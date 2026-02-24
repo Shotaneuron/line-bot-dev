@@ -96,7 +96,7 @@ function displayResult(userData, testType) {
             // ★進化ポイント：新しいデータ構造（domainScores）に対応
             const domains = s.domainScores || s;
             
-            labels = ['外向性', '協調性', '誠実性', '敏感さ', '開放性'];
+            labels = ['外向性', '協調性', '誠実性', '神経症的傾向', '開放性'];
             dataPoints = [domains.extraversion, domains.agreeableness, domains.conscientiousness, domains.neuroticism, domains.openness];
             
             const version = userData.bigFiveVersion ? userData.bigFiveVersion.stringValue : 'short';

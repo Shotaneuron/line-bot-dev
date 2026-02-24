@@ -208,7 +208,7 @@
             }
         },
         'N': {
-            title: "敏感さ（神経症傾向）の内訳", color: "bg-purple-400",
+            title: "神経症傾向の内訳", color: "bg-purple-400",
             facets: {
                 1: { name: "不安", desc: "心配事や恐怖、将来への漠然とした不安を感じやすい傾向" },
                 2: { name: "怒り", desc: "イライラしやすく、他人の行動に対して不満を抱きやすい傾向" },
@@ -231,7 +231,7 @@
         }
     };
 
-    async function initializePortal() {
+async function initializePortal() {
         try {
             await liff.init({ liffId: "2009176797-S5FV668D" }); 
             fetchStatistics();
@@ -239,6 +239,7 @@
             if (!liff.isLoggedIn()) { liff.login(); return; }
             const userId = (await liff.getProfile()).userId;
 
+            // APIキーなしでも通る設定ならこのままでOK。通らないなら末尾に ?key=YOUR_API_KEY を追加
             const url = `https://firestore.googleapis.com/v1/projects/shinrizemi-linebot/databases/default/documents/users/${userId}`;
             const res = await fetch(url);
             
@@ -256,70 +257,20 @@
     }
 
     function reflectData(type, resultField, dateField) {
-        if(resultField) {
+        if(resultField && resultField.stringValue) {
             document.getElementById(`result-${type}`).innerText = resultField.stringValue;
             document.getElementById(`result-${type}`).style.color = "#1e293b";
             document.getElementById(`btn-${type}`).classList.remove('hidden');
-            const d = new Date(dateField.timestampValue);
-            document.getElementById(`date-${type}`).innerText = d.toLocaleDateString() + " 実施";
+            if(dateField && dateField.timestampValue) {
+                const d = new Date(dateField.timestampValue);
+                document.getElementById(`date-${type}`).innerText = d.toLocaleDateString() + " 実施";
+            }
         }
     }
 
-    async function fetchStatistics() {
-        try {
-            const statsUrl = `https://firestore.googleapis.com/v1/projects/shinrizemi-linebot/databases/default/documents/users?pageSize=1000`;
-            const statsRes = await fetch(statsUrl);
-            if (!statsRes.ok) return;
-            const statsJson = await statsRes.json();
-            
-            if (statsJson.documents) {
-                let totalUsers = 0;
-                let motiCounts = {}, chronoCounts = {}, coffeeCounts = {};
+    // (fetchStatistics 関数は省略せずそのまま残してください)
 
-                statsJson.documents.forEach(doc => {
-                    if (doc.fields) {
-                        let isTested = false;
-                        if (doc.fields.motivationResult) {
-                            isTested = true;
-                            let t = doc.fields.motivationResult.stringValue.replace('やる気：', '');
-                            motiCounts[t] = (motiCounts[t] || 0) + 1;
-                        }
-                        if (doc.fields.chronoResult) {
-                            isTested = true;
-                            let t = doc.fields.chronoResult.stringValue.split('（')[0];
-                            chronoCounts[t] = (chronoCounts[t] || 0) + 1;
-                        }
-                        if (doc.fields.coffeeResult) {
-                            isTested = true;
-                            let t = doc.fields.coffeeResult.stringValue.split(' ')[0];
-                            coffeeCounts[t] = (coffeeCounts[t] || 0) + 1;
-                        }
-                        if (isTested) totalUsers++;
-                    }
-                });
-
-                if (totalUsers > 0) {
-                    let currentCount = 0;
-                    const counter = setInterval(() => {
-                        currentCount++;
-                        document.getElementById('stat-total').innerText = currentCount;
-                        if (currentCount >= totalUsers) clearInterval(counter);
-                    }, 50);
-
-                    if (Object.keys(motiCounts).length > 0) document.getElementById('stat-top-motivation').innerText = Object.keys(motiCounts).reduce((a, b) => motiCounts[a] > motiCounts[b] ? a : b);
-                    if (Object.keys(chronoCounts).length > 0) document.getElementById('stat-top-chrono').innerText = Object.keys(chronoCounts).reduce((a, b) => chronoCounts[a] > chronoCounts[b] ? a : b);
-                    if (Object.keys(coffeeCounts).length > 0) document.getElementById('stat-top-coffee').innerText = Object.keys(coffeeCounts).reduce((a, b) => coffeeCounts[a] > coffeeCounts[b] ? a : b);
-                } else {
-                    document.getElementById('stat-total').innerText = "0";
-                    document.getElementById('stat-top-motivation').innerText = "まだ";
-                    document.getElementById('stat-top-chrono').innerText = "まだ";
-                    document.getElementById('stat-top-coffee').innerText = "まだ";
-                }
-            }
-        } catch (e) { console.error(e); }
-    }
-
-function openModal(testType) {
+    function openModal(testType) {
         document.getElementById('detail-modal').style.display = 'flex';
         const chartContainer = document.getElementById('chart-container');
         const modalText = document.getElementById('modal-text');
@@ -330,13 +281,23 @@ function openModal(testType) {
 
         if (testType === 'bigfive' && userData.bigFiveScores) {
             const s = JSON.parse(userData.bigFiveScores.stringValue);
+            // 新旧データ構造の統合
             const domains = s.domainScores || s;
             
-            labels = ['外向性', '協調性', '誠実性', '敏感さ', '開放性'];
-            dataPoints = [domains.extraversion, domains.agreeableness, domains.conscientiousness, domains.neuroticism, domains.openness];
+            labels = ['外向性', '協調性', '誠実性', '神経症的傾向', '開放性'];
             
-            const version = userData.bigFiveVersion ? userData.bigFiveVersion.stringValue : 'short';
-            maxScore = (version === 'full' || s.domainScores) ? 120 : 7;
+            // ✅ 旧データのキー名(E,A,C,N,O)と新データのキー名(extraversion...)を両方サポート！
+            dataPoints = [
+                domains.extraversion || domains.E || 0,
+                domains.agreeableness || domains.A || 0,
+                domains.conscientiousness || domains.C || 0,
+                domains.neuroticism || domains.N || 0,
+                domains.openness || domains.O || 0
+            ];
+            
+            // ✅ bigfive_full かどうかを確実に判別
+            const isFull = (userData.latestTest?.stringValue === "bigfive_full" || !!s.domainScores);
+            maxScore = isFull ? 120 : 7;
             
             title = "Big Five 分析 🧠";
             text = "世界で最も信頼されている性格分析「Big Five」の結果です。\nグラフが外に広がっている項目があなたの強み。内側にへこんでいる項目は、意識してカバーすべきポイントです。\n\n";
@@ -351,34 +312,38 @@ function openModal(testType) {
                     const dict = FACET_DICT[domainKey];
                     const facetsData = s.facetScores[domainKey];
                     
-                    if (facetsData) {
+                    if (facetsData && dict) {
                         extraHTML += `<div class="bg-slate-50 rounded-xl p-4 shadow-sm border border-slate-100">
                             <h6 class="text-xs font-black text-slate-700 mb-3">${dict.title}</h6>
                             <div class="space-y-3">`;
 
                         for (let i = 1; i <= 6; i++) {
+                            // キー名が数字でも英語でも値を取れるように Object.values を使用
                             const score = Object.values(facetsData)[i-1] || 0;
                             const facetInfo = dict.facets[i];
                             const percent = Math.min(100, Math.round((score / 20) * 100));
 
-                            extraHTML += `
-                            <div>
-                                <div class="flex justify-between items-end mb-1">
-                                    <span class="text-[11px] font-bold text-slate-800">${facetInfo.name}</span>
-                                    <span class="text-[10px] font-black text-slate-400">${score}/20</span>
-                                </div>
-                                <div class="h-1.5 bg-slate-200 rounded-full overflow-hidden mb-1">
-                                    <div class="h-full ${dict.color} rounded-full" style="width: ${percent}%"></div>
-                                </div>
-                                <p class="text-[9px] text-slate-500 leading-tight">${facetInfo.desc}</p>
-                            </div>`;
+                            if(facetInfo) {
+                                extraHTML += `
+                                <div>
+                                    <div class="flex justify-between items-end mb-1">
+                                        <span class="text-[11px] font-bold text-slate-800">${facetInfo.name}</span>
+                                        <span class="text-[10px] font-black text-slate-400">${score}/20</span>
+                                    </div>
+                                    <div class="h-1.5 bg-slate-200 rounded-full overflow-hidden mb-1">
+                                        <div class="h-full ${dict.color} rounded-full" style="width: ${percent}%"></div>
+                                    </div>
+                                    <p class="text-[9px] text-slate-500 leading-tight">${facetInfo.desc}</p>
+                                </div>`;
+                            }
                         }
                         extraHTML += `</div></div>`;
                     }
                 });
                 extraHTML += `</div></div>`;
             }
-        } 
+        }
+
         else if (testType === 'motivation' && userData.motivationScores) {
             const s = JSON.parse(userData.motivationScores.stringValue);
             const resultName = userData.motivationResult ? userData.motivationResult.stringValue : "診断結果";
@@ -457,7 +422,7 @@ function openModal(testType) {
             chartContainer.style.display = 'none';
         }
     }
-    
+
     function closeModal() { document.getElementById('detail-modal').style.display = 'none'; }
 
     function drawChart(labels, dataPoints, maxScore) {
