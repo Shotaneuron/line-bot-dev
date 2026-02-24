@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta name="google-site-verification" content="TBQw73S6rqvCW7v0EA0RoUHvCtnTDl8TTngcXVx-btQ" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>プロフィール設定</title>
+
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background-color: #f8f9fa; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; color: #2c3e50; }
+        input, select, textarea { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
+        textarea { resize: vertical; height: 100px; }
+        button { width: 100%; padding: 14px; background-color: #06C755; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h3 style="text-align: center; color: #2c3e50;">👤 基本情報の登録</h3>
+    
+    <div class="form-group">
+        <label>📛 お名前（フルネーム）</label>
+        <input type="text" id="name" placeholder="例：北大 太郎">
+    </div>
+
+    <div class="form-group">
+        <label>🏫 大学名</label>
+        <input type="text" id="uni" value="北海道大学">
+    </div>
+
+    <div class="form-group">
+        <label>📚 学部・学科</label>
+        <input type="text" id="faculty" placeholder="例：理学部 数学科">
+    </div>
+
+    <div class="form-group">
+        <label>🎓 学年</label>
+        <select id="grade">
+            <option value="学部1年">学部1年</option>
+            <option value="学部2年">学部2年</option>
+            <option value="学部3年" selected>学部3年</option>
+            <option value="学部4年">学部4年</option>
+            <option value="修士1年">修士1年</option>
+            <option value="修士2年">修士2年</option>
+            <option value="その他">その他</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label>📝 自己紹介（Notionのページに記録されます）</label>
+        <textarea id="intro" placeholder="興味のある分野や、ゼミでやりたいことなどを自由に書いてください！"></textarea>
+    </div>
+
+    <button id="submitBtn">保存して閉じる</button>
+
+    <script>
+        // LIFF IDを設定
+        liff.init({ liffId: "2009176797-qGY6VB64" }).then(() => {
+            document.getElementById("submitBtn").addEventListener("click", () => {
+                const name = document.getElementById("name").value;
+                const uni = document.getElementById("uni").value;
+                const faculty = document.getElementById("faculty").value;
+                const grade = document.getElementById("grade").value;
+                const intro = document.getElementById("intro").value; // ★追加
+
+                if(!name || !uni || !faculty) {
+                    alert("名前、大学、学部を入力してください！");
+                    return;
+                }
+
+                // ★自己紹介文も一緒に送信する
+                const msg = `【プロフ更新】\n名前:${name}\n大学:${uni}\n学部:${faculty}\n学年:${grade}\n自己紹介:${intro}`;
+                
+                liff.sendMessages([{ type: "text", text: msg }]).then(() => {
+                    liff.closeWindow();
+                }).catch(err => console.error(err));
+            });
+        });
+    </script>
+</body>
+</html>

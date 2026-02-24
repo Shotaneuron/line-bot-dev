@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <title>クロノタイプ診断 | 北大心理ゼミ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body { font-family: 'Zen Maru Gothic', sans-serif; background: linear-gradient(-45deg, #10b981, #3b82f6, #6366f1, #8b5cf6); background-size: 400% 400%; animation: aurora 20s ease infinite; min-height: 100vh; display: flex; flex-direction: column; }
+        @keyframes aurora { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        .glass-panel { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(25px); border: 1px solid rgba(255, 255, 255, 0.4); }
+        .choice-btn { transition: all 0.2s ease; border: 1px solid rgba(0,0,0,0.05); }
+        .choice-btn:active { transform: scale(0.95); background-color: #f0f9ff; }
+        .progress-bar { transition: width 0.4s ease-out; }
+    </style>
+</head>
+<body class="safe-area-inset-top p-6">
+    <header class="text-center mb-6">
+        <p class="text-[10px] font-black text-white/80 tracking-[0.3em] mb-1">HOKKAIDO UNIVERSITY</p>
+        <h1 class="text-xl font-black text-white drop-shadow-md">クロノタイプ診断 🐻🦁🐺🐬</h1>
+    </header>
+
+    <main class="flex-1 flex flex-col justify-center">
+        <div id="intro-area" class="glass-panel rounded-[3rem] p-8 shadow-2xl text-center">
+            <div class="text-5xl mb-4">⏰</div>
+            <h2 class="text-lg font-black text-slate-800 mb-4">あなたの「最強の時間帯」は？</h2>
+            <p class="text-sm text-slate-700 font-bold leading-relaxed mb-6 text-left">
+                人間の体内時計は、遺伝的に4つの動物タイプに分かれています。<br><br>
+                この完全版テストでは、まずパート1で「イルカ型」かを判定し、その後パート2で残りのタイプを精密に分析します！
+            </p>
+            <button onclick="startTest()" class="w-full py-4 bg-emerald-500 rounded-[2rem] font-black text-white shadow-lg text-lg choice-btn">
+                診断をスタート！ ✨
+            </button>
+        </div>
+
+        <div id="quiz-area" class="glass-panel rounded-[3rem] p-6 shadow-2xl relative overflow-hidden" style="display: none;">
+            <div class="absolute top-0 left-0 w-full h-1.5 bg-slate-200">
+                <div id="progress" class="progress-bar h-full bg-emerald-500" style="width: 0%"></div>
+            </div>
+            <div class="pt-2 text-center">
+                <span id="part-badge" class="inline-block bg-emerald-100 text-emerald-600 text-[10px] font-black px-2 py-1 rounded mb-2 uppercase tracking-widest">Part 1</span>
+                <span id="q-number" class="block text-[10px] font-black text-slate-400 tracking-widest uppercase mb-1">Q 01 / 10</span>
+                <h2 id="q-text" class="text-[16px] font-black mt-2 mb-6 leading-relaxed text-slate-800 min-h-[4rem]"></h2>
+                
+                <div id="choices-container" class="grid grid-cols-1 gap-3">
+                    </div>
+                <button id="back-btn" onclick="goBack()" class="mt-5 text-xs font-bold text-slate-400 underline" style="display: none;">◀ 一つ前の問題に戻る</button>
+            </div>
+        </div>
+    </main>
+    <footer class="mt-6 text-center"><p class="text-[10px] text-white/60 tracking-widest uppercase">© 2026 北大心理ゼミ</p></footer>
+
+    <script>
+    // パート1：イルカ判定（10問 Yes/No）
+    const part1Questions = [ "わずかな音や光で目が覚めてしまう", "食べ物への情熱はそれほどない", "アラームが鳴る前に起きることが多い", "飛行機でうまく眠れない", "疲れるとすぐにイライラする", "ささいなことを悩みすぎる", "自分は不眠症だと思う（または診断された）", "学生のころは、成績にこだわるほうだった", "いつも「睡眠不足だ」と感じている", "何か起きると、過去・現在・未来の順に物事を考える" ];
+    const part2Questions = [
+        { t: "翌日に何の予定もない日の、理想の起床時間は？", choices: [{text: "午前6時半より前", score: 1}, {text: "午前6時半〜午前8時45分", score: 2}, {text: "午前8時45分以降", score: 3}] },
+        { t: "時差ボケにはどれくらい適応できる？", choices: [{text: "すぐに適応できる", score: 1}, {text: "48時間くらいで適応する", score: 2}, {text: "ずっと引きずる", score: 3}, {text: "時差ボケになりやすい", score: 4}] },
+        { t: "一日のうち、一番イライラしやすい時間は？", choices: [{text: "疲れてくる夕方以降", score: 1}, {text: "朝起きた直後", score: 3}, {text: "一日中なんとなく", score: 4}] },
+        { t: "自分のことを「完璧主義」だと思う？", choices: [{text: "絶対そう思う", score: 1}, {text: "どちらかというとそう", score: 2}, {text: "あまりそう思わない", score: 4}] },
+        { t: "休日の寝だめについてどう思う？", choices: [{text: "あまりしない・できない", score: 1}, {text: "数時間は長く寝る", score: 2}, {text: "休日は昼まで爆睡する", score: 3}, {text: "寝だめしても疲れが取れない", score: 4}] },
+        { t: "朝ごはんはしっかり食べるほう？", choices: [{text: "起きてすぐガッツリ食べる", score: 1}, {text: "少し時間が経ってから食べる", score: 2}, {text: "朝は食欲がない", score: 3}, {text: "食べたり食べなかったり", score: 4}] },
+        { t: "学生時代のテスト勉強はいつやるのが一番捗った？", choices: [{text: "早起きして朝にやる", score: 1}, {text: "学校から帰って夕方まで", score: 2}, {text: "深夜まで徹夜でやる", score: 3}, {text: "気分によってバラバラ", score: 4}] },
+        { t: "カフェイン（コーヒー等）を飲むとどうなる？", choices: [{text: "夕方以降に飲むと眠れない", score: 1}, {text: "あまり影響を感じない", score: 2}, {text: "寝る直前でも飲める", score: 3}, {text: "カフェインにかなり敏感", score: 4}] },
+        { t: "毎日の睡眠の深さは？", choices: [{text: "たまに途中で目が覚める", score: 1}, {text: "途中で起きることなく熟睡", score: 2}, {text: "少しの物音で起きてしまう", score: 4}] },
+        { t: "自分の性格を最も表しているのは？", choices: [{text: "現実的・戦略的", score: 1}, {text: "親切・楽観的", score: 2}, {text: "創造的・気分屋", score: 3}, {text: "神経質・知的", score: 4}] }
+    ];
+
+    let isPart2 = false;
+    let current = 0;
+    let userAnswersPart1 = []; 
+    let userAnswersPart2 = [];
+    let userId = "";
+
+    async function initializeLiff() {
+        try {
+            await liff.init({ liffId: "2009176797-L8SmhOdw" }); 
+            if (!liff.isLoggedIn()) { liff.login(); return; }
+            userId = (await liff.getProfile()).userId;
+        } catch (err) { console.warn("LIFFエラー:", err); }
+    }
+
+    function startTest() {
+        document.getElementById('intro-area').style.display = 'none';
+        document.getElementById('quiz-area').style.display = 'block';
+        updateUI();
+    }
+
+    function updateUI() {
+        const container = document.getElementById('choices-container');
+        container.innerHTML = "";
+        // 戻るボタンの表示・非表示（最初の問題以外は表示）
+        document.getElementById('back-btn').style.display = current > 0 ? 'inline-block' : 'none';
+
+        if (!isPart2) {
+            document.getElementById('part-badge').innerText = "Part 1";
+            document.getElementById('part-badge').className = "inline-block bg-emerald-100 text-emerald-600 text-[10px] font-black px-2 py-1 rounded mb-2 uppercase tracking-widest";
+            document.getElementById('q-number').innerText = `Q ${String(current+1).padStart(2, '0')} / 10`;
+            document.getElementById('q-text').innerText = part1Questions[current];
+            document.getElementById('progress').style.width = `${(current / 10) * 100}%`;
+            
+            ["はい", "いいえ"].forEach((ans, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "choice-btn w-full py-4 bg-white rounded-2xl text-sm font-black text-slate-800 shadow-sm border-2 border-slate-100";
+                btn.innerText = ans;
+                btn.onclick = () => answerPart1(idx === 0);
+                container.appendChild(btn);
+            });
+        } else {
+            document.getElementById('part-badge').innerText = "Part 2";
+            document.getElementById('part-badge').className = "inline-block bg-blue-100 text-blue-600 text-[10px] font-black px-2 py-1 rounded mb-2 uppercase tracking-widest";
+            document.getElementById('q-number').innerText = `Q ${String(current+1).padStart(2, '0')} / 10`;
+            const q = part2Questions[current];
+            document.getElementById('q-text').innerText = q.t;
+            document.getElementById('progress').style.width = `${(current / 10) * 100}%`;
+            document.getElementById('progress').className = "progress-bar h-full bg-blue-500";
+            
+            q.choices.forEach(choice => {
+                const btn = document.createElement('button');
+                btn.className = "choice-btn w-full py-4 bg-white rounded-2xl text-sm font-black text-slate-800 shadow-sm border-2 border-slate-100";
+                btn.innerText = choice.text;
+                btn.onclick = () => answerPart2(choice.score);
+                container.appendChild(btn);
+            });
+        }
+    }
+
+    function goBack() {
+        if (current > 0) {
+            current--;
+            updateUI();
+        }
+    }
+
+    function answerPart1(isYes) {
+        userAnswersPart1[current] = isYes;
+        current++;
+        if (current < 10) {
+            updateUI();
+        } else {
+            const part1Score = userAnswersPart1.filter(v => v).length;
+            if (part1Score >= 7) {
+                saveAndRedirect("イルカ（不規則型）");
+            } else {
+                isPart2 = true;
+                current = 0;
+                document.getElementById('quiz-area').innerHTML = `<div class="text-center py-10"><div class="text-4xl mb-4">🔍</div><p class="font-black text-slate-800">Part 2 へ進みます...</p></div>`;
+                setTimeout(() => {
+                    document.getElementById('quiz-area').innerHTML = `
+                        <div class="absolute top-0 left-0 w-full h-1.5 bg-slate-200"><div id="progress" class="progress-bar h-full bg-blue-500" style="width: 0%"></div></div>
+                        <div class="pt-2 text-center">
+                            <span id="part-badge"></span><span id="q-number" class="block text-[10px] font-black text-slate-400 tracking-widest uppercase mb-1"></span>
+                            <h2 id="q-text" class="text-[16px] font-black mt-2 mb-6 leading-relaxed text-slate-800 min-h-[4rem]"></h2>
+                            <div id="choices-container" class="grid grid-cols-1 gap-3"></div>
+                            <button id="back-btn" onclick="goBack()" class="mt-5 text-xs font-bold text-slate-400 underline" style="display: none;">◀ 一つ前の問題に戻る</button>
+                        </div>`;
+                    updateUI();
+                }, 1500);
+            }
+        }
+    }
+
+    function answerPart2(score) {
+        userAnswersPart2[current] = score;
+        current++;
+        if (current < 10) {
+            updateUI();
+        } else {
+            const part2Score = userAnswersPart2.reduce((a, b) => a + b, 0);
+            let type = "";
+            if (part2Score <= 16) type = "ライオン（朝型）";
+            else if (part2Score <= 23) type = "クマ（昼型）";
+            else if (part2Score <= 30) type = "オオカミ（夜型）";
+            else type = "イルカ（不規則型）";
+            
+            saveAndRedirect(type);
+        }
+    }
+
+    async function saveAndRedirect(type) {
+        document.getElementById('quiz-area').innerHTML = `<div class="text-center py-10"><div class="animate-spin text-4xl mb-4">🌀</div><p class="font-black text-slate-800">最適な時間帯を分析中...</p></div>`;
+        if (userId) {
+            const apiKey = "AIzaSyD6qGmXgiLp0W7VhNdQYBnCzMnq4TNiQdk";
+            const url = `https://firestore.googleapis.com/v1/projects/shinrizemi-linebot/databases/default/documents/users/${userId}?updateMask.fieldPaths=chronoResult&updateMask.fieldPaths=chronoDate&updateMask.fieldPaths=latestTest&key=${apiKey}`;
+            const payload = { fields: { chronoResult: { stringValue: type }, chronoDate: { timestampValue: new Date().toISOString() }, latestTest: { stringValue: "chronotype" } } };
+            try { await fetch(url, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); } catch (err) {}
+        }
+        window.location.href = "result.html?type=chronotype";
+    }
+
+    initializeLiff();
+    </script>
+</body>
+</html>

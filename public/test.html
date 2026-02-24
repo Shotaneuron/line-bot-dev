@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <title>北大心理ゼミ Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body { font-family: 'Zen Maru Gothic', sans-serif; background: #f0fdfa; color: #1e293b; min-height: 100vh; }
+        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.6); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); }
+        .btn-hover { transition: transform 0.2s; }
+        .btn-hover:active { transform: scale(0.96); }
+        #detail-modal { display: none; transition: opacity 0.3s; }
+        #detail-modal.show { display: flex; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .pulse-bg { animation: pulseBg 3s infinite alternate; }
+        @keyframes pulseBg { 0% { background-color: #f8fafc; } 100% { background-color: #f1f5f9; } }
+    </style>
+</head>
+<body class="safe-area-inset-top pb-24 relative">
+
+    <header class="bg-white px-6 py-8 rounded-b-[2rem] shadow-sm mb-6 text-center">
+        <p class="text-[10px] font-black text-sky-500 tracking-[0.3em] mb-2 uppercase">Hokkaido University</p>
+        <h1 class="text-2xl font-black text-slate-800 tracking-tight mb-2">北大心理ゼミ <span class="text-xl">💡</span></h1>
+        <p class="text-xs text-slate-500 font-bold mt-3 bg-slate-100 inline-block px-3 py-1 rounded-full">「心」を科学する学生コミュニティ</p>
+    </header>
+
+    <main class="px-5 space-y-8">
+
+        <section class="pulse-bg border-2 border-slate-200 rounded-[2rem] p-5 text-center relative overflow-hidden shadow-inner">
+            <div class="absolute -top-4 -right-4 text-6xl opacity-10">📊</div>
+            <h2 class="text-xs font-black text-slate-500 tracking-widest mb-3">RESEARCH DATA</h2>
+            <div class="flex justify-center items-end space-x-1 mb-4">
+                <span class="text-sm font-bold text-slate-600 pb-1">現在、北大生</span>
+                <span id="stat-total" class="text-4xl font-black text-sky-600 tracking-tighter">--</span>
+                <span class="text-sm font-bold text-slate-600 pb-1">人が診断済！</span>
+            </div>
+            
+            <p class="text-[10px] font-bold text-slate-400 mb-2">👑 一番多いタイプは...</p>
+            <div class="grid grid-cols-3 gap-2">
+                <div class="bg-white rounded-xl py-3 px-1 shadow-sm border border-slate-100">
+                    <p class="text-[9px] font-bold text-slate-400 mb-1">🔥 やる気</p>
+                    <p id="stat-top-motivation" class="text-[11px] font-black text-orange-500 break-words">集計中...</p>
+                </div>
+                <div class="bg-white rounded-xl py-3 px-1 shadow-sm border border-slate-100">
+                    <p class="text-[9px] font-bold text-slate-400 mb-1">⏰ 時間帯</p>
+                    <p id="stat-top-chrono" class="text-[11px] font-black text-emerald-500 break-words">集計中...</p>
+                </div>
+                <div class="bg-white rounded-xl py-3 px-1 shadow-sm border border-slate-100">
+                    <p class="text-[9px] font-bold text-slate-400 mb-1">☕ コーヒー</p>
+                    <p id="stat-top-coffee" class="text-[11px] font-black text-amber-600 break-words">集計中...</p>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2 class="text-sm font-black text-slate-700 pl-2 mb-3 border-l-4 border-indigo-500">心理テストを受ける</h2>
+            <div class="grid grid-cols-2 gap-3">
+                <a href="motivation.html" class="btn-hover block bg-gradient-to-br from-orange-400 to-rose-400 rounded-2xl p-4 text-white shadow-md">
+                    <h3 class="text-sm font-black mb-1">やる気８タイプ 🔥</h3>
+                    <p class="text-[9px] font-bold text-white/80">モチベの源泉を特定</p>
+                </a>
+                <a href="bigfive.html" class="btn-hover block bg-gradient-to-br from-indigo-500 to-cyan-500 rounded-2xl p-4 text-white shadow-md">
+                    <h3 class="text-sm font-black mb-1">Big Five診断 🧠</h3>
+                    <p class="text-[9px] font-bold text-white/80">世界基準の性格分析</p>
+                </a>
+                <a href="chronotype.html" class="btn-hover block bg-gradient-to-br from-emerald-400 to-teal-500 rounded-2xl p-4 text-white shadow-md">
+                    <h3 class="text-sm font-black mb-1">クロノタイプ ⏰</h3>
+                    <p class="text-[9px] font-bold text-white/80">最強の「時間帯」が判明</p>
+                </a>
+                <a href="coffee.html" class="btn-hover block bg-gradient-to-br from-amber-500 to-orange-400 rounded-2xl p-4 text-white shadow-md">
+                    <h3 class="text-sm font-black mb-1">コーヒー性格 ☕</h3>
+                    <p class="text-[9px] font-bold text-white/80">1問でわかる深層心理</p>
+                </a>
+            </div>
+        </section>
+
+        <section>
+            <h2 class="text-sm font-black text-slate-700 pl-2 mb-3 border-l-4 border-sky-400">あなたの分析データ</h2>
+            <div class="space-y-3">
+                
+                <div class="glass-card rounded-[2rem] p-5">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-[10px] font-black text-slate-400 tracking-widest bg-slate-100 px-2 py-1 rounded">やる気８タイプ診断</span>
+                        <span id="date-motivation" class="text-[10px] font-bold text-slate-400">未診断</span>
+                    </div>
+                    <p id="result-motivation" class="text-base font-black text-slate-400 mb-3">テストを受けてみよう！</p>
+                    <button id="btn-motivation" onclick="openModal('motivation')" class="hidden w-full bg-orange-500 text-white text-xs font-bold py-2.5 rounded-xl shadow-sm btn-hover">詳細を見る</button>
+                </div>
+
+                <div class="glass-card rounded-[2rem] p-5">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-[10px] font-black text-slate-400 tracking-widest bg-slate-100 px-2 py-1 rounded">Big Five 性格テスト</span>
+                        <span id="date-bigfive" class="text-[10px] font-bold text-slate-400">未診断</span>
+                    </div>
+                    <p id="result-bigfive" class="text-base font-black text-slate-400 mb-3">テストを受けてみよう！</p>
+                    <button id="btn-bigfive" onclick="openModal('bigfive')" class="hidden w-full bg-indigo-500 text-white text-xs font-bold py-2.5 rounded-xl shadow-sm btn-hover">詳細を見る</button>
+                </div>
+
+                <div class="glass-card rounded-[2rem] p-5">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-[10px] font-black text-slate-400 tracking-widest bg-slate-100 px-2 py-1 rounded">クロノタイプ診断</span>
+                        <span id="date-chrono" class="text-[10px] font-bold text-slate-400">未診断</span>
+                    </div>
+                    <p id="result-chrono" class="text-base font-black text-slate-400 mb-3">テストを受けてみよう！</p>
+                    <button id="btn-chrono" onclick="openModal('chronotype')" class="hidden w-full bg-emerald-500 text-white text-xs font-bold py-2.5 rounded-xl shadow-sm btn-hover">詳細を見る</button>
+                </div>
+
+                <div class="glass-card rounded-[2rem] p-5">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-[10px] font-black text-slate-400 tracking-widest bg-slate-100 px-2 py-1 rounded">コーヒー性格テスト</span>
+                        <span id="date-coffee" class="text-[10px] font-bold text-slate-400">未診断</span>
+                    </div>
+                    <p id="result-coffee" class="text-base font-black text-slate-400 mb-3">テストを受けてみよう！</p>
+                    <button id="btn-coffee" onclick="openModal('coffee')" class="hidden w-full bg-amber-500 text-white text-xs font-bold py-2.5 rounded-xl shadow-sm btn-hover">詳細を見る</button>
+                </div>
+
+            </div>
+        </section>
+
+        <section>
+            <h2 class="text-sm font-black text-slate-700 pl-2 mb-3 border-l-4 border-teal-400">ゼミ生の活動・コラム</h2>
+            <div class="space-y-3">
+                <a href="#" class="btn-hover flex items-center bg-white rounded-2xl p-3 shadow-sm border border-slate-100">
+                    <div class="w-12 h-12 flex justify-center items-center bg-teal-50 rounded-xl text-2xl mr-4">📖</div>
+                    <div><h3 class="text-sm font-black text-slate-800">AI先輩の3分心理学コラム</h3><p class="text-[10px] font-bold text-slate-500 mt-1">「エリートタイプ」の落とし穴とは？</p></div>
+                </a>
+                <a href="#" class="btn-hover flex items-center bg-white rounded-2xl p-3 shadow-sm border border-slate-100">
+                    <div class="w-12 h-12 flex justify-center items-center bg-amber-50 rounded-xl text-2xl mr-4">📸</div>
+                    <div><h3 class="text-sm font-black text-slate-800">ゼミ活動日誌 & メンバー紹介</h3><p class="text-[10px] font-bold text-slate-500 mt-1">個性豊かな先輩たちを大公開！</p></div>
+                </a>
+            </div>
+        </section>
+
+        <section class="btn-hover">
+            <a href="#" class="block bg-gradient-to-r from-amber-400 to-orange-500 rounded-[2rem] p-6 text-center shadow-lg relative overflow-hidden">
+                <div class="absolute -right-4 -bottom-4 text-6xl opacity-20">☕</div>
+                <h2 class="text-white font-black text-sm mb-2 drop-shadow-md">＼ 新入生歓迎イベント開催！ ／</h2>
+                <p class="text-white/90 text-xs font-bold mb-4 drop-shadow-sm">心理学に興味がある人、大歓迎！<br>まずはオンライン説明会へ遊びに来てね✨</p>
+                <span class="inline-block bg-white text-orange-500 text-xs font-black px-8 py-3 rounded-full shadow-md">詳細・参加申込はこちら！ 👉</span>
+            </a>
+        </section>
+
+    </main>
+
+    <div id="detail-modal" class="fixed inset-0 bg-slate-900/60 z-50 justify-center items-end pb-0 sm:items-center sm:p-5 hidden">
+        <div class="bg-white w-full sm:w-96 rounded-t-[2rem] sm:rounded-[2rem] p-6 max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="modal-title" class="text-lg font-black text-slate-800">詳細レポート 📑</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 font-bold text-xl bg-slate-100 rounded-full w-8 h-8 flex justify-center items-center">×</button>
+            </div>
+            
+            <div id="chart-container" class="w-full aspect-square mb-6 bg-slate-50 rounded-2xl p-2">
+                <canvas id="radarChart"></canvas>
+            </div>
+            
+            <div class="bg-indigo-50 p-4 rounded-xl mb-4">
+                <h4 class="text-xs font-black text-indigo-600 mb-2">🤖 AI先輩の分析</h4>
+                <p id="modal-text" class="text-xs text-slate-700 font-bold leading-relaxed whitespace-pre-wrap"></p>
+            </div>
+            <button onclick="closeModal()" class="w-full bg-slate-200 text-slate-700 text-sm font-black py-3 rounded-xl mt-2 active:bg-slate-300">閉じる</button>
+        </div>
+    </div>
+
+    <script>
+let myChart = null;
+    let userData = null;
+
+    // 📖 30項目のファセット（小項目）辞書
+    const FACET_DICT = {
+        'E': {
+            title: "外向性の内訳", color: "bg-orange-400",
+            facets: {
+                1: { name: "友好性", desc: "周囲の人へ親しみを感じ、温かく接する傾向" },
+                2: { name: "社交性", desc: "人と一緒にいることを好み、集団を求める傾向" },
+                3: { name: "自己主張", desc: "リーダーシップを取り、自分の意見を主張する力" },
+                4: { name: "活動水準", desc: "エネルギッシュで、常に忙しく活動的に動くペース" },
+                5: { name: "刺激希求", desc: "スリルや興奮、非日常的な強い刺激を求める傾向" },
+                6: { name: "明朗性", desc: "ポジティブな感情（喜び・楽しさ）を感じやすい傾向" }
+            }
+        },
+        'A': {
+            title: "協調性の内訳", color: "bg-green-400",
+            facets: {
+                1: { name: "信頼", desc: "他人の意図が善意に基づいていると信じる傾向" },
+                2: { name: "誠実さ", desc: "駆け引きをせず、率直で隠し事がない傾向" },
+                3: { name: "利他主義", desc: "他人の幸福を願い、進んで援助しようとする傾向" },
+                4: { name: "順応性", desc: "対立を避け、他人に譲歩して許す傾向" },
+                5: { name: "謙虚さ", desc: "自慢をせず、自分を控えめに表現する傾向" },
+                6: { name: "優しい心", desc: "他人の悲しみや苦しみに共感し、同情する傾向" }
+            }
+        },
+        'C': {
+            title: "誠実性の内訳", color: "bg-blue-400",
+            facets: {
+                1: { name: "自己効力感", desc: "自分には物事を成し遂げる能力があると信じる傾向" },
+                2: { name: "秩序性", desc: "整理整頓を好み、計画的に物事を進める傾向" },
+                3: { name: "義務感", desc: "ルールや道徳的な義務を厳格に守ろうとする傾向" },
+                4: { name: "達成努力", desc: "高い目標を設定し、それに向かって努力する傾向" },
+                5: { name: "自己鍛錬", desc: "困難や退屈なタスクでも、投げ出さずにやり遂げる力" },
+                6: { name: "慎重さ", desc: "行動する前に結果を予測し、深く考えてから動く傾向" }
+            }
+        },
+        'N': {
+            title: "敏感さ（神経症傾向）の内訳", color: "bg-purple-400",
+            facets: {
+                1: { name: "不安", desc: "心配事や恐怖、将来への漠然とした不安を感じやすい傾向" },
+                2: { name: "怒り", desc: "イライラしやすく、他人の行動に対して不満を抱きやすい傾向" },
+                3: { name: "抑うつ", desc: "悲しみや孤独感、罪悪感などを感じて落ち込みやすい傾向" },
+                4: { name: "自意識", desc: "他人の目を気にし、恥ずかしさや気まずさを感じやすい傾向" },
+                5: { name: "衝動性", desc: "強い欲求や誘惑に抗えず、その場の感情で行動してしまう傾向" },
+                6: { name: "脆弱性", desc: "プレッシャーやストレスに弱く、パニックになりやすい傾向" }
+            }
+        },
+        'O': {
+            title: "開放性の内訳", color: "bg-pink-400",
+            facets: {
+                1: { name: "想像力", desc: "空想を好み、豊かで創造的な内面世界を持っている傾向" },
+                2: { name: "芸術的関心", desc: "音楽・美術・自然などの美しさに深く感動する傾向" },
+                3: { name: "感情性", desc: "自分の感情の動きに敏感で、それを大切にする傾向" },
+                4: { name: "冒険心", desc: "新しい活動や場所、食べたことのないものを好む傾向" },
+                5: { name: "知性", desc: "抽象的なアイデアや哲学的な議論、知的な遊びを好む傾向" },
+                6: { name: "進取性", desc: "伝統や権威を疑い、新しい価値観を受け入れる傾向" }
+            }
+        }
+    };
+
+    async function initializePortal() {
+        try {
+            await liff.init({ liffId: "2009176797-S5FV668D" }); 
+            fetchStatistics();
+
+            if (!liff.isLoggedIn()) { liff.login(); return; }
+            const userId = (await liff.getProfile()).userId;
+
+            const url = `https://firestore.googleapis.com/v1/projects/shinrizemi-linebot/databases/default/documents/users/${userId}`;
+            const res = await fetch(url);
+            
+            if (res.ok) {
+                const json = await res.json();
+                if (json.fields) {
+                    userData = json.fields;
+                    reflectData('motivation', userData.motivationResult, userData.motivationDate);
+                    reflectData('bigfive', userData.bigFiveResult, userData.bigFiveDate);
+                    reflectData('chrono', userData.chronoResult, userData.chronoDate);
+                    reflectData('coffee', userData.coffeeResult, userData.coffeeDate);
+                }
+            }
+        } catch (err) { console.error(err); }
+    }
+
+    function reflectData(type, resultField, dateField) {
+        if(resultField) {
+            document.getElementById(`result-${type}`).innerText = resultField.stringValue;
+            document.getElementById(`result-${type}`).style.color = "#1e293b";
+            document.getElementById(`btn-${type}`).classList.remove('hidden');
+            const d = new Date(dateField.timestampValue);
+            document.getElementById(`date-${type}`).innerText = d.toLocaleDateString() + " 実施";
+        }
+    }
+
+    async function fetchStatistics() {
+        try {
+            const statsUrl = `https://firestore.googleapis.com/v1/projects/shinrizemi-linebot/databases/default/documents/users?pageSize=1000`;
+            const statsRes = await fetch(statsUrl);
+            if (!statsRes.ok) return;
+            const statsJson = await statsRes.json();
+            
+            if (statsJson.documents) {
+                let totalUsers = 0;
+                let motiCounts = {}, chronoCounts = {}, coffeeCounts = {};
+
+                statsJson.documents.forEach(doc => {
+                    if (doc.fields) {
+                        let isTested = false;
+                        if (doc.fields.motivationResult) {
+                            isTested = true;
+                            let t = doc.fields.motivationResult.stringValue.replace('やる気：', '');
+                            motiCounts[t] = (motiCounts[t] || 0) + 1;
+                        }
+                        if (doc.fields.chronoResult) {
+                            isTested = true;
+                            let t = doc.fields.chronoResult.stringValue.split('（')[0];
+                            chronoCounts[t] = (chronoCounts[t] || 0) + 1;
+                        }
+                        if (doc.fields.coffeeResult) {
+                            isTested = true;
+                            let t = doc.fields.coffeeResult.stringValue.split(' ')[0];
+                            coffeeCounts[t] = (coffeeCounts[t] || 0) + 1;
+                        }
+                        if (isTested) totalUsers++;
+                    }
+                });
+
+                if (totalUsers > 0) {
+                    let currentCount = 0;
+                    const counter = setInterval(() => {
+                        currentCount++;
+                        document.getElementById('stat-total').innerText = currentCount;
+                        if (currentCount >= totalUsers) clearInterval(counter);
+                    }, 50);
+
+                    if (Object.keys(motiCounts).length > 0) document.getElementById('stat-top-motivation').innerText = Object.keys(motiCounts).reduce((a, b) => motiCounts[a] > motiCounts[b] ? a : b);
+                    if (Object.keys(chronoCounts).length > 0) document.getElementById('stat-top-chrono').innerText = Object.keys(chronoCounts).reduce((a, b) => chronoCounts[a] > chronoCounts[b] ? a : b);
+                    if (Object.keys(coffeeCounts).length > 0) document.getElementById('stat-top-coffee').innerText = Object.keys(coffeeCounts).reduce((a, b) => coffeeCounts[a] > coffeeCounts[b] ? a : b);
+                } else {
+                    document.getElementById('stat-total').innerText = "0";
+                    document.getElementById('stat-top-motivation').innerText = "まだ";
+                    document.getElementById('stat-top-chrono').innerText = "まだ";
+                    document.getElementById('stat-top-coffee').innerText = "まだ";
+                }
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    function openModal(testType) {
+        document.getElementById('detail-modal').style.display = 'flex';
+        const chartContainer = document.getElementById('chart-container');
+        const modalText = document.getElementById('modal-text');
+        
+        let labels = [], dataPoints = [], maxScore = 7, title = "", text = "";
+        let showChart = true;
+        let extraHTML = "";
+
+        if (testType === 'bigfive' && userData.bigFiveScores) {
+            const s = JSON.parse(userData.bigFiveScores.stringValue);
+            const domains = s.domainScores || s;
+            
+            labels = ['外向性', '協調性', '誠実性', '敏感さ', '開放性'];
+            dataPoints = [domains.extraversion, domains.agreeableness, domains.conscientiousness, domains.neuroticism, domains.openness];
+            
+            const version = userData.bigFiveVersion ? userData.bigFiveVersion.stringValue : 'short';
+            maxScore = (version === 'full' || s.domainScores) ? 120 : 7;
+            
+            title = "Big Five 分析 🧠";
+            text = "グラフが外に広がっている項目があなたの強み。内側にへこんでいる項目は、意識してカバーすべきポイントです。";
+
+            if (s.facetScores) {
+                extraHTML = `<div class="mt-6 border-t border-slate-200 pt-5">
+                    <h5 class="text-sm font-black text-slate-800 mb-4">🔬 30項目の詳細プロファイリング</h5>
+                    <div class="space-y-6">`;
+                
+                const domainKeys = ['E', 'A', 'C', 'N', 'O'];
+                domainKeys.forEach(domainKey => {
+                    const dict = FACET_DICT[domainKey];
+                    const facetsData = s.facetScores[domainKey];
+                    
+                    if (facetsData) {
+                        extraHTML += `<div class="bg-slate-50 rounded-xl p-4 shadow-sm border border-slate-100">
+                            <h6 class="text-xs font-black text-slate-700 mb-3">${dict.title}</h6>
+                            <div class="space-y-3">`;
+
+                        for (let i = 1; i <= 6; i++) {
+                            const score = Object.values(facetsData)[i-1] || 0;
+                            const facetInfo = dict.facets[i];
+                            const percent = Math.min(100, Math.round((score / 20) * 100));
+
+                            extraHTML += `
+                            <div>
+                                <div class="flex justify-between items-end mb-1">
+                                    <span class="text-[11px] font-bold text-slate-800">${facetInfo.name}</span>
+                                    <span class="text-[10px] font-black text-slate-400">${score}/20</span>
+                                </div>
+                                <div class="h-1.5 bg-slate-200 rounded-full overflow-hidden mb-1">
+                                    <div class="h-full ${dict.color} rounded-full" style="width: ${percent}%"></div>
+                                </div>
+                                <p class="text-[9px] text-slate-500 leading-tight">${facetInfo.desc}</p>
+                            </div>`;
+                        }
+                        // ★修正：ここの閉じタグの数を整理
+                        extraHTML += `</div></div>`;
+                    }
+                });
+                // ★修正：最後の閉じタグ
+                extraHTML += `</div></div>`;
+            }
+        } 
+        else if (testType === 'motivation' && userData.motivationScores) {
+            const s = JSON.parse(userData.motivationScores.stringValue);
+            labels = ['成長思考', '賞賛欲求', '自信']; dataPoints = [s.mindset, s.focus, s.confidence]; maxScore = 2;
+            title = "やる気８タイプ 分析 🔥";
+            text = "自分がどんな時に頑張れるかを知ることで、大学生活のモチベーションを自在にコントロールできるようになります！";
+        }
+        else if (testType === 'chronotype') {
+            showChart = false;
+            title = "クロノタイプ 分析 ⏰";
+            const typeStr = userData.chronoResult.stringValue;
+            if(typeStr.includes('ライオン')) text = "【ライオン型（朝型）】\n午前中に最も集中力がピークに達する生粋の朝型です。大事なタスクや勉強は朝一番に片付けるのが大正解！夜は潔く休むのが吉です。";
+            else if(typeStr.includes('クマ')) text = "【クマ型（昼型）】\nお昼前〜午後にかけて能力が全開になる、太陽の動きに合わせたタイプ。昼過ぎの眠気を軽い散歩で飛ばせば、ゼミの活動でも一番活躍できます！";
+            else if(typeStr.includes('オオカミ')) text = "【オオカミ型（夜型）】\n夕方から夜にかけて集中力が高まる夜型。午前中はクリエイティブな発想が出やすいので、アイデア出しに使い、ガッツリ作業は夜に回しましょう！";
+            else if(typeStr.includes('イルカ')) text = "【イルカ型（不規則型）】\n少し神経質で睡眠が浅くなりやすいタイプ。夜にスマホを見すぎず、リラックスするルーティンを作ると大学生活の質が劇的に上がります！";
+        }
+        else if (testType === 'coffee') {
+            showChart = false;
+            title = "コーヒー性格 分析 ☕";
+            const typeStr = userData.coffeeResult.stringValue;
+            if(typeStr.includes('ブラック')) text = "【ブラックコーヒー】\n純粋なものを好む保守的なタイプです！無駄を嫌いストレートな物言いを好むので、ゼミの進行役やマネージャーなど、場を仕切る役割に向いています。";
+            else if(typeStr.includes('カフェラテ')) text = "【カフェラテ】\n人生の苦しみを和らげようとする快楽主義者タイプです！周囲を和ませるため、ゼミの人間関係の潤滑油になる素晴らしい才能を持っています。";
+            else if(typeStr.includes('フローズン')) text = "【フローズン】\n流行に敏感で、自発的なトレンドセッターです！ゼミのイベント企画や、SNS運用など、新しいアイデアを出す場面で最も輝きます。";
+            else if(typeStr.includes('特殊')) text = "【特殊オーダー】\n自分の体調や状況に敏感な、こだわりの強い完璧主義タイプです！ゼミの研究や論文執筆など、細部まで徹底的にこだわる作業が得意です。";
+            else if(typeStr.includes('インスタント')) text = "【インスタント】\n伝統的な方法にこだわる、マイペースでのんびり屋なタイプです！焦らず自分のペースで進められる役割を見つけると、確実に成果を出します。";
+        }
+
+        document.getElementById('modal-title').innerText = title;
+        // ★修正：\n を <br> に変換して、HTML上でもちゃんと改行されるようにする！
+        modalText.innerHTML = text.replace(/\n/g, '<br>') + extraHTML;
+
+        if (showChart) {
+            chartContainer.style.display = 'block';
+            drawChart(labels, dataPoints, maxScore);
+        } else {
+            chartContainer.style.display = 'none';
+        }
+    }
+
+    function closeModal() { document.getElementById('detail-modal').style.display = 'none'; }
+
+    function drawChart(labels, dataPoints, maxScore) {
+        const ctx = document.getElementById('radarChart').getContext('2d');
+        if(myChart) { myChart.destroy(); }
+        myChart = new Chart(ctx, {
+            type: 'radar',
+            data: { labels: labels, datasets: [{ label: 'スコア', data: dataPoints, backgroundColor: 'rgba(99, 102, 241, 0.2)', borderColor: 'rgba(99, 102, 241, 1)', pointBackgroundColor: 'rgba(99, 102, 241, 1)', borderWidth: 2 }] },
+            options: { scales: { r: { min: 0, max: maxScore, ticks: { stepSize: maxScore/5, display: false } } }, plugins: { legend: { display: false } } }
+        });
+    }
+
+    initializePortal();
+        
+    </script>
+</body>
+</html>

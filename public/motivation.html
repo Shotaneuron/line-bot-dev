@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <title>やる気８タイプ診断 | 北大心理ゼミ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body { font-family: 'Zen Maru Gothic', sans-serif; background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab); background-size: 400% 400%; animation: aurora 20s ease infinite; min-height: 100vh; display: flex; flex-direction: column; }
+        @keyframes aurora { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        .glass-panel { background: rgba(255, 255, 255, 0.82); backdrop-filter: blur(25px); border: 1px solid rgba(255, 255, 255, 0.4); }
+        .choice-btn { transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .choice-btn:active { transform: scale(0.94); background: white; }
+        .progress-bar { transition: width 0.4s ease; }
+    </style>
+</head>
+<body class="safe-area-inset-top p-6">
+    <header class="text-center mb-8">
+        <p class="text-[10px] font-black text-white/70 tracking-[0.4em] mb-1">HOKKAIDO UNIVERSITY</p>
+        <h1 class="text-xl font-black text-white drop-shadow-md tracking-tighter">やる気８タイプ診断 🔥</h1>
+    </header>
+
+    <main class="flex-1 flex flex-col justify-center">
+        <div id="intro-area" class="glass-panel rounded-[3rem] p-8 shadow-2xl text-center">
+            <div class="text-5xl mb-4">🔥</div>
+            <h2 class="text-lg font-black text-indigo-950 mb-4">あなたの「やる気スイッチ」<br>どこにある？</h2>
+            <p class="text-sm text-indigo-900/80 font-bold leading-relaxed mb-8 text-left">
+                コロンビア大学の心理学研究に基づく診断です。<br><br>
+                「褒められたい」「失敗したくない」など、あなたがどんな状況で一番モチベーションが上がるのかを8つのタイプから特定します！
+            </p>
+            <button onclick="startTest()" class="choice-btn w-full py-4 bg-orange-500 rounded-[2rem] font-black text-white shadow-lg text-lg">
+                診断をスタート！ 🚀
+            </button>
+        </div>
+
+        <div id="quiz-area" class="glass-panel rounded-[3rem] p-8 shadow-2xl relative overflow-hidden" style="display: none;">
+            <div class="absolute top-0 left-0 w-full h-2 bg-white/30">
+                <div id="progress" class="progress-bar h-full bg-orange-500" style="width: 0%"></div>
+            </div>
+            <div class="pt-4 text-center">
+                <span id="q-number" class="text-[10px] font-black text-orange-500 tracking-[0.2em] uppercase">STEP 01</span>
+                <h2 id="q-text" class="text-xl font-black mt-4 mb-8 leading-relaxed text-indigo-950 min-h-[5rem]">
+                    </h2>
+                <div class="space-y-4">
+                    <button id="btn-1" onclick="answer(1)" class="choice-btn w-full py-5 bg-white/60 rounded-[2rem] font-black text-indigo-950 shadow-sm border border-white">
+                        </button>
+                    <button id="btn-0" onclick="answer(0)" class="choice-btn w-full py-5 bg-white/60 rounded-[2rem] font-black text-indigo-950 shadow-sm border border-white">
+                        </button>
+                </div>
+                <button id="back-btn" onclick="goBack()" class="mt-6 text-sm font-bold text-indigo-900/50 underline active:text-orange-500" style="display: none;">
+                    ◀ 一つ前の問題に戻る
+                </button>
+            </div>
+        </div>
+    </main>
+    <footer class="mt-8 text-center"><p class="text-[10px] text-white/50 tracking-widest uppercase">© 2026 北大心理ゼミ</p></footer>
+
+    <script>
+    const questions = [
+        { t: "能力は努力次第で、いくらでも伸ばせると思う？", ans1: "努力で伸びる！📈", ans0: "才能で決まる 🧊", axis: "mindset" },
+        { t: "新しいことに挑戦して失敗するより、今のままが良い？", ans1: "失敗しても挑戦！🚀", ans0: "現状を維持したい 🛡️", axis: "mindset", reverse: true },
+        { t: "目標を達成して「すごい！」と言われるのが一番の喜び？", ans1: "賞賛がほしい！🌟", ans0: "特に求めない 🍃", axis: "focus" },
+        { t: "ミスをして誰かに怒られるのは、何としても避けたい？", ans1: "絶対に避けたい 🚫", ans0: "あまり気にしない 🕊️", axis: "focus", reverse: true },
+        { t: "難しい課題に出会ったとき、「自分ならできる」と思える？", ans1: "できる気がする！🔥", ans0: "不安が勝つ 💦", axis: "confidence" },
+        { t: "周りの人と比べて、自分は器用にこなせる方だと思う？", ans1: "自信がある ✨", ans0: "自信がない 📉", axis: "confidence" }
+    ];
+
+    let current = 0;
+    let userAnswers = []; // 戻れるように回答履歴を保存
+    let userId = "";
+
+    async function initializeLiff() {
+        try {
+            await liff.init({ liffId: "2009176797-haV5S7AC" }); 
+            if (!liff.isLoggedIn()) { liff.login(); return; }
+            userId = (await liff.getProfile()).userId;
+        } catch (err) { console.error("LIFFエラー:", err); }
+    }
+
+    function startTest() {
+        document.getElementById('intro-area').style.display = 'none';
+        document.getElementById('quiz-area').style.display = 'block';
+        updateUI();
+    }
+
+    function updateUI() {
+        const q = questions[current];
+        document.getElementById('q-number').innerText = `STEP ${String(current + 1).padStart(2, '0')} / 06`;
+        document.getElementById('q-text').innerText = q.t;
+        document.getElementById('btn-1').innerText = q.ans1;
+        document.getElementById('btn-0').innerText = q.ans0;
+        document.getElementById('progress').style.width = `${(current / questions.length) * 100}%`;
+        document.getElementById('back-btn').style.display = current > 0 ? 'inline-block' : 'none';
+    }
+
+    function answer(val) {
+        userAnswers[current] = val;
+        current++;
+        if (current < questions.length) {
+            updateUI();
+        } else {
+            document.getElementById('quiz-area').innerHTML = `<div class="text-center py-10"><div class="animate-spin text-4xl mb-4">🌀</div><p class="font-black text-indigo-950">結果を分析中...</p></div>`;
+            sendResult();
+        }
+    }
+
+    function goBack() {
+        if (current > 0) {
+            current--;
+            updateUI();
+        }
+    }
+
+async function sendResult() {
+        let scores = { mindset: 0, focus: 0, confidence: 0 };
+        questions.forEach((q, i) => {
+            let val = userAnswers[i];
+            scores[q.axis] += q.reverse ? (val === 1 ? 0 : 1) : val;
+        });
+
+        const G = scores.mindset >= 1; const P = scores.focus >= 1; const H = scores.confidence >= 1;
+        let type = "";
+        if (G && P && H) type = "エリート"; else if (G && P && !H) type = "新星"; else if (G && !P && H) type = "戦略家"; else if (G && !P && !H) type = "臆病者"; else if (!G && P && H) type = "レジェンド"; else if (!G && P && !H) type = "ビギナー"; else if (!G && !P && H) type = "熟練者"; else type = "凡人";
+
+        if (userId) {
+            const apiKey = "AIzaSyD6qGmXgiLp0W7VhNdQYBnCzMnq4TNiQdk";
+            const url = `https://firestore.googleapis.com/v1/projects/shinrizemi-linebot/databases/default/documents/users/${userId}?updateMask.fieldPaths=motivationResult&updateMask.fieldPaths=motivationDate&updateMask.fieldPaths=motivationScores&updateMask.fieldPaths=latestTest&key=${apiKey}`;
+            const payload = { 
+                fields: { 
+                    motivationResult: { stringValue: "やる気：" + type }, 
+                    motivationDate: { timestampValue: new Date().toISOString() },
+                    motivationScores: { stringValue: JSON.stringify(scores) },
+                    latestTest: { stringValue: "motivation" }
+                } 
+            };
+            try { 
+                await fetch(url, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); 
+            } catch (err) {
+                console.error("保存エラー:", err);
+            }
+        }
+
+        // ★大進化：LINEに送信せず、そのままポータル画面（test.html）へ移動する！
+        window.location.href = "result.html?type=motivation";
+    }
+    initializeLiff();
+
+    </script>
+</body>
+</html>

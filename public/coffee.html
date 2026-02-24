@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <title>コーヒー性格テスト | 北大心理ゼミ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body { font-family: 'Zen Maru Gothic', sans-serif; background: linear-gradient(135deg, #a16207, #d97706, #f59e0b); min-height: 100vh; display: flex; flex-direction: column; }
+        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.4); }
+        .choice-btn { transition: all 0.2s ease; border: 1px solid rgba(0,0,0,0.05); }
+        .choice-btn:active { transform: scale(0.95); background-color: #fef3c7; }
+    </style>
+</head>
+<body class="safe-area-inset-top p-6">
+    <header class="text-center mb-6">
+        <p class="text-[10px] font-black text-amber-100 tracking-[0.3em] mb-1">HOKKAIDO UNIVERSITY</p>
+        <h1 class="text-xl font-black text-white drop-shadow-md">コーヒー性格テスト ☕</h1>
+    </header>
+
+    <main class="flex-1 flex flex-col justify-center">
+        <div id="quiz-area" class="glass-panel rounded-[3rem] p-6 shadow-2xl text-center">
+            <div class="text-5xl mb-4">☕</div>
+            <h2 class="text-lg font-black text-amber-900 mb-6 leading-relaxed">
+                あなたが一番好きな<br>コーヒーの飲み方は？
+            </h2>
+            
+            <div class="grid grid-cols-1 gap-3">
+                <button onclick="answer('ブラックコーヒー')" class="choice-btn w-full py-4 bg-white rounded-2xl text-sm font-black text-amber-900 shadow-sm border-2 border-amber-100">
+                    ブラックコーヒー ☕️
+                </button>
+                <button onclick="answer('カフェラテ（ミルク入り）')" class="choice-btn w-full py-4 bg-white rounded-2xl text-sm font-black text-amber-900 shadow-sm border-2 border-amber-100">
+                    カフェラテ（ミルク入り） 🥛
+                </button>
+                <button onclick="answer('フローズン / ブレンド系')" class="choice-btn w-full py-4 bg-white rounded-2xl text-sm font-black text-amber-900 shadow-sm border-2 border-amber-100">
+                    フローズン / ブレンド系（甘い・冷たい） 🥤
+                </button>
+                <button onclick="answer('カフェインレス / 豆乳など特殊オーダー')" class="choice-btn w-full py-4 bg-white rounded-2xl text-sm font-black text-amber-900 shadow-sm border-2 border-amber-100">
+                    カフェインレス / 豆乳など特殊オーダー 🌿
+                </button>
+                <button onclick="answer('インスタントコーヒー')" class="choice-btn w-full py-4 bg-white rounded-2xl text-sm font-black text-amber-900 shadow-sm border-2 border-amber-100">
+                    インスタントコーヒー ⏳
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+    let userId = "";
+
+    async function initializeLiff() {
+        try {
+            await liff.init({ liffId: "2009176797-WGz7zAZb" }); 
+            if (!liff.isLoggedIn()) { liff.login(); return; }
+            userId = (await liff.getProfile()).userId;
+        } catch (err) { console.warn("LIFFエラー:", err); }
+    }
+
+    async function answer(type) {
+        document.getElementById('quiz-area').innerHTML = `<div class="text-center py-10"><div class="animate-spin text-4xl mb-4 text-amber-700">🌀</div><p class="font-black text-amber-900">性格を分析中...</p></div>`;
+        
+        if (userId) {
+            const apiKey = "AIzaSyD6qGmXgiLp0W7VhNdQYBnCzMnq4TNiQdk";
+            const url = `https://firestore.googleapis.com/v1/projects/shinrizemi-linebot/databases/default/documents/users/${userId}?updateMask.fieldPaths=coffeeResult&updateMask.fieldPaths=coffeeDate&updateMask.fieldPaths=latestTest&key=${apiKey}`;
+            const payload = { 
+                fields: { 
+                    coffeeResult: { stringValue: type }, 
+                    coffeeDate: { timestampValue: new Date().toISOString() },
+                    latestTest: { stringValue: "coffee" }
+                } 
+            };
+            try { await fetch(url, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); } catch (err) {}
+        }
+        window.location.href = "result.html?type=coffee";
+    }
+
+    initializeLiff();
+    </script>
+</body>
+</html>

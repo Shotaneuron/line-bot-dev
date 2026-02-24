@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <title>Big Five 診断 | 北大心理ゼミ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body { font-family: 'Zen Maru Gothic', sans-serif; background: linear-gradient(-45deg, #3b82f6, #6366f1, #8b5cf6, #d946ef); background-size: 400% 400%; animation: aurora 20s ease infinite; min-height: 100vh; display: flex; flex-direction: column; }
+        @keyframes aurora { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        .glass-panel { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(25px); border: 1px solid rgba(255, 255, 255, 0.4); }
+        .choice-btn { transition: all 0.2s ease; border: 1px solid rgba(0,0,0,0.05); }
+        .choice-btn:active { transform: scale(0.95); background-color: #f0f9ff; }
+        .progress-bar { transition: width 0.3s ease-out; }
+    </style>
+</head>
+<body class="safe-area-inset-top p-6">
+    <header class="text-center mb-6">
+        <p class="text-[10px] font-black text-white/80 tracking-[0.3em] mb-1">HOKKAIDO UNIVERSITY</p>
+        <h1 class="text-xl font-black text-white drop-shadow-md">Big Five 性格テスト 🧠</h1>
+    </header>
+
+    <main class="flex-1 flex flex-col justify-center">
+        <div id="intro-area" class="glass-panel rounded-[3rem] p-8 shadow-2xl text-center">
+            <div class="text-5xl mb-4">🔬</div>
+            <h2 class="text-lg font-black text-slate-800 mb-4">自分に合ったコースを選択</h2>
+            <p class="text-sm text-slate-700 font-bold leading-relaxed mb-6 text-left">
+                世界基準の性格分析です。サクッと知りたい方は「簡易版」、自分の性格を丸裸にしたい方は「完全版」をお選びください！
+            </p>
+            
+            <div class="space-y-4">
+                <button onclick="selectMode('short')" class="w-full py-4 bg-white rounded-[2rem] font-black text-indigo-600 shadow-md border-2 border-indigo-100 btn-hover">
+                    ⏱️ 簡易版（10問 / 約5分）
+                </button>
+                <button onclick="selectMode('full')" class="w-full py-4 bg-indigo-600 rounded-[2rem] font-black text-white shadow-lg btn-hover relative overflow-hidden">
+                    <span class="absolute top-0 right-0 bg-pink-500 text-white text-[9px] px-2 py-1 rounded-bl-lg">オススメ</span>
+                    🔥 完全版（120問 / 約20分）
+                </button>
+            </div>
+        </div>
+
+        <div id="quiz-area" class="glass-panel rounded-[3rem] p-6 shadow-2xl relative overflow-hidden" style="display: none;">
+            <div class="absolute top-0 left-0 w-full h-1.5 bg-slate-200">
+                <div id="progress" class="progress-bar h-full bg-indigo-500" style="width: 0%"></div>
+            </div>
+            <div class="pt-2 text-center">
+                <span id="mode-badge" class="inline-block bg-indigo-100 text-indigo-600 text-[10px] font-black px-2 py-1 rounded mb-2 uppercase tracking-widest"></span>
+                <span id="q-number" class="block text-[11px] font-black text-slate-400 tracking-widest uppercase mb-1"></span>
+                <h2 id="q-text" class="text-[17px] font-black mt-2 mb-6 leading-relaxed text-slate-800 min-h-[4rem]"></h2>
+                
+                <div id="choices-short" class="grid grid-cols-1 gap-2" style="display: none;">
+                    <button onclick="answer(7)" class="choice-btn w-full py-2.5 bg-white rounded-xl text-xs font-bold text-slate-800 shadow-sm border border-slate-100">強く同意する</button>
+                    <button onclick="answer(6)" class="choice-btn w-full py-2.5 bg-white rounded-xl text-xs font-bold text-slate-800 shadow-sm border border-slate-100">同意する</button>
+                    <button onclick="answer(5)" class="choice-btn w-full py-2.5 bg-white rounded-xl text-xs font-bold text-slate-800 shadow-sm border border-slate-100">少し同意する</button>
+                    <button onclick="answer(4)" class="choice-btn w-full py-2.5 bg-white rounded-xl text-xs font-bold text-slate-800 shadow-sm border border-slate-100">どちらともいえない</button>
+                    <button onclick="answer(3)" class="choice-btn w-full py-2.5 bg-white rounded-xl text-xs font-bold text-slate-800 shadow-sm border border-slate-100">少し反対する</button>
+                    <button onclick="answer(2)" class="choice-btn w-full py-2.5 bg-white rounded-xl text-xs font-bold text-slate-800 shadow-sm border border-slate-100">反対する</button>
+                    <button onclick="answer(1)" class="choice-btn w-full py-2.5 bg-white rounded-xl text-xs font-bold text-slate-800 shadow-sm border border-slate-100">強く反対する</button>
+                </div>
+
+                <div id="choices-full" class="grid grid-cols-1 gap-2.5" style="display: none;">
+                    <button onclick="answer(5)" class="choice-btn w-full py-3.5 bg-white rounded-2xl text-sm font-black text-slate-800 shadow-sm border-2 border-slate-100">非常に当てはまる</button>
+                    <button onclick="answer(4)" class="choice-btn w-full py-3.5 bg-white rounded-2xl text-sm font-black text-slate-800 shadow-sm border-2 border-slate-100">やや当てはまる</button>
+                    <button onclick="answer(3)" class="choice-btn w-full py-3.5 bg-white rounded-2xl text-sm font-black text-slate-800 shadow-sm border-2 border-slate-100">どちらともいえない</button>
+                    <button onclick="answer(2)" class="choice-btn w-full py-3.5 bg-white rounded-2xl text-sm font-black text-slate-800 shadow-sm border-2 border-slate-100">やや当てはまらない</button>
+                    <button onclick="answer(1)" class="choice-btn w-full py-3.5 bg-white rounded-2xl text-sm font-black text-slate-800 shadow-sm border-2 border-slate-100">非常に当てはまらない</button>
+                </div>
+                
+                <button id="back-btn" onclick="goBack()" class="mt-5 text-xs font-bold text-slate-400 underline" style="display: none;">◀ 一つ前の問題に戻る</button>
+            </div>
+        </div>
+    </main>
+    <footer class="mt-6 text-center"><p class="text-[10px] text-white/60 tracking-widest uppercase">© 2026 北大心理ゼミ</p></footer>
+
+    <script>
+    const questionsShort = [
+        { t: "活発で、外向的だと思う", r: false }, { t: "他人に批判的で、もめごとを起こしやすいと思う", r: true },
+        { t: "しっかりしていて、自分に厳しいと思う", r: false }, { t: "不安になりやすく、うろたえやすいと思う", r: true },
+        { t: "新しいことが好きで、変わった考えを持っていると思う", r: false }, { t: "控えめで、おとなしいと思う", r: true },
+        { t: "頼もしく、思いやりがあると思う", r: false }, { t: "だらしなく、うっかりしていると思う", r: true },
+        { t: "冷静で、気分が安定していると思う", r: false }, { t: "保守的で、平凡なことが好きだと思う", r: true }
+    ];
+
+    let version = "";
+    let questions = [];
+    let current = 0;
+    let userAnswers = []; 
+    let userId = "";
+
+    async function initializeLiff() {
+        try {
+            await liff.init({ liffId: "2009176797-MQuRvfCA" }); 
+            if (!liff.isLoggedIn()) { liff.login(); return; }
+            userId = (await liff.getProfile()).userId;
+        } catch (err) { console.warn("LIFFエラー:", err); }
+    }
+
+    async function selectMode(mode) {
+        version = mode;
+        if (mode === 'short') {
+            questions = questionsShort;
+            startTest();
+        } else {
+            document.getElementById('intro-area').innerHTML = `<div class="text-center py-10"><div class="animate-spin text-4xl mb-4 text-indigo-600">🌀</div><p class="font-black text-slate-800">120問のデータを<br>取得中...</p></div>`;
+            try {
+                const res = await fetch('https://cdn.jsdelivr.net/npm/@alheimsins/b5-johnson-120-ipip-neo-pi-r@6.0.13/data/ja/questions.json');
+                questions = await res.json();
+                startTest();
+            } catch(e) { alert("読み込みエラー: 通信環境を確認してください。"); }
+        }
+    }
+
+    function startTest() {
+        document.getElementById('intro-area').style.display = 'none';
+        document.getElementById('quiz-area').style.display = 'block';
+        
+        if (version === 'short') {
+            document.getElementById('mode-badge').innerText = "簡易版";
+            document.getElementById('choices-short').style.display = 'grid';
+            document.getElementById('choices-full').style.display = 'none';
+        } else {
+            document.getElementById('mode-badge').innerText = "完全版";
+            document.getElementById('choices-short').style.display = 'none';
+            document.getElementById('choices-full').style.display = 'grid';
+        }
+        updateUI();
+    }
+
+    function updateUI() {
+        const total = questions.length;
+        document.getElementById('q-number').innerText = `Q ${String(current+1).padStart(version==='full'?3:2, '0')} / ${total}`;
+        document.getElementById('q-text').innerText = version === 'short' ? questions[current].t : questions[current].text;
+        document.getElementById('progress').style.width = `${(current / total) * 100}%`;
+        document.getElementById('back-btn').style.display = current > 0 ? 'inline-block' : 'none';
+    }
+
+    function answer(val) {
+        userAnswers[current] = val;
+        current++;
+        if (current < questions.length) {
+            updateUI();
+        } else {
+            document.getElementById('quiz-area').innerHTML = `<div class="text-center py-10"><div class="animate-spin text-4xl mb-4 text-indigo-600">🌀</div><p class="font-black text-slate-800">結果を精密分析中...</p></div>`;
+            calcAndSend();
+        }
+    }
+
+    function goBack() { if (current > 0) { current--; updateUI(); } }
+
+async function calcAndSend() {
+        // 大項目（ドメイン）と小項目（ファセット）の箱を用意
+        let domains = { E: 0, A: 0, C: 0, N: 0, O: 0 };
+        let facets = { E: {}, A: {}, C: {}, N: {}, O: {} };
+        
+        userAnswers.forEach((ans, i) => {
+            const q = questions[i];
+            // keyedが "plus" ならそのままの点数、"minus" なら逆転（6 - 選んだ数字）
+            const val = q.keyed === "plus" ? ans : (6 - ans);
+            
+            // 大項目の加算
+            domains[q.domain] += val;
+            
+            // 小項目（ファセット）の加算
+            if (!facets[q.domain][q.facet]) {
+                facets[q.domain][q.facet] = 0;
+            }
+            facets[q.domain][q.facet] += val;
+        });
+
+        // 保存用にデータを構造化
+        const finalData = {
+            domainScores: {
+                extraversion: domains['E'], 
+                agreeableness: domains['A'],
+                conscientiousness: domains['C'], 
+                neuroticism: domains['N'], 
+                openness: domains['O']
+            },
+            facetScores: facets // 30項目の詳細データ
+        };
+
+        const traits = [
+            { name: "外向性", score: finalData.domainScores.extraversion }, 
+            { name: "協調性", score: finalData.domainScores.agreeableness },
+            { name: "誠実性", score: finalData.domainScores.conscientiousness }, 
+            { name: "神経症的傾向", score: finalData.domainScores.neuroticism },
+            { name: "開放性", score: finalData.domainScores.openness }
+        ];
+        traits.sort((a, b) => b.score - a.score);
+        const topTrait = traits[0].name;
+
+        if (userId) {
+            const apiKey = "AIzaSyD6qGmXgiLp0W7VhNdQYBnCzMnq4TNiQdk";
+            const url = `https://firestore.googleapis.com/v1/projects/shinrizemi-linebot/databases/default/documents/users/${userId}?updateMask.fieldPaths=bigFiveResult&updateMask.fieldPaths=bigFiveDate&updateMask.fieldPaths=bigFiveScores&updateMask.fieldPaths=latestTest&key=${apiKey}`;
+            const payload = { 
+                fields: { 
+                    bigFiveResult: { stringValue: `Big Five：${topTrait}が特徴的（詳細データあり）` }, 
+                    bigFiveDate: { timestampValue: new Date().toISOString() },
+                    bigFiveScores: { stringValue: JSON.stringify(finalData) },
+                    latestTest: { stringValue: "bigfive_full" }
+                } 
+            };
+            try { 
+                await fetch(url, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); 
+            } catch (err) {
+                console.error("データ保存エラー:", err);
+            }
+        }
+
+        window.location.href = "result.html?type=bigfive";
+    }
+
+    initializeLiff();
+    </script>
+</body>
+</html>

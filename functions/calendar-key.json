@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "shinrizemi-linebot",
+  "private_key_id": "4623199f5881e754c14c44e4ec7b71c308102905",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC9kkm2Rw+b1w+n\nOHboU1Xab006RfdVzqvHySMr/xxdbNRnslqeMzKI5zt7cdTKuyTUycTC8x4gWvTz\nVOFakuzazdoPuaqcbu3xgqh7ui2/zooJPeHdpeJbztJVMgTsyi8umag525AG2dui\ncFyCmypzmw6fMI3T1dWchYS8LRDQxqNRj/PHotECSIndJxQeR0GvMBu3CiUSvn0v\nc3Re9GyID36416qYkHVkmDXdYXsPma2maE54cWkiezQJyxT+Gikj0Qm5K9PSZZE4\nQXDmHWTJ2/+mrAIiolYsohP0SRq97B+TjbbcHuBSV2ljUA1vxfVYgYHn3Gk3X+Gk\nF11G31LPAgMBAAECggEAAXIgrXW285gnzpLagU9wEQWWoAem6RjK7EVR8dofvsH/\nkAznA7GImfey10WuevSuGrtb4frAXjx4sB8TxZY88oxDCf9UrZ3A+H29HY3Kyd2K\n5aLQWq7oXjfibcjptbPzDoFt1tx1qZUMHPM2GWmSi3rWw+Bhwd2tzo72zLKb9WOo\na0tWm/0vi8h0W9EPyAQ4PYJo74BSnLCOFGIehYLtjwQsBI4WagltoLsWRhEleAcD\nZ0sCQxnemrR8pFu7J0Rne4wFyAkzve9w2fzhr6RlQ3brAJ4MV1/mkBRRyfq3Gc9R\nqHAt9lUm6Mz6mVNPkC6NAX//nAFELb0adIJ6KE4zzQKBgQDde54hhcR3kefD0smu\nUlENUfGxVoB6b7ecXUZqDLCGfGFFvh6QqUROGo/W581uQac/IJ5abuFrEwyQp7ax\ns2WcUGCt1uhgNLUFzOrfCX4rG8wvdAzq5da1B1BrpB1tR51D/N6hPFgfPxPsQtzy\nKN+qray5i58tC0dlWL4m5/oMDQKBgQDbHYREIgxXaAMk/qAvjU5AdCEUSuTyFAuw\n9vNMlJ4BOB8Nq4npeI336tRiH8m5ZwKD4Hztv+nF8HwIcgWdQNvx1XwkMq7HoH+S\nHTK2z7DF1I1lu8WcL3DAUCVAXDRX6rJ90KR3Gd7ffP+tdNVUY0RDpEGQGups6Uid\nnOdW62M3SwKBgDNbv/5sA3PqnIC3N1c59VuOXepOcbpyf3Q92N8slB6LZw8CGBpZ\ndeJanHIsDGH9zWeBC9dSkOkAYNCGY4HvZKeLp++HvxjYAAYZT3lqvRwH9SAn2/r4\nUwJlcMuVIdG+YoRqdcGTuad9PAR0OMHaoor0fPIFo2KRk/u3SVjCQCRdAoGBANVd\nW7Og2BWxAgbfL4q+damLq75/44ra/Dt5bZdvzKBxTsPX+zZunwgAEonuXFd+uFNE\noUI+M9z8fTsYFOF5C/Pkp7rz44AeiLr2VbDwczlg7cNX4mhhRdDu+ic+4fWOY/rh\n1ZToiz9jD/GPKEDBXPLlGrbBju85Bu37oMXh9r4bAoGBAIc/AsIAVkr2vAbjVvbB\n73BZX98Kmz23yWr1e2EZXKS4eFSMJOKdccq5GgzojdiW+VIIttEACbrZwjkCQFw5\nocST8X/eEnoph0nTBINxr+yyfb2KjU31aE/NCd+3CsevfzqJMs0ZjeAfrfc07soE\nL0CAOsnrGnPmUnzm9Cd/5HUe\n-----END PRIVATE KEY-----\n",
+  "client_email": "bot-calendar@shinrizemi-linebot.iam.gserviceaccount.com",
+  "client_id": "110185393111619021711",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/bot-calendar%40shinrizemi-linebot.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

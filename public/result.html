@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <title>診断結果 | 北大心理ゼミ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Zen Maru Gothic', sans-serif; background: #f0fdfa; color: #1e293b; min-height: 100vh; display: flex; flex-direction: column; }
+        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.6); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); }
+        .btn-hover { transition: transform 0.2s; }
+        .btn-hover:active { transform: scale(0.96); }
+        /* ふわっと表示させるアニメーション */
+        .fade-in { animation: fadeIn 0.6s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="safe-area-inset-top p-5">
+
+    <header class="text-center mb-6 pt-4 fade-in">
+        <p class="text-[10px] font-black text-sky-500 tracking-[0.3em] mb-1 uppercase">Result</p>
+        <h1 class="text-2xl font-black text-slate-800 tracking-tight">診断完了！ 🎉</h1>
+    </header>
+
+    <main class="flex-1 flex flex-col justify-center">
+        <div id="loading" class="text-center py-10">
+            <div class="animate-spin text-4xl mb-4">🌀</div>
+            <p class="font-black text-slate-500 tracking-widest">結果を分析中...</p>
+        </div>
+
+        <div id="result-content" class="hidden fade-in">
+            <div class="glass-card w-full rounded-[2rem] p-6 mb-8">
+                <h3 id="result-title" class="text-lg font-black text-slate-800 mb-4 text-center border-b-2 border-slate-100 pb-3"></h3>
+                
+                <div class="w-full aspect-square mb-6 bg-slate-50 rounded-2xl p-2 relative">
+                    <canvas id="radarChart"></canvas>
+                </div>
+                
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+                    <h4 class="text-xs font-black text-indigo-600 mb-2 flex items-center"><span class="text-base mr-1">🤖</span> AI先輩の分析</h4>
+                    <p id="result-text" class="text-xs text-slate-700 font-bold leading-relaxed whitespace-pre-wrap"></p>
+                </div>
+            </div>
+
+            <button onclick="window.location.href='test.html'" class="w-full bg-slate-800 text-white text-sm font-black py-4 rounded-2xl shadow-lg btn-hover flex justify-center items-center">
+                🏠 ホーム（ポータル）へ戻る
+            </button>
+        </div>
+    </main>
+
+    <script>
+    let myChart = null;
+
+    async function initResult() {
+        try {
+            // ★超重要：ここにポータル用のLIFF IDを入れてください
+            await liff.init({ liffId: "2009176797-LOp8bXQi" }); 
+            if (!liff.isLoggedIn()) { liff.login(); return; }
+            const userId = (await liff.getProfile()).userId;
+
+            // URLから「どのテストから来たか」の情報を取得（例: ?type=motivation）
+            const urlParams = new URLSearchParams(window.location.search);
+            const testType = urlParams.get('type');
+
+            // データベースから最新の結果を取得
+            const url = `https://firestore.googleapis.com/v1/projects/shinrizemi-linebot/databases/default/documents/users/${userId}`;
+            const res = await fetch(url);
+            
+            if (res.ok) {
+                const json = await res.json();
+                if (json.fields) {
+                    // 少しだけ「分析中...」を見せるための演出（0.8秒待つ）
+                    setTimeout(() => {
+                        displayResult(json.fields, testType);
+                    }, 800);
+                }
+            }
+        } catch (err) {
+            document.getElementById('loading').innerHTML = `<p class="text-red-500 font-bold">エラーが発生しました: ${err.message}</p>`;
+        }
+    }
+
+function displayResult(userData, testType) {
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('result-content').classList.remove('hidden');
+
+        let labels = [], dataPoints = [], maxScore = 7, title = "", text = "";
+        let showChart = true;
+
+        if (testType === 'bigfive' && userData.bigFiveScores) {
+            const s = JSON.parse(userData.bigFiveScores.stringValue);
+            // ★進化ポイント：新しいデータ構造（domainScores）に対応
+            const domains = s.domainScores || s;
+            
+            labels = ['外向性', '協調性', '誠実性', '敏感さ', '開放性'];
+            dataPoints = [domains.extraversion, domains.agreeableness, domains.conscientiousness, domains.neuroticism, domains.openness];
+            
+            const version = userData.bigFiveVersion ? userData.bigFiveVersion.stringValue : 'short';
+            maxScore = (version === 'full' || s.domainScores) ? 120 : 7;
+            
+            title = "Big Five 分析完了 🧠";
+            // ★ポータル（詳細画面）へ誘導する熱いメッセージに！
+            text = "世界基準の「5因子」のスコアが算出されました！\n\nレーダーチャートが外に広がっている項目が、あなたの基本的な強みです。\n\n🎉 さらに！\n120問お答えいただいたあなたには【30項目の詳細な性格パラメーター】も裏側で算出されています！\n\n下のボタンから「ホーム（ポータル）」に戻り、詳細レポートを確認してみましょう✨";
+        } 
+        else if (testType === 'motivation' && userData.motivationScores) {
+            const s = JSON.parse(userData.motivationScores.stringValue);
+            labels = ['成長思考', '賞賛欲求', '自信'];
+            dataPoints = [s.mindset, s.focus, s.confidence];
+            maxScore = 2;
+            title = "やる気８タイプ 分析完了 🔥";
+            text = "あなたの「やる気スイッチ」を構成する3つの要素です！\n\n自分がどんな時に頑張れるかを知ることで、大学生活のモチベーションを自在にコントロールできるようになります！\n\n下のボタンからポータルに戻り、詳しい解説をチェックしてください！";
+        }
+        else if (testType === 'chronotype') {
+            showChart = false;
+            title = "クロノタイプ 分析完了 ⏰";
+            const typeStr = userData.chronoResult.stringValue;
+            document.getElementById('radarChart').parentElement.style.display = 'none';
+            text = `あなたの遺伝的な体内時計は\n【 ${typeStr} 】です！\n\nあなたの集中力が最も高まる「ゴールデンタイム」や、大学生活での最強の過ごし方をポータル画面にまとめました。\n\n下のボタンからポータルへ戻って、詳細なアドバイスを確認してみましょう！`;
+        }
+        else if (testType === 'coffee') {
+            showChart = false;
+            title = "コーヒー性格テスト ☕";
+            const typeStr = userData.coffeeResult.stringValue;
+            document.getElementById('radarChart').parentElement.style.display = 'none';
+            text = `あなたの性格は…\n【 ${typeStr} 】好きタイプ！\n\nこのタイプが持つ「意外な強み」と「人間関係の落とし穴」を分析しました。\n\n下のボタンからポータルへ戻って、詳しい診断結果を読んでみましょう！`;
+        }
+
+        document.getElementById('result-title').innerText = title;
+        document.getElementById('result-text').innerText = text;
+
+        if (showChart) {
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            myChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: labels,
+                    datasets: [{ label: 'スコア', data: dataPoints, backgroundColor: 'rgba(99, 102, 241, 0.2)', borderColor: 'rgba(99, 102, 241, 1)', pointBackgroundColor: 'rgba(99, 102, 241, 1)', borderWidth: 2 }]
+                },
+                options: { scales: { r: { min: 0, max: maxScore, ticks: { stepSize: maxScore/5, display: false }, pointLabels: { font: { family: 'Zen Maru Gothic', size: 11, weight: 'bold' } } } }, plugins: { legend: { display: false } } }
+            });
+        }
+    }
+
+    initResult();
+    </script>
+</body>
+</html>
