@@ -249,122 +249,132 @@
             } catch (e) { console.error("統計取得エラー:", e); }
         }
 
-function openModal(testType) {
-    if (!userData) return;
-    document.getElementById('detail-modal').style.display = 'flex';
-    const chartContainer = document.getElementById('chart-container');
-    const modalText = document.getElementById('modal-text');
-    
-    let labels = [], dataPoints = [], maxScore = 7, title = "", text = "", extraHTML = "";
-    let showChart = true;
+        function openModal(testType) {
+            if (!userData) return;
+            document.getElementById('detail-modal').style.display = 'flex';
+            const chartContainer = document.getElementById('chart-container');
+            const modalText = document.getElementById('modal-text');
+            
+            let labels = [], dataPoints = [], maxScore = 7, title = "", text = "", extraHTML = "";
+            let showChart = true;
 
-    try {
-        if (testType === 'bigfive') {
-            title = "Big Five 分析 🧠";
-            // データの存在チェック
-            if (!userData.bigFiveScores || !userData.bigFiveScores.stringValue) {
-                text = userData.bigFiveResult ? userData.bigFiveResult.stringValue : "診断結果が見つかりません。";
-                showChart = false;
-            } else {
-                // REST API形式のパース
-                const s = JSON.parse(userData.bigFiveScores.stringValue);
-                const domains = s.domainScores || s; // domainScores階層があればそれを使う
-                
-                // 表示ラベルの更新（「神経症的傾向」に統一）
-                labels = ['外向性', '協調性', '誠実性', '神経症的傾向', '開放性'];
-                
-                // データポイントの抽出（保存時の英語キー名に合わせる）
-                dataPoints = [
-                    domains.extraversion || domains.E || 0,
-                    domains.agreeableness || domains.A || 0,
-                    domains.conscientiousness || domains.C || 0,
-                    domains.neuroticism || domains.N || 0,
-                    domains.openness || domains.O || 0
-                ];
+            try {
+                if (testType === 'bigfive') {
+                    title = "Big Five 分析 🧠";
+                    // 1. データの存在確認（REST API形式の .stringValue をチェック）
+                    if (!userData.bigFiveScores || !userData.bigFiveScores.stringValue) {
+                        text = userData.bigFiveResult ? userData.bigFiveResult.stringValue : "診断結果がありません。";
+                        showChart = false;
+                    } else {
+                        // 2. JSONパース
+                        const s = JSON.parse(userData.bigFiveScores.stringValue);
+                        const domains = s.domainScores || s;
+                        
+                        // 3. ラベルとデータのマッピング（「神経症的傾向」に統一）
+                        labels = ['外向性', '協調性', '誠実性', '神経症的傾向', '開放性'];
+                        dataPoints = [
+                            domains.extraversion || domains.E || 0,
+                            domains.agreeableness || domains.A || 0,
+                            domains.conscientiousness || domains.C || 0,
+                            domains.neuroticism || domains.N || 0,
+                            domains.openness || domains.O || 0
+                        ];
+                        
+                        // 4. 120問版判定（latestTestフィールドまたはfacetScoresの有無）
+                        const isFull = (userData.latestTest && userData.latestTest.stringValue === "bigfive_full") || !!s.facetScores;
+                        maxScore = isFull ? 120 : 7;
+                        text = "世界基準の性格分析結果です。外側に広がっている項目があなたの強みです。\n\n";
 
-                // 満点の判定（latestTestフィールドを確認）
-                const isFull = (userData.latestTest && userData.latestTest.stringValue === "bigfive_full");
-                maxScore = isFull ? 120 : 7;
-
-                text = "世界基準の性格分析結果です。外側に広がっている項目があなたの強みです。\n\n";
-
-                // 30項目の詳細レポート作成（facetScoresがある場合のみ）
-                if (s.facetScores) {
-                    extraHTML = `<div class="mt-6 border-t border-slate-200 pt-5"><h5 class="text-sm font-black text-slate-800 mb-4">🔬 30項目の詳細プロファイリング</h5><div class="space-y-6">`;
-                    
-                    // E, A, C, N, O の順で表示
-                    const domainKeys = ['E', 'A', 'C', 'N', 'O'];
-                    domainKeys.forEach(key => {
-                        const d = FACET_DICT[key];
-                        const fData = s.facetScores[key];
-                        if (fData && d) {
-                            extraHTML += `<div class="bg-slate-50 rounded-xl p-4 border border-slate-100"><h6 class="text-xs font-black text-slate-700 mb-3">${d.title}</h6><div class="space-y-3">`;
+                        // 5. 30項目の詳細レポート作成
+                        if (s.facetScores) {
+                            extraHTML = `<div class="mt-6 border-t border-slate-200 pt-5"><h5 class="text-sm font-black text-slate-800 mb-4">🔬 30項目の詳細レポート</h5><div class="space-y-6">`;
                             
-                            // 1〜6の小項目をループ
-                            for (let i = 1; i <= 6; i++) {
-                                // データのキーが数字('1')か英語名か両方対応できるようにする
-                                const score = fData[i] || Object.values(fData)[i-1] || 0;
-                                const facetName = d.facets[i];
-                                const facetDesc = d.descs ? d.descs[i] : ""; // descデータの補完
-                                const percent = Math.min(100, Math.round((score / 20) * 100));
+                            ['E', 'A', 'C', 'N', 'O'].forEach(key => {
+                                const d = FACET_DICT[key];
+                                const fData = s.facetScores[key];
+                                if (fData && d) {
+                                    extraHTML += `<div class="bg-slate-50 rounded-xl p-4 border border-slate-100"><h6 class="text-xs font-black text-slate-700 mb-3">${d.title}</h6><div class="space-y-3">`;
+                                    
+                                    // 1〜6の小項目をループ
+                                    for (let i = 1; i <= 6; i++) {
+                                        // キーが数字('1')か英語名か両方に対応
+                                        const score = fData[i] || Object.values(fData)[i-1] || 0;
+                                        const facetName = d.facets[i];
+                                        const facetDesc = d.descs ? d.descs[i] : (d.facets[i] ? "" : ""); // 辞書構造に合わせる
+                                        const percent = Math.min(100, Math.round((score / 20) * 100));
 
-                                extraHTML += `
-                                <div>
-                                    <div class="flex justify-between items-end mb-1">
-                                        <span class="text-[11px] font-bold text-slate-800">${facetName}</span>
-                                        <span class="text-[10px] font-black text-slate-400">${score}/20</span>
-                                    </div>
-                                    <div class="h-1.5 bg-slate-200 rounded-full overflow-hidden mb-1">
-                                        <div class="h-full ${d.color} rounded-full" style="width: ${percent}%"></div>
-                                    </div>
-                                    <p class="text-[9px] text-slate-500 leading-tight">${facetDesc}</p>
-                                </div>`;
-                            }
+                                        if (facetName) {
+                                            extraHTML += `
+                                            <div>
+                                                <div class="flex justify-between items-end mb-1">
+                                                    <span class="text-[11px] font-bold text-slate-800">${facetName}</span>
+                                                    <span class="text-[10px] font-black text-slate-400">${score}/20</span>
+                                                </div>
+                                                <div class="h-1.5 bg-slate-200 rounded-full overflow-hidden mb-1">
+                                                    <div class="h-full ${d.color} rounded-full" style="width: ${percent}%"></div>
+                                                </div>
+                                                <p class="text-[9px] text-slate-500 leading-tight">${d.descs ? d.descs[i] : ""}</p>
+                                            </div>`;
+                                        }
+                                    }
+                                    extraHTML += `</div></div>`;
+                                }
+                            });
                             extraHTML += `</div></div>`;
                         }
-                    });
-                    extraHTML += `</div></div>`;
-                }
-            }
-        }
-        else if (testType === 'motivation' && userData.motivationScores) {
+                    }
+                } 
+                else if (testType === 'motivation' && userData.motivationScores && userData.motivationScores.stringValue) {
                     const s = JSON.parse(userData.motivationScores.stringValue);
-                    const resName = userData.motivationResult ? userData.motivationResult.stringValue : "";
+                    const resName = userData.motivationResult ? userData.motivationResult.stringValue : "診断結果";
                     labels = ['成長思考', '賞賛欲求', '自信']; 
                     dataPoints = [s.mindset || 0, s.focus || 0, s.confidence || 0]; 
                     maxScore = 2;
                     title = "やる気８タイプ 分析 🔥";
                     text = `【 ${resName} 】\n\nあなたのモチベーションの源泉を分析しました！\n\n`;
-                    text += (s.mindset >= 1 ? "🌱 成長思考：高\n困難な課題に燃えるタイプです。\n\n" : "🌱 成長思考：安定\n効率を重視するタイプです。\n\n");
-                    // ... (他の解説も同様に .stringValue を考慮して継続)
-                }
-                else if (testType === 'chronotype' && userData.chronoResult) {
-                    showChart = false;
+                    text += (s.mindset >= 1 ? "🌱 成長思考：高\n新しい知識の吸収に強くモチベーションを感じるタイプ。\n\n" : "🌱 成長思考：安定\n効率を重視するタイプ。\n\n");
+                    text += (s.focus >= 1 ? "👀 賞賛欲求：高\n人から認められると120%の力を発揮します！\n\n" : "👀 賞賛欲求：内発的\n自分が納得するクオリティを追求する職人肌です。\n\n");
+                    text += (s.confidence >= 1 ? "✨ 自信：高\n物怖じせず挑戦できるタイプです。\n\n" : "✨ 自信：慎重\nリスクを事前に察知できるサポーター気質です。\n\n");
+                } 
+                else if (testType === 'chronotype' && userData.chronoResult && userData.chronoResult.stringValue) {
+                    showChart = false; 
                     title = "クロノタイプ 分析 ⏰";
-                    text = userData.chronoResult.stringValue.replace(/\n/g, '<br>');
-                }
-                else if (testType === 'coffee' && userData.coffeeResult) {
-                    showChart = false;
+                    text = userData.chronoResult.stringValue;
+                } 
+                else if (testType === 'coffee' && userData.coffeeResult && userData.coffeeResult.stringValue) {
+                    showChart = false; 
                     title = "コーヒー性格 分析 ☕";
-                    text = userData.coffeeResult.stringValue.replace(/\n/g, '<br>');
+                    text = userData.coffeeResult.stringValue;
                 }
-
-                // 表示の反映
-                document.getElementById('modal-title').innerText = title;
-                modalText.innerHTML = text.replace(/\n/g, '<br>') + extraHTML;
-
-                if (showChart) {
-                    chartContainer.style.display = 'block';
-                    drawChart(labels, dataPoints, maxScore);
-                } else {
-                    chartContainer.style.display = 'none';
-                }
-
-            } catch (e) {
-                console.error("データ処理エラー:", e);
-                modalText.innerHTML = "データの解析に失敗しました。もう一度テストを受けてみてください。";
+            } catch (e) { 
+                console.error("データ処理エラー:", e); 
+                text = "データの解析に失敗しました。もう一度テストを受けてみてください。"; 
+                showChart = false;
             }
-}
+
+            // 画面への反映
+            document.getElementById('modal-title').innerText = title;
+            modalText.innerHTML = text.replace(/\n/g, '<br>') + extraHTML;
+
+            if (showChart) {
+                chartContainer.style.display = 'block';
+                drawChart(labels, dataPoints, maxScore);
+            } else {
+                chartContainer.style.display = 'none';
+            }
+        }
+        function closeModal() { document.getElementById('detail-modal').style.display = 'none'; }
+
+        function drawChart(labels, dataPoints, maxScore) {
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            if(myChart) { myChart.destroy(); }
+            myChart = new Chart(ctx, {
+                type: 'radar',
+                data: { labels: labels, datasets: [{ label: 'スコア', data: dataPoints, backgroundColor: 'rgba(99, 102, 241, 0.2)', borderColor: 'rgba(99, 102, 241, 1)', pointBackgroundColor: 'rgba(99, 102, 241, 1)', borderWidth: 2 }] },
+                options: { scales: { r: { min: 0, max: maxScore, ticks: { stepSize: maxScore/5, display: false } } }, plugins: { legend: { display: false } } }
+            });
+        }
+
         initializePortal();
     </script>
 </body>
