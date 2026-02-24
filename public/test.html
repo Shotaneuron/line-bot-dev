@@ -168,8 +168,8 @@
         </div>
     </div>
 
-    <script>
-let myChart = null;
+<script>
+    let myChart = null;
     let userData = null;
 
     // 📖 30項目のファセット（小項目）辞書
@@ -319,7 +319,7 @@ let myChart = null;
         } catch (e) { console.error(e); }
     }
 
-    function openModal(testType) {
+function openModal(testType) {
         document.getElementById('detail-modal').style.display = 'flex';
         const chartContainer = document.getElementById('chart-container');
         const modalText = document.getElementById('modal-text');
@@ -339,7 +339,7 @@ let myChart = null;
             maxScore = (version === 'full' || s.domainScores) ? 120 : 7;
             
             title = "Big Five 分析 🧠";
-            text = "グラフが外に広がっている項目があなたの強み。内側にへこんでいる項目は、意識してカバーすべきポイントです。";
+            text = "世界で最も信頼されている性格分析「Big Five」の結果です。\nグラフが外に広がっている項目があなたの強み。内側にへこんでいる項目は、意識してカバーすべきポイントです。\n\n";
 
             if (s.facetScores) {
                 extraHTML = `<div class="mt-6 border-t border-slate-200 pt-5">
@@ -373,42 +373,81 @@ let myChart = null;
                                 <p class="text-[9px] text-slate-500 leading-tight">${facetInfo.desc}</p>
                             </div>`;
                         }
-                        // ★修正：ここの閉じタグの数を整理
                         extraHTML += `</div></div>`;
                     }
                 });
-                // ★修正：最後の閉じタグ
                 extraHTML += `</div></div>`;
             }
         } 
         else if (testType === 'motivation' && userData.motivationScores) {
             const s = JSON.parse(userData.motivationScores.stringValue);
-            labels = ['成長思考', '賞賛欲求', '自信']; dataPoints = [s.mindset, s.focus, s.confidence]; maxScore = 2;
+            const resultName = userData.motivationResult ? userData.motivationResult.stringValue : "診断結果";
+            labels = ['成長思考', '賞賛欲求', '自信']; 
+            dataPoints = [s.mindset, s.focus, s.confidence]; 
+            maxScore = 2; // ※やる気テストの満点に合わせて調整してください
+            
             title = "やる気８タイプ 分析 🔥";
-            text = "自分がどんな時に頑張れるかを知ることで、大学生活のモチベーションを自在にコントロールできるようになります！";
+            text = `【 ${resultName} 】\n\nあなたのモチベーション（やる気）の源泉を構成する3つの要素を分析しました！\n\n`;
+            
+            // パラメーターごとの動的解説
+            if(s.mindset >= (maxScore/2)) text += "🌱 成長思考：高\n「できないことができるようになる」ことに喜びを感じるタイプ。困難な課題や新しい知識の吸収に対して強くモチベーションを感じます。\n\n";
+            else text += "🌱 成長思考：安定\n結果や実用性を重視するタイプ。無駄な労力をかけず、効率よく目標を達成するプロセスにやりがいを感じます。\n\n";
+
+            if(s.focus >= (maxScore/2)) text += "👀 賞賛欲求：高\n「人から認められたい、褒められたい」という気持ちが原動力になるタイプ。期待されたり、感謝されたりすると120%の力を発揮します！\n\n";
+            else text += "👀 賞賛欲求：内発的\n他人の評価より「自分がどう思うか」を重視するタイプ。自分が納得するクオリティをとことん追求できる職人肌です。\n\n";
+
+            if(s.confidence >= (maxScore/2)) text += "✨ 自信：高\n「自分ならできる！」という自己効力感が高いタイプ。リーダーシップを取り、プレッシャーのかかる場面でも物怖じせず挑戦できます。\n\n";
+            else text += "✨ 自信：慎重\n石橋を叩いて渡る慎重派。リスクを事前に察知し、綿密な計画を立ててから確実に行動に移すことができる優秀なサポーター気質です。\n\n";
+
+            text += "💡 ゼミでのアドバイス：\n自分がどんな条件で「頑張れるか」を言語化しておくと、大学生活のモチベーションを自在にコントロールできるようになります！";
         }
         else if (testType === 'chronotype') {
             showChart = false;
             title = "クロノタイプ 分析 ⏰";
             const typeStr = userData.chronoResult.stringValue;
-            if(typeStr.includes('ライオン')) text = "【ライオン型（朝型）】\n午前中に最も集中力がピークに達する生粋の朝型です。大事なタスクや勉強は朝一番に片付けるのが大正解！夜は潔く休むのが吉です。";
-            else if(typeStr.includes('クマ')) text = "【クマ型（昼型）】\nお昼前〜午後にかけて能力が全開になる、太陽の動きに合わせたタイプ。昼過ぎの眠気を軽い散歩で飛ばせば、ゼミの活動でも一番活躍できます！";
-            else if(typeStr.includes('オオカミ')) text = "【オオカミ型（夜型）】\n夕方から夜にかけて集中力が高まる夜型。午前中はクリエイティブな発想が出やすいので、アイデア出しに使い、ガッツリ作業は夜に回しましょう！";
-            else if(typeStr.includes('イルカ')) text = "【イルカ型（不規則型）】\n少し神経質で睡眠が浅くなりやすいタイプ。夜にスマホを見すぎず、リラックスするルーティンを作ると大学生活の質が劇的に上がります！";
+            if(typeStr.includes('ライオン')) {
+                text = "【 ライオン型（朝型）🦁 】\n全体の約15〜20%しかいない生粋の朝型です。狩りをするライオンのように、目覚めとともにエネルギーが全開になります。\n\n";
+                text += "📈 集中力のピーク：午前8時〜12時\n📉 魔の時間帯：午後14時以降\n\n";
+                text += "💡 ゼミ・大学生活のアドバイス\n大事なタスクや勉強、重いレポート作成は必ず「午前中」に片付けるのが大正解！午後はルーティン作業やミーティングなど、頭をあまり使わない作業に充てましょう。夜は潔く休むのが吉です。";
+            }
+            else if(typeStr.includes('クマ')) {
+                text = "【 クマ型（昼型）🐻 】\n全体の約50%を占める標準的な昼型です。太陽の動きに合わせて生活するタイプで、親切で開放的な性格の人が多いのも特徴です。\n\n";
+                text += "📈 集中力のピーク：午前10時〜午後14時\n📉 魔の時間帯：午後14時〜16時\n\n";
+                text += "💡 ゼミ・大学生活のアドバイス\n朝イチはウォーミングアップに使い、10時以降の「ゴールデンタイム」で一気に課題を進めてください。午後に強い眠気を感じたら、無理せず20分程度の「軽い昼寝（パワーナップ）」をすると夜まで集中力が持ちます！";
+            }
+            else if(typeStr.includes('オオカミ')) {
+                text = "【 オオカミ型（夜型）🐺 】\n全体の約15〜20%にあたる夜型です。朝は非常に弱く、エンジンがかかるのは夕方以降。夜になればなるほど集中力が高まるクリエイター気質です。\n\n";
+                text += "📈 集中力のピーク：午後17時〜深夜\n📉 魔の時間帯：午前中すべて\n\n";
+                text += "💡 ゼミ・大学生活のアドバイス\n午前中は無理をせず、講義を聞くなどのインプットにとどめましょう。夕方以降からあなたの本領発揮！企画のアイデア出しや、創造的な作業はこの時間帯に行うと圧倒的な成果が出ます。";
+            }
+            else if(typeStr.includes('イルカ')) {
+                text = "【 イルカ型（不規則型）🐬 】\n全体のわずか10%！眠りが浅く神経質なタイプです。ちょっとした音で目が覚めてしまい睡眠不足を感じやすいですが、その分知性が高く完璧主義な傾向があります。\n\n";
+                text += "📈 集中力のピーク：午後15時〜21時（波がある）\n📉 魔の時間帯：起床直後\n\n";
+                text += "💡 ゼミ・大学生活のアドバイス\nあなたの最優先事項は「睡眠環境を徹底的に整える」こと！寝る前のスマホは厳禁です。疲れを溜めやすいため、ゼミの活動中も「こまめな休憩」を意識して挟んでください。完璧を求めすぎず「60点でOK」と割り切ると楽になります。";
+            }
         }
         else if (testType === 'coffee') {
             showChart = false;
             title = "コーヒー性格 分析 ☕";
             const typeStr = userData.coffeeResult.stringValue;
-            if(typeStr.includes('ブラック')) text = "【ブラックコーヒー】\n純粋なものを好む保守的なタイプです！無駄を嫌いストレートな物言いを好むので、ゼミの進行役やマネージャーなど、場を仕切る役割に向いています。";
-            else if(typeStr.includes('カフェラテ')) text = "【カフェラテ】\n人生の苦しみを和らげようとする快楽主義者タイプです！周囲を和ませるため、ゼミの人間関係の潤滑油になる素晴らしい才能を持っています。";
-            else if(typeStr.includes('フローズン')) text = "【フローズン】\n流行に敏感で、自発的なトレンドセッターです！ゼミのイベント企画や、SNS運用など、新しいアイデアを出す場面で最も輝きます。";
-            else if(typeStr.includes('特殊')) text = "【特殊オーダー】\n自分の体調や状況に敏感な、こだわりの強い完璧主義タイプです！ゼミの研究や論文執筆など、細部まで徹底的にこだわる作業が得意です。";
-            else if(typeStr.includes('インスタント')) text = "【インスタント】\n伝統的な方法にこだわる、マイペースでのんびり屋なタイプです！焦らず自分のペースで進められる役割を見つけると、確実に成果を出します。";
+            if(typeStr.includes('ブラック')) {
+                text = "【 ブラックコーヒー☕️ 】\n純粋なものを好む保守的なタイプです。\n\n✨ 強み：忍耐強く、効率的。ものごとをシンプルに考えることができます。\n💦 弱み：やや気分屋でぶっきらぼう。自分のやり方に固執しがちです。\n\n💡 ゼミでの活躍ポイント\n無駄を嫌いストレートな物言いを好むので、ゼミの進行役やマネージャーなど、場を仕切る役割で圧倒的な信頼を得られます！";
+            }
+            else if(typeStr.includes('カフェラテ')) {
+                text = "【 カフェラテ🥛 】\n人生の苦しみを和らげようとする快楽主義者タイプです。\n\n✨ 強み：お人好しで開けっぴろげ。時間に寛容で、人助けが好きです。\n💦 弱み：自分を犠牲にしすぎる。他人の責任まで負いすぎてパンクしがちです。\n\n💡 ゼミでの活躍ポイント\n周囲を和ませる天性の才能があります！ゼミの人間関係の潤滑油として、新入生のサポートや相談役として欠かせない存在になります。";
+            }
+            else if(typeStr.includes('フローズン')) {
+                text = "【 フローズン🧊 】\n流行に敏感で、自発的なトレンドセッターです。\n\n✨ 強み：新しいものが好きで社交的。子どものような豊かな想像力を持っています。\n💦 弱み：無謀な選択をしがち。安易な解決策に飛びつきやすい一面があります。\n\n💡 ゼミでの活躍ポイント\nゼミのイベント企画や、SNS運用、新歓のアイデア出しなど、0から1を生み出すクリエイティブな場面で最も輝きます！";
+            }
+            else if(typeStr.includes('特殊')) {
+                text = "【 特殊オーダー✨ 】\n自分の体調や状況に敏感な、こだわりの強い完璧主義タイプです。\n\n✨ 強み：健康やルールに気を使い、常に論理的に正しい選択をします。自立心が高いです。\n💦 弱み：ルールや秩序にこだわりすぎる。完璧主義がゆえに不安になりやすいです。\n\n💡 ゼミでの活躍ポイント\nゼミの研究データの分析や、論文執筆のチェックなど、細部まで徹底的にこだわる緻密な作業で右に出る者はいません！";
+            }
+            else if(typeStr.includes('インスタント')) {
+                text = "【 インスタント🍵 】\n伝統的な方法にこだわる、マイペースでのんびり屋なタイプです。\n\n✨ 強み：人生を気楽に考えることができ、些細なことに動じません。\n💦 弱み：大事なことも先送りにしがち。緻密な計画を立てるのが苦手です。\n\n💡 ゼミでの活躍ポイント\n周囲が焦っている時でも冷静さを保てるのが最大の強みです。自分のペースでじっくり進められるリサーチなどの役割を見つけると、確実に成果を出します。";
+            }
         }
 
         document.getElementById('modal-title').innerText = title;
-        // ★修正：\n を <br> に変換して、HTML上でもちゃんと改行されるようにする！
         modalText.innerHTML = text.replace(/\n/g, '<br>') + extraHTML;
 
         if (showChart) {
@@ -418,7 +457,7 @@ let myChart = null;
             chartContainer.style.display = 'none';
         }
     }
-
+    
     function closeModal() { document.getElementById('detail-modal').style.display = 'none'; }
 
     function drawChart(labels, dataPoints, maxScore) {
@@ -432,7 +471,6 @@ let myChart = null;
     }
 
     initializePortal();
-        
     </script>
 </body>
 </html>
