@@ -12,6 +12,7 @@
         .glass-panel { background: rgba(30, 41, 59, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
         .choice-btn { transition: transform 0.1s; border: 1px solid rgba(255,255,255,0.1); }
         .choice-btn:active { transform: scale(0.96); background: rgba(255,255,255,0.2); }
+        .btn-hover:active { transform: scale(0.95); }
     </style>
 </head>
 <body class="safe-area-inset-top p-6 flex flex-col">
@@ -20,7 +21,18 @@
     </header>
 
     <main class="flex-1 flex flex-col justify-center">
-        <div class="glass-panel rounded-[3rem] p-6 shadow-2xl relative overflow-hidden">
+        <div id="intro-area" class="glass-panel rounded-[3rem] p-8 shadow-2xl text-center">
+            <div class="text-5xl mb-4">🔋</div>
+            <h2 class="text-lg font-black text-slate-100 mb-4">ノモフォビア危険度テスト</h2>
+            <p class="text-sm text-slate-300 font-bold leading-relaxed mb-6 text-left">
+                米アイオワ州立大学で開発された「ノモフォビア（携帯電話がない恐怖症）」の判定テストです。あなたがどれくらいスマホに依存しているかを測定します。<br><br>全20問、ありのままをお答えください！
+            </p>
+            <button onclick="startTest()" class="w-full py-4 bg-cyan-500 rounded-[2rem] font-black text-slate-900 shadow-lg btn-hover">
+                テストを始める 👉
+            </button>
+        </div>
+
+        <div id="quiz-area" class="glass-panel rounded-[3rem] p-6 shadow-2xl relative overflow-hidden" style="display: none;">
             <div class="absolute top-0 left-0 w-full h-1.5 bg-slate-800">
                 <div id="progress" class="h-full bg-cyan-400 transition-all duration-300" style="width: 0%"></div>
             </div>
@@ -38,6 +50,8 @@
                     <button onclick="answer(2)" class="choice-btn w-full py-3 bg-slate-800 rounded-xl text-xs font-bold text-slate-200">ほとんど当てはまらない (2点)</button>
                     <button onclick="answer(1)" class="choice-btn w-full py-3 bg-slate-800 rounded-xl text-xs font-bold text-slate-200">全く当てはまらない (1点)</button>
                 </div>
+
+                <button id="back-btn" onclick="goBack()" class="mt-5 text-xs font-bold text-slate-400 underline" style="display: none;">◀ 一つ前の問題に戻る</button>
             </div>
         </div>
     </main>
@@ -68,12 +82,18 @@
 
         let current = 0;
         let totalScore = 0;
+        let answerHistory = []; // 戻るボタン用に履歴を保存
         let userId = "";
 
         async function init() {
             await liff.init({ liffId: "2009176797-S5FV668D" });
             if (!liff.isLoggedIn()) { liff.login(); return; }
             userId = (await liff.getProfile()).userId;
+        }
+
+        function startTest() {
+            document.getElementById('intro-area').style.display = 'none';
+            document.getElementById('quiz-area').style.display = 'block';
             showQ();
         }
 
@@ -81,17 +101,28 @@
             document.getElementById('q-number').innerText = `Q ${String(current+1).padStart(2,'0')} / 20`;
             document.getElementById('q-text').innerText = questions[current];
             document.getElementById('progress').style.width = `${(current / 20) * 100}%`;
+            document.getElementById('back-btn').style.display = current > 0 ? 'inline-block' : 'none';
         }
 
         async function answer(val) {
             totalScore += val;
+            answerHistory.push(val);
             current++;
             if (current < questions.length) { showQ(); } 
             else { await saveResult(); }
         }
 
+        function goBack() {
+            if (current > 0) {
+                current--;
+                const lastVal = answerHistory.pop();
+                totalScore -= lastVal; // スコアを元に戻す
+                showQ();
+            }
+        }
+
         async function saveResult() {
-            document.querySelector('.glass-panel').innerHTML = `<div class="text-center py-10"><p class="font-black text-slate-100">分析中...</p></div>`;
+            document.getElementById('quiz-area').innerHTML = `<div class="text-center py-10"><div class="animate-spin text-4xl mb-4 text-cyan-500">🌀</div><p class="font-black text-slate-100">分析中...</p></div>`;
             try {
                 let level = "";
                 if (totalScore <= 27) level = "問題なし";
@@ -105,18 +136,11 @@
                 const url = `https://firestore.googleapis.com/v1/projects/shinrizemi-linebot/databases/default/documents/users/${userId}?updateMask.fieldPaths=nomophobiaResult&updateMask.fieldPaths=nomophobiaDate&updateMask.fieldPaths=nomophobiaScores&key=${apiKey}`;
                 
                 await fetch(url, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        fields: {
-                            nomophobiaResult: { stringValue: level },
-                            nomophobiaDate: { timestampValue: new Date().toISOString() },
-                            nomophobiaScores: { stringValue: JSON.stringify(data) }
-                        }
-                    })
+                    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fields: { nomophobiaResult: { stringValue: level }, nomophobiaDate: { timestampValue: new Date().toISOString() }, nomophobiaScores: { stringValue: JSON.stringify(data) } } })
                 });
-                window.location.href = "test.html";
-            } catch (e) { alert("エラーが発生しました。"); window.location.href = "test.html"; }
+                window.location.href = "result.html?type=nomophobia";
+            } catch (e) { alert("エラーが発生しました。"); window.location.href = "result.html?type=nomophobia"; }
         }
         init();
     </script>

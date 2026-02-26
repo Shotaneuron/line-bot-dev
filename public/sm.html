@@ -12,6 +12,7 @@
         .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.6); }
         .choice-btn { transition: transform 0.1s; }
         .choice-btn:active { transform: scale(0.96); }
+        .btn-hover:active { transform: scale(0.95); }
     </style>
 </head>
 <body class="safe-area-inset-top p-6 flex flex-col">
@@ -21,7 +22,18 @@
     </header>
 
     <main class="flex-1 flex flex-col justify-center">
-        <div class="glass-panel rounded-[3rem] p-6 shadow-xl relative overflow-hidden">
+        <div id="intro-area" class="glass-panel rounded-[3rem] p-8 shadow-xl text-center">
+            <div class="text-5xl mb-4">🎭</div>
+            <h2 class="text-lg font-black text-slate-800 mb-4">あなたの「カメレオン度」は？</h2>
+            <p class="text-sm text-slate-700 font-bold leading-relaxed mb-6 text-left">
+                科学的に正しい「セルフモニタリング（SM）尺度」を用いて、あなたがどれくらい「空気を読む」のが得意か、あるいは「自分を貫く」タイプかを診断します。<br><br>全13問、直感でお答えください！
+            </p>
+            <button onclick="startTest()" class="w-full py-4 bg-pink-500 rounded-[2rem] font-black text-white shadow-lg btn-hover">
+                テストを始める 👉
+            </button>
+        </div>
+
+        <div id="quiz-area" class="glass-panel rounded-[3rem] p-6 shadow-xl relative overflow-hidden" style="display: none;">
             <div class="absolute top-0 left-0 w-full h-1.5 bg-slate-100">
                 <div id="progress" class="h-full bg-pink-400 transition-all duration-300" style="width: 0%"></div>
             </div>
@@ -36,6 +48,8 @@
                     <button onclick="answer(2)" class="choice-btn w-full py-4 bg-white rounded-2xl text-sm font-bold text-slate-700 shadow-sm border-2 border-slate-100">あまり当てはまらない</button>
                     <button onclick="answer(1)" class="choice-btn w-full py-4 bg-white rounded-2xl text-sm font-bold text-slate-700 shadow-sm border-2 border-slate-100">全く当てはまらない</button>
                 </div>
+
+                <button id="back-btn" onclick="goBack()" class="mt-6 text-xs font-bold text-slate-400 underline" style="display: none;">◀ 一つ前の問題に戻る</button>
             </div>
         </div>
     </main>
@@ -65,6 +79,11 @@
             await liff.init({ liffId: "2009176797-S5FV668D" });
             if (!liff.isLoggedIn()) { liff.login(); return; }
             userId = (await liff.getProfile()).userId;
+        }
+
+        function startTest() {
+            document.getElementById('intro-area').style.display = 'none';
+            document.getElementById('quiz-area').style.display = 'block';
             showQ();
         }
 
@@ -72,6 +91,7 @@
             document.getElementById('q-number').innerText = `Q ${String(current+1).padStart(2,'0')} / 13`;
             document.getElementById('q-text').innerText = questions[current];
             document.getElementById('progress').style.width = `${(current / 13) * 100}%`;
+            document.getElementById('back-btn').style.display = current > 0 ? 'inline-block' : 'none';
         }
 
         async function answer(val) {
@@ -81,14 +101,20 @@
             else { await saveResult(); }
         }
 
+        function goBack() {
+            if (current > 0) {
+                current--;
+                answers.pop(); // 直前の回答を取り消す
+                showQ();
+            }
+        }
+
         async function saveResult() {
-            document.querySelector('.glass-panel').innerHTML = `<div class="text-center py-10"><p class="font-black text-slate-800">分析中...</p></div>`;
+            document.getElementById('quiz-area').innerHTML = `<div class="text-center py-10"><div class="animate-spin text-4xl mb-4 text-pink-500">🌀</div><p class="font-black text-slate-800">分析中...</p></div>`;
             try {
-                let readMind = 0; // 1~6問目（他人の心を読む力）
-                let adaptAct = 0; // 7~13問目（自分を演出する力）
-                answers.forEach((v, i) => {
-                    if (i < 6) readMind += v; else adaptAct += v;
-                });
+                let readMind = 0; 
+                let adaptAct = 0; 
+                answers.forEach((v, i) => { if (i < 6) readMind += v; else adaptAct += v; });
                 const total = readMind + adaptAct;
                 const resultText = total >= 32.5 ? "HSM（空気を読むのが得意なタイプ）" : "LSM（自分を貫くマイペースタイプ）";
 
@@ -97,18 +123,11 @@
                 const url = `https://firestore.googleapis.com/v1/projects/shinrizemi-linebot/databases/default/documents/users/${userId}?updateMask.fieldPaths=smResult&updateMask.fieldPaths=smDate&updateMask.fieldPaths=smScores&key=${apiKey}`;
                 
                 await fetch(url, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        fields: {
-                            smResult: { stringValue: resultText },
-                            smDate: { timestampValue: new Date().toISOString() },
-                            smScores: { stringValue: JSON.stringify(data) }
-                        }
-                    })
+                    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fields: { smResult: { stringValue: resultText }, smDate: { timestampValue: new Date().toISOString() }, smScores: { stringValue: JSON.stringify(data) } } })
                 });
-                window.location.href = "test.html";
-            } catch (e) { alert("エラーが発生しました。"); window.location.href = "test.html"; }
+                window.location.href = "result.html?type=sm";
+            } catch (e) { alert("エラーが発生しました。"); window.location.href = "result.html?type=sm"; }
         }
         init();
     </script>
