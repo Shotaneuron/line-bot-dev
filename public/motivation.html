@@ -74,7 +74,7 @@
 
     async function initializeLiff() {
         try {
-            await liff.init({ liffId: "2009176797-haV5S7AC" }); 
+            await liff.init({ liffId: "2009176797-S5FV668D" }); 
             if (!liff.isLoggedIn()) { liff.login(); return; }
             userId = (await liff.getProfile()).userId;
         } catch (err) { console.error("LIFFエラー:", err); }

@@ -92,7 +92,7 @@
 
     async function initializeLiff() {
         try {
-            await liff.init({ liffId: "2009176797-MQuRvfCA" }); 
+            await liff.init({ liffId: "2009176797-S5FV668D" }); 
             if (!liff.isLoggedIn()) { liff.login(); return; }
             userId = (await liff.getProfile()).userId;
         } catch (err) { console.warn("LIFFエラー:", err); }
@@ -150,69 +150,86 @@
 
     function goBack() { if (current > 0) { current--; updateUI(); } }
 
-async function calcAndSend() {
-        // 大項目（ドメイン）と小項目（ファセット）の箱を用意
-        let domains = { E: 0, A: 0, C: 0, N: 0, O: 0 };
-        let facets = { E: {}, A: {}, C: {}, N: {}, O: {} };
-        
-        userAnswers.forEach((ans, i) => {
-            const q = questions[i];
-            // keyedが "plus" ならそのままの点数、"minus" なら逆転（6 - 選んだ数字）
-            const val = q.keyed === "plus" ? ans : (6 - ans);
-            
-            // 大項目の加算
-            domains[q.domain] += val;
-            
-            // 小項目（ファセット）の加算
-            if (!facets[q.domain][q.facet]) {
-                facets[q.domain][q.facet] = 0;
-            }
-            facets[q.domain][q.facet] += val;
-        });
+    async function calcAndSend() {
+        try {
+            let domains = { E: 0, A: 0, C: 0, N: 0, O: 0 };
+            let facets = { E: {}, A: {}, C: {}, N: {}, O: {} };
 
-        // 保存用にデータを構造化
-        const finalData = {
-            domainScores: {
-                extraversion: domains['E'], 
-                agreeableness: domains['A'],
-                conscientiousness: domains['C'], 
-                neuroticism: domains['N'], 
-                openness: domains['O']
-            },
-            facetScores: facets // 30項目の詳細データ
-        };
+            // 1. どんな問題データが来ても絶対にエラーを出さずに計算する
+            questions.forEach((q, i) => {
+                if (!q) return;
+                const ans = userAnswers[i] || 3; 
 
-        const traits = [
-            { name: "外向性", score: finalData.domainScores.extraversion }, 
-            { name: "協調性", score: finalData.domainScores.agreeableness },
-            { name: "誠実性", score: finalData.domainScores.conscientiousness }, 
-            { name: "神経症的傾向", score: finalData.domainScores.neuroticism },
-            { name: "開放性", score: finalData.domainScores.openness }
-        ];
-        traits.sort((a, b) => b.score - a.score);
-        const topTrait = traits[0].name;
+                // 逆転項目の判定（完全版・簡易版の両方に対応）
+                let val = ans;
+                if (q.keyed === "minus" || q.keyed === -1 || q.r === true) {
+                    val = 6 - ans;
+                }
 
-        if (userId) {
-            const apiKey = "AIzaSyD6qGmXgiLp0W7VhNdQYBnCzMnq4TNiQdk";
-            const url = `https://firestore.googleapis.com/v1/projects/shinrizemi-linebot/databases/default/documents/users/${userId}?updateMask.fieldPaths=bigFiveResult&updateMask.fieldPaths=bigFiveDate&updateMask.fieldPaths=bigFiveScores&updateMask.fieldPaths=latestTest&key=${apiKey}`;
-            const payload = { 
-                fields: { 
-                    bigFiveResult: { stringValue: `Big Five：${topTrait}が特徴的（詳細データあり）` }, 
-                    bigFiveDate: { timestampValue: new Date().toISOString() },
-                    bigFiveScores: { stringValue: JSON.stringify(finalData) },
-                    latestTest: { stringValue: "bigfive_full" }
-                } 
+                // 大項目（小文字できても大文字に変換し、不明ならEに入れる）
+                let rawD = (q.domain || 'E').toString().toUpperCase().trim();
+                const d = ['E','A','C','N','O'].includes(rawD) ? rawD : 'E';
+                
+                // 小項目
+                const f = q.facet || 1;
+
+                // スコア加算
+                domains[d] += val;
+                if (!facets[d][f]) facets[d][f] = 0;
+                facets[d][f] += val;
+            });
+
+            // 2. データの構造化
+            const finalData = {
+                domainScores: {
+                    extraversion: domains['E'], 
+                    agreeableness: domains['A'],
+                    conscientiousness: domains['C'], 
+                    neuroticism: domains['N'], 
+                    openness: domains['O']
+                },
+                facetScores: facets 
             };
-            try { 
+
+            const traits = [
+                { name: "外向性", score: finalData.domainScores.extraversion }, 
+                { name: "協調性", score: finalData.domainScores.agreeableness },
+                { name: "誠実性", score: finalData.domainScores.conscientiousness }, 
+                { name: "神経症的傾向", score: finalData.domainScores.neuroticism },
+                { name: "開放性", score: finalData.domainScores.openness }
+            ];
+            traits.sort((a, b) => b.score - a.score);
+            const topTrait = traits[0].name;
+
+            // 3. Firestoreへ安全に保存
+            if (userId) {
+                const apiKey = "AIzaSyD6qGmXgiLp0W7VhNdQYBnCzMnq4TNiQdk";
+                const url = `https://firestore.googleapis.com/v1/projects/shinrizemi-linebot/databases/default/documents/users/${userId}?updateMask.fieldPaths=bigFiveResult&updateMask.fieldPaths=bigFiveDate&updateMask.fieldPaths=bigFiveScores&updateMask.fieldPaths=latestTest&key=${apiKey}`;
+                const payload = { 
+                    fields: { 
+                        bigFiveResult: { stringValue: `Big Five：${topTrait}が特徴的（詳細データあり）` }, 
+                        bigFiveDate: { timestampValue: new Date().toISOString() },
+                        bigFiveScores: { stringValue: JSON.stringify(finalData) },
+                        latestTest: { stringValue: version === 'full' ? "bigfive_full" : "bigfive_short" }
+                    } 
+                };
+                
                 await fetch(url, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); 
-            } catch (err) {
-                console.error("データ保存エラー:", err);
             }
+
+            // 4. 【重要】保存が終わったら「ポータル画面」に直接戻す！
+            window.location.href = "test.html";
+
+        } catch (error) {
+            console.error("計算エラー:", error);
+            // 万が一エラーが起きてもフリーズさせず、画面に赤い文字で原因を表示する
+            document.getElementById('quiz-area').innerHTML = `
+                <div class="text-center py-10">
+                    <p class="text-red-500 font-bold mb-4">保存中にエラーが発生しました。<br><span class="text-xs">${error.message}</span></p>
+                    <button onclick="window.location.href='test.html'" class="px-6 py-3 bg-indigo-100 text-indigo-600 rounded-xl font-bold">ポータルに戻る</button>
+                </div>`;
         }
-
-        window.location.href = "result.html?type=bigfive";
-    }
-
+    }    
     initializeLiff();
     </script>
 </body>
