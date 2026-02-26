@@ -25,10 +25,25 @@
 </head>
 <body class="safe-area-inset-top pb-24 relative">
 
-    <header class="bg-white px-6 py-8 rounded-b-[2rem] shadow-sm mb-6 text-center">
-        <p class="text-[10px] font-black text-sky-500 tracking-[0.3em] mb-2 uppercase">Hokkaido University</p>
-        <h1 class="text-2xl font-black text-slate-800 tracking-tight mb-2">北大心理ゼミ <span class="text-xl">💡</span></h1>
-        <p class="text-xs text-slate-500 font-bold mt-3 bg-slate-100 inline-block px-3 py-1 rounded-full">「心」を科学する学生コミュニティ</p>
+<header class="bg-gradient-to-b from-indigo-500 to-indigo-700 px-6 pt-12 pb-8 rounded-b-[2.5rem] shadow-lg mb-6 relative overflow-hidden">
+        <div class="absolute top-[-50px] right-[-50px] w-40 h-40 bg-white opacity-10 rounded-full blur-2xl"></div>
+        <div class="absolute bottom-[-30px] left-[-30px] w-32 h-32 bg-pink-400 opacity-20 rounded-full blur-xl"></div>
+
+        <div class="relative z-10 flex flex-col items-center">
+            <p class="text-[9px] font-black text-white/70 tracking-[0.3em] mb-3 uppercase border border-white/30 px-3 py-1 rounded-full">Hokkaido Univ. Shinri Zemi</p>
+            
+            <div class="relative mb-3">
+                <img id="user-icon" src="https://via.placeholder.com/150" alt="User Icon" class="w-20 h-20 rounded-full border-4 border-white shadow-md object-cover">
+                <div class="absolute -bottom-2 -right-2 bg-white text-xl rounded-full w-8 h-8 flex items-center justify-center shadow-sm">🎓</div>
+            </div>
+            <h1 id="user-name" class="text-2xl font-black text-white tracking-tight mb-4 drop-shadow-sm">ゲスト さん</h1>
+            
+            <div id="user-tags" class="flex flex-wrap justify-center gap-2 max-w-sm">
+                <span class="bg-white/20 text-white text-[10px] font-bold px-3 py-1.5 rounded-full backdrop-blur-sm border border-white/30">
+                    👇 テストを受けてトリセツを完成させよう！
+                </span>
+            </div>
+        </div>
     </header>
 
     <main class="px-5 space-y-8">
@@ -223,13 +238,19 @@
                 descs: { 1: "空想を好み、豊かな内面世界を持つ傾向", 2: "音楽や美術などの美しさに深く感動する傾向", 3: "自分の感情の動きを大切にする傾向", 4: "新しい活動や場所、未知のものを好む傾向", 5: "抽象的なアイデアや知的な遊びを好む傾向", 6: "伝統を疑い、新しい価値観を受け入れる傾向" } }
         };
 
-        async function initializePortal() {
+async function initializePortal() {
             try {
                 await liff.init({ liffId: "2009176797-S5FV668D" }); 
                 fetchStatistics();
                 if (!liff.isLoggedIn()) { liff.login(); return; }
+                
+                // 👤 LINEのプロフィール情報を取得して画面に表示！
                 const profile = await liff.getProfile();
                 const userId = profile.userId;
+                document.getElementById('user-name').innerText = profile.displayName + " さん";
+                if(profile.pictureUrl) {
+                    document.getElementById('user-icon').src = profile.pictureUrl;
+                }
 
                 const url = `https://firestore.googleapis.com/v1/projects/shinrizemi-linebot/databases/default/documents/users/${userId}`;
                 const res = await fetch(url);
@@ -241,12 +262,49 @@
                         reflectData('bigfive', userData.bigFiveResult, userData.bigFiveDate);
                         reflectData('chrono', userData.chronoResult, userData.chronoDate);
                         reflectData('coffee', userData.coffeeResult, userData.coffeeDate);
-                        // ★ 新テストのデータを読み込む！
                         reflectData('sm', userData.smResult, userData.smDate);
                         reflectData('nomophobia', userData.nomophobiaResult, userData.nomophobiaDate);
+                        
+                        // 🏷️ トリセツタグの生成
+                        generateUserTags(userData);
                     }
                 }
             } catch (err) { console.error("初期化エラー:", err); }
+        }
+
+        // --- 🏷️ 取得したデータから「トリセツタグ」を生成する関数 ---
+        function generateUserTags(data) {
+            const tagsContainer = document.getElementById('user-tags');
+            let tagsHTML = "";
+
+            // 各テストの結果から、キーワードだけを抜き出してタグ化する
+            if (data.motivationResult) {
+                const text = data.motivationResult.stringValue.replace('やる気：', '');
+                tagsHTML += `<span class="bg-orange-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-full shadow-sm">🔥 ${text}</span>`;
+            }
+            if (data.bigFiveResult) {
+                // "Big Five：開放性が特徴的..." などから抜き出し
+                const match = data.bigFiveResult.stringValue.match(/Big Five：(.+?)が特徴的/);
+                const text = match ? match[1] : "分析済";
+                tagsHTML += `<span class="bg-indigo-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-full shadow-sm">🧠 ${text}派</span>`;
+            }
+            if (data.chronoResult) {
+                const text = data.chronoResult.stringValue.split('（')[0];
+                tagsHTML += `<span class="bg-emerald-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-full shadow-sm">⏰ ${text}</span>`;
+            }
+            if (data.coffeeResult) {
+                const text = data.coffeeResult.stringValue.split(' ')[0];
+                tagsHTML += `<span class="bg-amber-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-full shadow-sm">☕ ${text}好き</span>`;
+            }
+            if (data.smResult) {
+                const text = data.smResult.stringValue.split('（')[0];
+                tagsHTML += `<span class="bg-pink-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-full shadow-sm">🌬️ ${text}</span>`;
+            }
+
+            // タグが1つでもあれば、初期メッセージを消してタグを表示
+            if (tagsHTML !== "") {
+                tagsContainer.innerHTML = tagsHTML;
+            }
         }
 
         function reflectData(type, resultField, dateField) {
