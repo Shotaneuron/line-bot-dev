@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>空気読めるか診断 | 北大心理ゼミ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body { font-family: 'Zen Maru Gothic', sans-serif; background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%); min-height: 100vh; }
+        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.6); }
+        .choice-btn { transition: transform 0.1s; }
+        .choice-btn:active { transform: scale(0.96); }
+    </style>
+</head>
+<body class="safe-area-inset-top p-6 flex flex-col">
+    <header class="text-center mb-6">
+        <p class="text-[10px] font-black text-pink-500 tracking-[0.3em] mb-1">HOKKAIDO UNIVERSITY</p>
+        <h1 class="text-xl font-black text-slate-800">空気読めるか診断 🌬️</h1>
+    </header>
+
+    <main class="flex-1 flex flex-col justify-center">
+        <div class="glass-panel rounded-[3rem] p-6 shadow-xl relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-1.5 bg-slate-100">
+                <div id="progress" class="h-full bg-pink-400 transition-all duration-300" style="width: 0%"></div>
+            </div>
+            
+            <div class="pt-4 text-center">
+                <span id="q-number" class="block text-[11px] font-black text-slate-400 tracking-widest mb-2">Q 01 / 13</span>
+                <h2 id="q-text" class="text-[16px] font-black mt-2 mb-8 leading-relaxed text-slate-800 min-h-[4rem]"></h2>
+                
+                <div class="grid grid-cols-1 gap-3">
+                    <button onclick="answer(4)" class="choice-btn w-full py-4 bg-white rounded-2xl text-sm font-bold text-slate-700 shadow-sm border-2 border-slate-100">かなり当てはまる</button>
+                    <button onclick="answer(3)" class="choice-btn w-full py-4 bg-white rounded-2xl text-sm font-bold text-slate-700 shadow-sm border-2 border-slate-100">やや当てはまる</button>
+                    <button onclick="answer(2)" class="choice-btn w-full py-4 bg-white rounded-2xl text-sm font-bold text-slate-700 shadow-sm border-2 border-slate-100">あまり当てはまらない</button>
+                    <button onclick="answer(1)" class="choice-btn w-full py-4 bg-white rounded-2xl text-sm font-bold text-slate-700 shadow-sm border-2 border-slate-100">全く当てはまらない</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const questions = [
+            "話をしているときには、相手の表情のわずかな変化にも敏感になる。",
+            "目をみれば、その人のほんとうの気持ちを正確に読み取ることができる。",
+            "だれかが自分にうそをついても、表情やしぐさですぐに見抜くことができる。",
+            "目をみれば、自分が相手に何か不都合なことを言ったかどうか分かる。",
+            "相手が冗談を聴いて笑っても、内心では下品だと思っているかを見抜ける。",
+            "私の直感力は、相手の気持ちや行いの原因を知るのにとても役に立つ。",
+            "相手や状況に応じて自分の行動を変えるのが得意である。",
+            "その場面でどうふるまえばよいか分かれば、自分の行動をたやすく変えられる。",
+            "自分が今いる場面で必要とされていることに応じて、行動を変えることができる。",
+            "物事が思い通りにうまくいかないときには、すぐに他のやり方に切り換える。",
+            "自分のためになると分かっていても、体裁をよくするのが苦手ではない。",
+            "まわりの人が望んでいることに応じて、自分の行動を変えることができる。",
+            "相手にどのような印象でも与えることができる。"
+        ];
+
+        let current = 0;
+        let answers = [];
+        let userId = "";
+
+        async function init() {
+            await liff.init({ liffId: "2009176797-S5FV668D" });
+            if (!liff.isLoggedIn()) { liff.login(); return; }
+            userId = (await liff.getProfile()).userId;
+            showQ();
+        }
+
+        function showQ() {
+            document.getElementById('q-number').innerText = `Q ${String(current+1).padStart(2,'0')} / 13`;
+            document.getElementById('q-text').innerText = questions[current];
+            document.getElementById('progress').style.width = `${(current / 13) * 100}%`;
+        }
+
+        async function answer(val) {
+            answers.push(val);
+            current++;
+            if (current < questions.length) { showQ(); } 
+            else { await saveResult(); }
+        }
+
+        async function saveResult() {
+            document.querySelector('.glass-panel').innerHTML = `<div class="text-center py-10"><p class="font-black text-slate-800">分析中...</p></div>`;
+            try {
+                let readMind = 0; // 1~6問目（他人の心を読む力）
+                let adaptAct = 0; // 7~13問目（自分を演出する力）
+                answers.forEach((v, i) => {
+                    if (i < 6) readMind += v; else adaptAct += v;
+                });
+                const total = readMind + adaptAct;
+                const resultText = total >= 32.5 ? "HSM（空気を読むのが得意なタイプ）" : "LSM（自分を貫くマイペースタイプ）";
+
+                const data = { total: total, readMind: readMind, adaptAct: adaptAct };
+                const apiKey = "AIzaSyD6qGmXgiLp0W7VhNdQYBnCzMnq4TNiQdk";
+                const url = `https://firestore.googleapis.com/v1/projects/shinrizemi-linebot/databases/default/documents/users/${userId}?updateMask.fieldPaths=smResult&updateMask.fieldPaths=smDate&updateMask.fieldPaths=smScores&key=${apiKey}`;
+                
+                await fetch(url, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        fields: {
+                            smResult: { stringValue: resultText },
+                            smDate: { timestampValue: new Date().toISOString() },
+                            smScores: { stringValue: JSON.stringify(data) }
+                        }
+                    })
+                });
+                window.location.href = "test.html";
+            } catch (e) { alert("エラーが発生しました。"); window.location.href = "test.html"; }
+        }
+        init();
+    </script>
+</body>
+</html>

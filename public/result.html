@@ -57,23 +57,19 @@
 
     async function initResult() {
         try {
-            // ★超重要：ここにポータル用のLIFF IDを入れてください
             await liff.init({ liffId: "2009176797-S5FV668D" }); 
             if (!liff.isLoggedIn()) { liff.login(); return; }
             const userId = (await liff.getProfile()).userId;
 
-            // URLから「どのテストから来たか」の情報を取得（例: ?type=motivation）
             const urlParams = new URLSearchParams(window.location.search);
             const testType = urlParams.get('type');
 
-            // データベースから最新の結果を取得
             const url = `https://firestore.googleapis.com/v1/projects/shinrizemi-linebot/databases/default/documents/users/${userId}`;
             const res = await fetch(url);
             
             if (res.ok) {
                 const json = await res.json();
                 if (json.fields) {
-                    // 少しだけ「分析中...」を見せるための演出（0.8秒待つ）
                     setTimeout(() => {
                         displayResult(json.fields, testType);
                     }, 800);
@@ -84,7 +80,7 @@
         }
     }
 
-function displayResult(userData, testType) {
+    function displayResult(userData, testType) {
         document.getElementById('loading').classList.add('hidden');
         document.getElementById('result-content').classList.remove('hidden');
 
@@ -93,17 +89,12 @@ function displayResult(userData, testType) {
 
         if (testType === 'bigfive' && userData.bigFiveScores) {
             const s = JSON.parse(userData.bigFiveScores.stringValue);
-            // ★進化ポイント：新しいデータ構造（domainScores）に対応
             const domains = s.domainScores || s;
-            
             labels = ['外向性', '協調性', '誠実性', '神経症的傾向', '開放性'];
             dataPoints = [domains.extraversion, domains.agreeableness, domains.conscientiousness, domains.neuroticism, domains.openness];
-            
             const version = userData.bigFiveVersion ? userData.bigFiveVersion.stringValue : 'short';
             maxScore = (version === 'full' || s.domainScores) ? 120 : 7;
-            
             title = "Big Five 分析完了 🧠";
-            // ★ポータル（詳細画面）へ誘導する熱いメッセージに！
             text = "世界基準の「5因子」のスコアが算出されました！\n\nレーダーチャートが外に広がっている項目が、あなたの基本的な強みです。\n\n🎉 さらに！\n120問お答えいただいたあなたには【30項目の詳細な性格パラメーター】も裏側で算出されています！\n\n下のボタンから「ホーム（ポータル）」に戻り、詳細レポートを確認してみましょう✨";
         } 
         else if (testType === 'motivation' && userData.motivationScores) {
@@ -117,16 +108,32 @@ function displayResult(userData, testType) {
         else if (testType === 'chronotype') {
             showChart = false;
             title = "クロノタイプ 分析完了 ⏰";
-            const typeStr = userData.chronoResult.stringValue;
+            const typeStr = userData.chronoResult ? userData.chronoResult.stringValue : "";
             document.getElementById('radarChart').parentElement.style.display = 'none';
             text = `あなたの遺伝的な体内時計は\n【 ${typeStr} 】です！\n\nあなたの集中力が最も高まる「ゴールデンタイム」や、大学生活での最強の過ごし方をポータル画面にまとめました。\n\n下のボタンからポータルへ戻って、詳細なアドバイスを確認してみましょう！`;
         }
         else if (testType === 'coffee') {
             showChart = false;
             title = "コーヒー性格テスト ☕";
-            const typeStr = userData.coffeeResult.stringValue;
+            const typeStr = userData.coffeeResult ? userData.coffeeResult.stringValue : "";
             document.getElementById('radarChart').parentElement.style.display = 'none';
             text = `あなたの性格は…\n【 ${typeStr} 】好きタイプ！\n\nこのタイプが持つ「意外な強み」と「人間関係の落とし穴」を分析しました。\n\n下のボタンからポータルへ戻って、詳しい診断結果を読んでみましょう！`;
+        }
+        // ★新規追加：空気読めるか診断
+        else if (testType === 'sm') {
+            showChart = false;
+            title = "空気読めるか診断 完了 🌬️";
+            const typeStr = userData.smResult ? userData.smResult.stringValue.split('（')[0] : "";
+            document.getElementById('radarChart').parentElement.style.display = 'none';
+            text = `あなたのカメレオン度は…\n【 ${typeStr} 】タイプ！\n\n他人の心を読む力と、自分を演出する力の詳細なスコアをポータル画面にまとめました。\n\n下のボタンからポータルへ戻って確認してみましょう！`;
+        }
+        // ★新規追加：スマホ依存チェック
+        else if (testType === 'nomophobia') {
+            showChart = false;
+            title = "スマホ依存チェック 完了 📱";
+            const typeStr = userData.nomophobiaResult ? userData.nomophobiaResult.stringValue : "";
+            document.getElementById('radarChart').parentElement.style.display = 'none';
+            text = `あなたの危険度は…\n【 ${typeStr} 】です！\n\n140点満点の「依存度メーター」と詳細な分析をポータル画面にまとめました。\n\n下のボタンからポータルへ戻って、結果を確認してみましょう！`;
         }
 
         document.getElementById('result-title').innerText = title;

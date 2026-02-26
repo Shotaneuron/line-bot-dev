@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>スマホ依存チェック | 北大心理ゼミ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body { font-family: 'Zen Maru Gothic', sans-serif; background: #0f172a; color: white; min-height: 100vh; }
+        .glass-panel { background: rgba(30, 41, 59, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .choice-btn { transition: transform 0.1s; border: 1px solid rgba(255,255,255,0.1); }
+        .choice-btn:active { transform: scale(0.96); background: rgba(255,255,255,0.2); }
+    </style>
+</head>
+<body class="safe-area-inset-top p-6 flex flex-col">
+    <header class="text-center mb-6">
+        <h1 class="text-xl font-black text-slate-100">スマホ依存チェック 📱</h1>
+    </header>
+
+    <main class="flex-1 flex flex-col justify-center">
+        <div class="glass-panel rounded-[3rem] p-6 shadow-2xl relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-1.5 bg-slate-800">
+                <div id="progress" class="h-full bg-cyan-400 transition-all duration-300" style="width: 0%"></div>
+            </div>
+            
+            <div class="pt-2 text-center">
+                <span id="q-number" class="block text-[11px] font-black text-slate-400 tracking-widest mb-2">Q 01 / 20</span>
+                <h2 id="q-text" class="text-[15px] font-black mt-2 mb-6 leading-relaxed text-slate-100 min-h-[4rem]"></h2>
+                
+                <div class="grid grid-cols-1 gap-2">
+                    <button onclick="answer(7)" class="choice-btn w-full py-3 bg-slate-800 rounded-xl text-xs font-bold text-slate-200">完全に当てはまる (7点)</button>
+                    <button onclick="answer(6)" class="choice-btn w-full py-3 bg-slate-800 rounded-xl text-xs font-bold text-slate-200">かなり当てはまる (6点)</button>
+                    <button onclick="answer(5)" class="choice-btn w-full py-3 bg-slate-800 rounded-xl text-xs font-bold text-slate-200">やや当てはまる (5点)</button>
+                    <button onclick="answer(4)" class="choice-btn w-full py-3 bg-slate-800 rounded-xl text-xs font-bold text-slate-200">どちらともいえない (4点)</button>
+                    <button onclick="answer(3)" class="choice-btn w-full py-3 bg-slate-800 rounded-xl text-xs font-bold text-slate-200">あまり当てはまらない (3点)</button>
+                    <button onclick="answer(2)" class="choice-btn w-full py-3 bg-slate-800 rounded-xl text-xs font-bold text-slate-200">ほとんど当てはまらない (2点)</button>
+                    <button onclick="answer(1)" class="choice-btn w-full py-3 bg-slate-800 rounded-xl text-xs font-bold text-slate-200">全く当てはまらない (1点)</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const questions = [
+            "スマホでつねに情報にアクセスできないと落ち着かない。",
+            "情報をチェックしたいときにスマホがないとイライラする。",
+            "スマホで最新の情報をチェックできないとイライラする。",
+            "アプリを使いたいときにスマホがないとイライラする。",
+            "バッテリーが切れそうになるとドキドキする。",
+            "利用可能なデータの上限に達すると、オロオロしてしまう。",
+            "電波やWiFiが入らなくなると、つい何度も探してしまう。",
+            "もしスマホがなくなったら、何もできなくなってしまうだろう。",
+            "しばらくスマホをチェックできないと、更新したくてたまらなくなる。",
+            "スマホを失くしたら、家族や友人とすぐに連絡できず不安になる。",
+            "スマホを失くしたら、家族や友人が自分に連絡できなくて不安になる。",
+            "スマホを失くしたら、LINE・メール・着信を取れなくてイライラする。",
+            "スマホを失くしたら、家族や友人と連絡が取れず不安になる。",
+            "スマホを失くしたら、誰が自分に連絡しようとしたか分からず不安になる。",
+            "スマホを失くしたら、家族や友人との関係が壊れるのを不安に思う。",
+            "スマホを失くしたら、リアルの自分とネット上の自分が切り離されてイライラする。",
+            "スマホを失くしたら、SNSやネットニュースに着いて行けず落ち着かない。",
+            "スマホを失くしたら、SNSやLINEの通知がチェックできなくて落ち着かない。",
+            "スマホを失くしたら、メールがチェックできなくて不安になる。",
+            "スマホを失くしたら、何をしていいかわからず変な気分になる。"
+        ];
+
+        let current = 0;
+        let totalScore = 0;
+        let userId = "";
+
+        async function init() {
+            await liff.init({ liffId: "2009176797-S5FV668D" });
+            if (!liff.isLoggedIn()) { liff.login(); return; }
+            userId = (await liff.getProfile()).userId;
+            showQ();
+        }
+
+        function showQ() {
+            document.getElementById('q-number').innerText = `Q ${String(current+1).padStart(2,'0')} / 20`;
+            document.getElementById('q-text').innerText = questions[current];
+            document.getElementById('progress').style.width = `${(current / 20) * 100}%`;
+        }
+
+        async function answer(val) {
+            totalScore += val;
+            current++;
+            if (current < questions.length) { showQ(); } 
+            else { await saveResult(); }
+        }
+
+        async function saveResult() {
+            document.querySelector('.glass-panel').innerHTML = `<div class="text-center py-10"><p class="font-black text-slate-100">分析中...</p></div>`;
+            try {
+                let level = "";
+                if (totalScore <= 27) level = "問題なし";
+                else if (totalScore <= 55) level = "スマホ依存 予備軍";
+                else if (totalScore <= 83) level = "軽度の依存症";
+                else if (totalScore <= 111) level = "重度の依存症";
+                else level = "完全な依存症 (ノモフォビア)";
+
+                const data = { total: totalScore };
+                const apiKey = "AIzaSyD6qGmXgiLp0W7VhNdQYBnCzMnq4TNiQdk";
+                const url = `https://firestore.googleapis.com/v1/projects/shinrizemi-linebot/databases/default/documents/users/${userId}?updateMask.fieldPaths=nomophobiaResult&updateMask.fieldPaths=nomophobiaDate&updateMask.fieldPaths=nomophobiaScores&key=${apiKey}`;
+                
+                await fetch(url, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        fields: {
+                            nomophobiaResult: { stringValue: level },
+                            nomophobiaDate: { timestampValue: new Date().toISOString() },
+                            nomophobiaScores: { stringValue: JSON.stringify(data) }
+                        }
+                    })
+                });
+                window.location.href = "test.html";
+            } catch (e) { alert("エラーが発生しました。"); window.location.href = "test.html"; }
+        }
+        init();
+    </script>
+</body>
+</html>

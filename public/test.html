@@ -43,18 +43,30 @@
             </div>
             
             <p class="text-[10px] font-bold text-slate-400 mb-2">👑 一番多いタイプは...</p>
-            <div class="grid grid-cols-3 gap-2">
-                <div class="bg-white rounded-xl py-3 px-1 shadow-sm border border-slate-100">
-                    <p class="text-[9px] font-bold text-slate-400 mb-1">🔥 やる気</p>
-                    <p id="stat-top-motivation" class="text-[11px] font-black text-orange-500 break-words">集計中...</p>
+            <div class="space-y-2">
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="bg-white rounded-xl py-3 px-1 shadow-sm border border-slate-100">
+                        <p class="text-[9px] font-bold text-slate-400 mb-1">🔥 やる気</p>
+                        <p id="stat-top-motivation" class="text-[11px] font-black text-orange-500 break-words">集計中...</p>
+                    </div>
+                    <div class="bg-white rounded-xl py-3 px-1 shadow-sm border border-slate-100">
+                        <p class="text-[9px] font-bold text-slate-400 mb-1">⏰ 時間帯</p>
+                        <p id="stat-top-chrono" class="text-[11px] font-black text-emerald-500 break-words">集計中...</p>
+                    </div>
+                    <div class="bg-white rounded-xl py-3 px-1 shadow-sm border border-slate-100">
+                        <p class="text-[9px] font-bold text-slate-400 mb-1">☕ コーヒー</p>
+                        <p id="stat-top-coffee" class="text-[11px] font-black text-amber-600 break-words">集計中...</p>
+                    </div>
                 </div>
-                <div class="bg-white rounded-xl py-3 px-1 shadow-sm border border-slate-100">
-                    <p class="text-[9px] font-bold text-slate-400 mb-1">⏰ 時間帯</p>
-                    <p id="stat-top-chrono" class="text-[11px] font-black text-emerald-500 break-words">集計中...</p>
-                </div>
-                <div class="bg-white rounded-xl py-3 px-1 shadow-sm border border-slate-100">
-                    <p class="text-[9px] font-bold text-slate-400 mb-1">☕ コーヒー</p>
-                    <p id="stat-top-coffee" class="text-[11px] font-black text-amber-600 break-words">集計中...</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="bg-white rounded-xl py-3 px-1 shadow-sm border border-slate-100">
+                        <p class="text-[9px] font-bold text-slate-400 mb-1">🌬️ 空気読み</p>
+                        <p id="stat-top-sm" class="text-[11px] font-black text-pink-500 break-words">集計中...</p>
+                    </div>
+                    <div class="bg-white rounded-xl py-3 px-1 shadow-sm border border-slate-100">
+                        <p class="text-[9px] font-bold text-slate-400 mb-1">📱 スマホ依存</p>
+                        <p id="stat-top-nomophobia" class="text-[11px] font-black text-slate-600 break-words">集計中...</p>
+                    </div>
                 </div>
             </div>
         </section>
@@ -77,6 +89,14 @@
                 <a href="coffee.html" class="btn-hover block bg-gradient-to-br from-amber-500 to-orange-400 rounded-2xl p-4 text-white shadow-md">
                     <h3 class="text-sm font-black mb-1">コーヒー性格 ☕</h3>
                     <p class="text-[9px] font-bold text-white/80">1問でわかる深層心理</p>
+                </a>
+                <a href="sm.html" class="btn-hover block bg-gradient-to-br from-pink-400 to-rose-500 rounded-2xl p-4 text-white shadow-md">
+                    <h3 class="text-sm font-black mb-1">空気読めるか診断 🌬️</h3>
+                    <p class="text-[9px] font-bold text-white/80">あなたの「カメレオン度」</p>
+                </a>
+                <a href="nomophobia.html" class="btn-hover block bg-gradient-to-br from-slate-700 to-slate-900 rounded-2xl p-4 text-white shadow-md">
+                    <h3 class="text-sm font-black mb-1">スマホ依存チェック 📱</h3>
+                    <p class="text-[9px] font-bold text-white/80">ノモフォビアの危険度</p>
                 </a>
             </div>
         </section>
@@ -119,6 +139,24 @@
                     </div>
                     <p id="result-coffee" class="text-base font-black text-slate-400 mb-3">テストを受けてみよう！</p>
                     <button id="btn-coffee" onclick="openModal('coffee')" class="hidden w-full bg-amber-500 text-white text-xs font-bold py-2.5 rounded-xl shadow-sm btn-hover">詳細を見る</button>
+                </div>
+
+                <div class="glass-card rounded-[2rem] p-5">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-[10px] font-black text-slate-400 tracking-widest bg-slate-100 px-2 py-1 rounded">空気読めるか診断</span>
+                        <span id="date-sm" class="text-[10px] font-bold text-slate-400">未診断</span>
+                    </div>
+                    <p id="result-sm" class="text-base font-black text-slate-400 mb-3">テストを受けてみよう！</p>
+                    <button id="btn-sm" onclick="openModal('sm')" class="hidden w-full bg-pink-500 text-white text-xs font-bold py-2.5 rounded-xl shadow-sm btn-hover">詳細を見る</button>
+                </div>
+
+                <div class="glass-card rounded-[2rem] p-5">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-[10px] font-black text-slate-400 tracking-widest bg-slate-100 px-2 py-1 rounded">スマホ依存チェック</span>
+                        <span id="date-nomophobia" class="text-[10px] font-bold text-slate-400">未診断</span>
+                    </div>
+                    <p id="result-nomophobia" class="text-base font-black text-slate-400 mb-3">テストを受けてみよう！</p>
+                    <button id="btn-nomophobia" onclick="openModal('nomophobia')" class="hidden w-full bg-slate-800 text-white text-xs font-bold py-2.5 rounded-xl shadow-sm btn-hover">詳細を見る</button>
                 </div>
 
             </div>
@@ -203,6 +241,9 @@
                         reflectData('bigfive', userData.bigFiveResult, userData.bigFiveDate);
                         reflectData('chrono', userData.chronoResult, userData.chronoDate);
                         reflectData('coffee', userData.coffeeResult, userData.coffeeDate);
+                        // ★ 新テストのデータを読み込む！
+                        reflectData('sm', userData.smResult, userData.smDate);
+                        reflectData('nomophobia', userData.nomophobiaResult, userData.nomophobiaDate);
                     }
                 }
             } catch (err) { console.error("初期化エラー:", err); }
@@ -225,9 +266,11 @@
                 const statsUrl = `https://firestore.googleapis.com/v1/projects/shinrizemi-linebot/databases/default/documents/users?pageSize=1000`;
                 const statsRes = await fetch(statsUrl);
                 const statsJson = await statsRes.json();
+                
                 if (statsJson.documents) {
                     let totalUsers = 0;
-                    let motiCounts = {}, chronoCounts = {}, coffeeCounts = {};
+                    let motiCounts = {}, chronoCounts = {}, coffeeCounts = {}, smCounts = {}, nomoCounts = {};
+                    
                     statsJson.documents.forEach(doc => {
                         const f = doc.fields;
                         if (f) {
@@ -235,14 +278,34 @@
                             if (f.motivationResult) { tested = true; let t = f.motivationResult.stringValue.replace('やる気：', ''); motiCounts[t] = (motiCounts[t] || 0) + 1; }
                             if (f.chronoResult) { tested = true; let t = f.chronoResult.stringValue.split('（')[0]; chronoCounts[t] = (chronoCounts[t] || 0) + 1; }
                             if (f.coffeeResult) { tested = true; let t = f.coffeeResult.stringValue.split(' ')[0]; coffeeCounts[t] = (coffeeCounts[t] || 0) + 1; }
+                            
+                            // ★ 新規追加分の集計
+                            if (f.smResult) { 
+                                tested = true; 
+                                let t = f.smResult.stringValue.split('（')[0]; // 「HSM（空気を...」から「HSM」だけ切り取る
+                                smCounts[t] = (smCounts[t] || 0) + 1; 
+                            }
+                            if (f.nomophobiaResult) { 
+                                tested = true; 
+                                let t = f.nomophobiaResult.stringValue; 
+                                nomoCounts[t] = (nomoCounts[t] || 0) + 1; 
+                            }
+                            
                             if (tested) totalUsers++;
                         }
                     });
+
+                    // 画面に反映
                     if (totalUsers > 0) {
                         document.getElementById('stat-total').innerText = totalUsers;
-                        if (Object.keys(motiCounts).length > 0) document.getElementById('stat-top-motivation').innerText = Object.keys(motiCounts).reduce((a, b) => motiCounts[a] > motiCounts[b] ? a : b);
-                        if (Object.keys(chronoCounts).length > 0) document.getElementById('stat-top-chrono').innerText = Object.keys(chronoCounts).reduce((a, b) => chronoCounts[a] > chronoCounts[b] ? a : b);
-                        if (Object.keys(coffeeCounts).length > 0) document.getElementById('stat-top-coffee').innerText = Object.keys(coffeeCounts).reduce((a, b) => coffeeCounts[a] > coffeeCounts[b] ? a : b);
+                        
+                        const getTop = (counts) => Object.keys(counts).length > 0 ? Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b) : "まだ";
+
+                        document.getElementById('stat-top-motivation').innerText = getTop(motiCounts);
+                        document.getElementById('stat-top-chrono').innerText = getTop(chronoCounts);
+                        document.getElementById('stat-top-coffee').innerText = getTop(coffeeCounts);
+                        document.getElementById('stat-top-sm').innerText = getTop(smCounts);
+                        document.getElementById('stat-top-nomophobia').innerText = getTop(nomoCounts);
                     }
                 }
             } catch (e) { console.error("統計取得エラー:", e); }
@@ -514,6 +577,107 @@
                             </div>
                         `;
                     } else { text = t; }
+                }
+
+                else if (testType === 'sm') {
+                    title = "空気読めるか診断 🌬️";
+                    if (!userData.smScores) {
+                        text = "まだ診断データがありません。";
+                        showChart = false;
+                    } else {
+                        const s = safeParse(userData.smScores);
+                        showChart = false; // レーダーチャートは使わず、専用のバーUIを出します
+                        
+                        let typeName = s.total >= 32.5 ? "HSM（空気を読むのが得意なタイプ）" : "LSM（自分を貫くマイペースタイプ）";
+                        let typeDesc = s.total >= 32.5 
+                            ? "周囲の状況や他人の感情に敏感で、その場に合わせて柔軟に自分を演出できる「カメレオン」のような才能があります。一方で、人の目を気にしすぎて疲れてしまうこともあるので注意！"
+                            : "他人の目や周囲の空気に流されず、自分の信念やスタイルを貫ける芯の強さがあります。環境の変化やプレッシャーに強い反面、マイペースすぎると言われることも？";
+
+                        text = `【 診断結果：${typeName} 】\n\n${typeDesc}\n\n`;
+                        
+                        const pTotal = Math.round((s.total / 52) * 100);
+                        const pRead = Math.round((s.readMind / 24) * 100);
+                        const pAct = Math.round((s.adaptAct / 28) * 100);
+
+                        extraHTML = `
+                            <div class="mt-4 bg-slate-50 p-4 rounded-xl border border-slate-200 text-left">
+                                <h5 class="text-xs font-black text-slate-800 mb-3">📊 あなたのスコア詳細</h5>
+                                
+                                <div class="mb-3">
+                                    <div class="flex justify-between text-[11px] font-bold text-slate-700 mb-1">
+                                        <span>総合スコア (平均32.5点)</span><span>${s.total} / 52点</span>
+                                    </div>
+                                    <div class="h-2 bg-slate-200 rounded-full overflow-hidden"><div class="h-full bg-blue-500 rounded-full" style="width: ${pTotal}%"></div></div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="flex justify-between text-[11px] font-bold text-slate-700 mb-1">
+                                        <span>👀 他人の心を読む能力</span><span>${s.readMind} / 24点</span>
+                                    </div>
+                                    <div class="h-2 bg-slate-200 rounded-full overflow-hidden"><div class="h-full bg-pink-500 rounded-full" style="width: ${pRead}%"></div></div>
+                                    <p class="text-[9px] text-slate-500 mt-1">相手の表情やしぐさから、本音や嘘を察知する力です。</p>
+                                </div>
+                                
+                                <div>
+                                    <div class="flex justify-between text-[11px] font-bold text-slate-700 mb-1">
+                                        <span>🎭 自分を演出する能力</span><span>${s.adaptAct} / 28点</span>
+                                    </div>
+                                    <div class="h-2 bg-slate-200 rounded-full overflow-hidden"><div class="h-full bg-emerald-500 rounded-full" style="width: ${pAct}%"></div></div>
+                                    <p class="text-[9px] text-slate-500 mt-1">その場に求められる役割を瞬時に理解し、行動を変える力です。</p>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-4 bg-indigo-50 p-4 rounded-xl border border-indigo-100 text-left">
+                                <h5 class="text-xs font-black text-indigo-800 mb-2">📚 診断の根拠</h5>
+                                <p class="text-[10px] text-indigo-700 leading-relaxed break-words">心理学で「セルフモニタリング（SM）尺度」と呼ばれる、科学的に信頼性の高い性格テストに基づいています。</p>
+                            </div>
+                        `;
+                    }
+                }
+                
+
+                else if (testType === 'nomophobia') {
+                    title = "スマホ依存度チェック 📱";
+                    if (!userData.nomophobiaScores) {
+                        text = "まだ診断データがありません。";
+                        showChart = false;
+                    } else {
+                        const s = safeParse(userData.nomophobiaScores);
+                        showChart = false; // レーダーチャートは使わず、危険度メーターを出します
+                        
+                        let level = "", desc = "", color = "";
+                        if (s.total <= 27) { level = "問題なし"; desc = "素晴らしい！スマホと適切な距離を保てています。"; color = "bg-green-500"; }
+                        else if (s.total <= 55) { level = "依存予備軍"; desc = "少し注意が必要です。意識してデジタルデトックスの時間を持ちましょう。"; color = "bg-yellow-500"; }
+                        else if (s.total <= 83) { level = "軽度の依存症"; desc = "スマホがないと落ち着かない状態です。1日の使用時間を制限してみましょう。"; color = "bg-orange-500"; }
+                        else if (s.total <= 111) { level = "重度の依存症"; desc = "かなり依存しています。睡眠や日常生活に悪影響が出ている可能性があります。"; color = "bg-red-500"; }
+                        else { level = "完全な依存症"; desc = "スマホが手放せない状態（ノモフォビア）です。専門家への相談も検討すべきレベルです。"; color = "bg-purple-600"; }
+
+                        text = `【 診断結果：${level} 】\n\n${desc}\n\n`;
+                        const percent = Math.min(100, Math.round((s.total / 140) * 100));
+
+                        extraHTML = `
+                            <div class="mt-4 bg-slate-50 p-4 rounded-xl border border-slate-200 text-left">
+                                <h5 class="text-xs font-black text-slate-800 mb-3">📶 あなたの依存度スコア</h5>
+                                <div class="mb-2">
+                                    <div class="flex justify-between items-end mb-1">
+                                        <span class="text-[11px] font-bold text-slate-700">危険度メーター</span>
+                                        <span class="text-[14px] font-black ${color.replace('bg-', 'text-')}">${s.total} / 140点</span>
+                                    </div>
+                                    <div class="h-3 bg-slate-200 rounded-full overflow-hidden">
+                                        <div class="h-full ${color} rounded-full" style="width: ${percent}%"></div>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between text-[8px] font-bold text-slate-400">
+                                    <span>安全</span><span>危険</span>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-4 bg-indigo-50 p-4 rounded-xl border border-indigo-100 text-left">
+                                <h5 class="text-xs font-black text-indigo-800 mb-2">📚 診断の根拠</h5>
+                                <p class="text-[10px] text-indigo-700 leading-relaxed break-words">米アイオワ州立大学の研究チームが開発した「ノモフォビア（携帯電話がない恐怖症）」の判定尺度（NMP-Q）に基づいています。</p>
+                            </div>
+                        `;
+                    }
                 }
 
                 document.getElementById('modal-title').innerText = title;
