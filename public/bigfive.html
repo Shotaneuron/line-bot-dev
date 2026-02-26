@@ -77,11 +77,16 @@
 
     <script>
     const questionsShort = [
-        { t: "活発で、外向的だと思う", r: false }, { t: "他人に批判的で、もめごとを起こしやすいと思う", r: true },
-        { t: "しっかりしていて、自分に厳しいと思う", r: false }, { t: "不安になりやすく、うろたえやすいと思う", r: true },
-        { t: "新しいことが好きで、変わった考えを持っていると思う", r: false }, { t: "控えめで、おとなしいと思う", r: true },
-        { t: "頼もしく、思いやりがあると思う", r: false }, { t: "だらしなく、うっかりしていると思う", r: true },
-        { t: "冷静で、気分が安定していると思う", r: false }, { t: "保守的で、平凡なことが好きだと思う", r: true }
+        { text: "活発で、外向的だと思う", domain: "E", keyed: "plus" },
+        { text: "他人に批判的で、もめごとを起こしやすいと思う", domain: "A", keyed: "minus" },
+        { text: "しっかりしていて、自分に厳しいと思う", domain: "C", keyed: "plus" },
+        { text: "不安になりやすく、うろたえやすいと思う", domain: "N", keyed: "plus" },
+        { text: "新しいことが好きで、変わった考えを持っていると思う", domain: "O", keyed: "plus" },
+        { text: "控えめで、おとなしいと思う", domain: "E", keyed: "minus" },
+        { text: "頼もしく、思いやりがあると思う", domain: "A", keyed: "plus" },
+        { text: "だらしなく、うっかりしていると思う", domain: "C", keyed: "minus" },
+        { text: "冷静で、気分が安定していると思う", domain: "N", keyed: "minus" },
+        { text: "保守的で、平凡なことが好きだと思う", domain: "O", keyed: "minus" }
     ];
 
     let version = "";
@@ -178,6 +183,10 @@
                 if (!facets[d][f]) facets[d][f] = 0;
                 facets[d][f] += val;
             });
+
+            if (version === 'short') {
+                Object.keys(domains).forEach(k => domains[k] /= 2);
+            }
 
             // 2. データの構造化
             const finalData = {

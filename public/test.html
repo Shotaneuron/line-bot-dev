@@ -249,7 +249,7 @@
             } catch (e) { console.error("統計取得エラー:", e); }
         }
 
-function openModal(testType) {
+        function openModal(testType) {
             if (!userData) return;
             document.getElementById('detail-modal').style.display = 'flex';
             const chartContainer = document.getElementById('chart-container');
@@ -258,18 +258,15 @@ function openModal(testType) {
             let labels = [], dataPoints = [], maxScore = 7, title = "", text = "", extraHTML = "";
             let showChart = true;
 
-            // 🛡️ データを安全に取り出す魔法の関数（エラー回避用）
             function safeParse(field) {
                 if (!field) return {};
                 if (field.stringValue) {
                     try { return JSON.parse(field.stringValue); } 
-                    catch(e) { console.warn("JSONパース回避:", field.stringValue); return {}; }
+                    catch(e) { return {}; }
                 }
-                return field; // すでにオブジェクトならそのまま返す
+                return field;
             }
-            function safeString(field) {
-                return field && field.stringValue ? field.stringValue : "データなし";
-            }
+            function safeString(field) { return field && field.stringValue ? field.stringValue : "データなし"; }
 
             try {
                 if (testType === 'bigfive') {
@@ -282,7 +279,6 @@ function openModal(testType) {
                         const domains = s.domainScores || s;
                         
                         labels = ['外向性', '協調性', '誠実性', '神経症的傾向', '開放性'];
-                        // 欠損値があっても確実に数値(0)にする
                         dataPoints = [
                             Number(domains.extraversion || domains.E || 0),
                             Number(domains.agreeableness || domains.A || 0),
@@ -291,32 +287,55 @@ function openModal(testType) {
                             Number(domains.openness || domains.O || 0)
                         ];
                         
-                        // 120問版判定
                         const isFull = (safeString(userData.latestTest) === "bigfive_full" || !!s.facetScores);
                         maxScore = isFull ? 120 : 7;
-                        text = "世界基準の性格分析結果です。外側に広がっている項目があなたの強みです。\n\n";
+                        const mid = maxScore / 2;
 
-                        if (s.facetScores && typeof s.facetScores === 'object') {
-                            extraHTML = `<div class="mt-6 border-t border-slate-200 pt-5"><h5 class="text-sm font-black text-slate-800 mb-4">🔬 30項目の詳細レポート</h5><div class="space-y-6">`;
+                        text = "【 AI先輩の性格傾向分析 】\n";
+                        text += (dataPoints[0] >= mid ? "🔥 外向性 [高]：社交的でポジティブなエネルギーに溢れています。\n" : "☕ 外向性 [低]：一人の時間を大切にし、深く考える慎重派です。\n");
+                        text += (dataPoints[1] >= mid ? "🤝 協調性 [高]：思いやりがあり、チームの和を大切にします。\n" : "⚔️ 協調性 [低]：合理性を重んじ、自分の意見をしっかり持っています。\n");
+                        text += (dataPoints[2] >= mid ? "📋 誠実性 [高]：責任感が強く、計画的に物事を完遂します。\n" : "🌱 誠実性 [低]：型にとらわれず、臨機応変な対応が得意です。\n");
+                        text += (dataPoints[3] >= mid ? "🌧️ 神経症的傾向 [高]：些細な変化に気づける、高いリスク察知能力の持ち主です。\n" : "🛡️ 神経症的傾向 [低]：プレッシャーに強く、常にどっしり構える安定感があります。\n");
+                        text += (dataPoints[4] >= mid ? "💡 開放性 [高]：好奇心旺盛で、新しいアイデアや挑戦が大好きです。\n" : "🏛️ 開放性 [低]：現実的で、地に足のついた実績や伝統を重んじます。\n");
+                        text += "\n💡 低い項目は「欠点」ではなく、裏を返せば強力な「別の才能」です！";
+
+                        if (isFull && s.facetScores && typeof s.facetScores === 'object') {
+                            extraHTML = `<div class="mt-6 border-t border-slate-200 pt-5"><h5 class="text-sm font-black text-slate-800 mb-4">🔬 30項目の詳細レポート（タップで展開）</h5><div class="space-y-3">`;
+                            
+                            const domainInfo = {
+                                'E': { icon: '🔥', name: '外向性 (Extraversion)' },
+                                'A': { icon: '🤝', name: '協調性 (Agreeableness)' },
+                                'C': { icon: '📋', name: '誠実性 (Conscientiousness)' },
+                                'N': { icon: '🌧️', name: '神経症的傾向 (Neuroticism)' },
+                                'O': { icon: '💡', name: '開放性 (Openness)' }
+                            };
+
                             ['E', 'A', 'C', 'N', 'O'].forEach(key => {
                                 const d = FACET_DICT[key];
                                 const fData = s.facetScores[key];
                                 if (fData && typeof fData === 'object' && d) {
-                                    extraHTML += `<div class="bg-slate-50 rounded-xl p-4 border border-slate-100"><h6 class="text-xs font-black text-slate-700 mb-3">${d.title}</h6><div class="space-y-3">`;
+                                    extraHTML += `
+                                    <details class="group bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                                        <summary class="flex justify-between items-center p-4 cursor-pointer font-black text-slate-700 list-none [&::-webkit-details-marker]:hidden bg-slate-50 hover:bg-slate-100 transition">
+                                            <div class="flex items-center gap-2"><span class="text-lg">${domainInfo[key].icon}</span> ${domainInfo[key].name}</div>
+                                            <span class="transition duration-300 group-open:rotate-180 text-slate-400">▼</span>
+                                        </summary>
+                                        <div class="p-4 border-t border-slate-100 bg-white space-y-4">
+                                            <p class="text-[10px] text-slate-400 font-bold mb-3">※スコアが低い場合も「逆の強み」があることを意味します。</p>
+                                    `;
+                                    
                                     Object.keys(d.facets).forEach((idx, arrayIndex) => {
-                                        // データが壊れていても安全にスコアを取り出す
                                         let score = Number(fData[idx]);
                                         if (isNaN(score)) score = Number(Object.values(fData)[arrayIndex]) || 0;
-                                        
                                         const percent = Math.min(100, Math.max(0, Math.round((score / 20) * 100)));
                                         const facetName = d.facets[idx];
                                         const facetDesc = d.descs ? d.descs[idx] : "";
                                         
                                         extraHTML += `<div><div class="flex justify-between items-end mb-1"><span class="text-[11px] font-bold text-slate-800">${facetName}</span><span class="text-[10px] font-black text-slate-400">${score}/20</span></div>
-                                        <div class="h-1.5 bg-slate-200 rounded-full overflow-hidden mb-1"><div class="h-full ${d.color} rounded-full" style="width: ${percent}%"></div></div>
+                                        <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden mb-1"><div class="h-full ${d.color} rounded-full" style="width: ${percent}%"></div></div>
                                         <p class="text-[9px] text-slate-500 leading-tight">${facetDesc}</p></div>`;
                                     });
-                                    extraHTML += `</div></div>`;
+                                    extraHTML += `</div></details>`;
                                 }
                             });
                             extraHTML += `</div></div>`;
@@ -336,29 +355,172 @@ function openModal(testType) {
                         maxScore = 2; 
                         
                         text = `【 ${resName} 】\n\nあなたのモチベーションの源泉を分析しました！\n\n`;
-                        text += dataPoints[0] >= 1 ? "🌱 成長思考：高\n困難な課題や新しい知識の吸収に燃えるタイプです。\n\n" : "🌱 成長思考：安定\n無駄な労力をかけず、効率よく目標を達成するプロセスにやりがいを感じるタイプ。\n\n";
+                        text += dataPoints[0] >= 1 ? "🌱 成長思考：高\n困難な課題や新しい知識の吸収に燃えるタイプ。\n\n" : "🌱 成長思考：安定\n無駄な労力をかけず、効率よく目標を達成するプロセスにやりがいを感じるタイプ。\n\n";
                         text += dataPoints[1] >= 1 ? "👀 賞賛欲求：高\n人から認められ、褒められると120%の力を発揮します！\n\n" : "👀 賞賛欲求：内発的\n他人の評価より自分が納得するクオリティをとことん追求する職人肌です。\n\n";
                         text += dataPoints[2] >= 1 ? "✨ 自信：高\nプレッシャーのかかる場面でも物怖じせず挑戦できます。\n\n" : "✨ 自信：慎重\nリスクを事前に察知し、綿密な計画を立てるサポーター気質です。\n\n";
                     }
                 } 
                 else if (testType === 'chronotype') {
-                    showChart = false; title = "クロノタイプ 分析 ⏰";
+                    showChart = false;
+                    title = "クロノタイプ 分析 ⏰";
                     const t = safeString(userData.chronoResult);
-                    if(t.includes('ライオン')) text = "【 ライオン型（朝型）🦁 】\n集中ピーク：午前8時〜12時\n大事なタスクは必ず「午前中」に片付けましょう。夜は潔く休むのが吉です。";
-                    else if(t.includes('クマ')) text = "【 クマ型（昼型）🐻 】\n集中ピーク：午前10時〜午後14時\n標準的な昼型。10時からのゴールデンタイムで一気に課題を進めてください。";
-                    else if(t.includes('オオカミ')) text = "【 オオカミ型（夜型）🐺 】\n集中ピーク：午後17時〜深夜\n夕方から本領発揮！クリエイティブな作業はこの時間帯に行うと成果が出ます。";
-                    else if(t.includes('イルカ')) text = "【 イルカ型（不規則型）🐬 】\n集中ピーク：午後15時〜21時\n睡眠環境を徹底的に整えましょう。疲れやすいため、こまめな休憩が必須です。";
-                    else text = t;
+                    let desc = "", routine = "";
+                    
+                    if(t.includes('ライオン')) {
+                        desc = "【 ライオン型（朝型）🦁 】\n全人口の15〜20%を占める生粋の朝型。狩りをするライオンのように、目覚めとともにエネルギーが全開になります。";
+                        routine = "05:30 起床して朝食（タンパク質多め）\n06:00 - 09:00 集中して仕事（🔥 ゴールデンタイム！）\n09:00 - 10:00 カフェイン投入\n10:00 - 12:00 会議や雑用\n12:00 昼食\n13:00 - 17:00 アイデア出し等、創造的な仕事\n17:00 - 18:00 エクササイズ\n18:00 - 19:00 夕食\n22:00 スマホ・PCをオフ、リラックス\n22:30 就寝";
+                    } else if(t.includes('クマ')) {
+                        desc = "【 クマ型（昼型）🐻 】\n全人口の50%を占める標準的な昼型。太陽の動きに合わせて生活し、親切で開放的な性格が多いです。";
+                        routine = "07:00 起床して2〜3分の運動\n07:30 朝食（タンパク質多め）\n09:00 - 10:00 カフェイン投入、1日の計画\n10:00 - 12:00 集中力が必要なタスク（🔥 ゴールデンタイム！）\n12:00 昼食 → 軽く散歩\n14:30 - 14:50 瞑想またはパワーナップ(昼寝)\n15:00 - 18:00 会議や雑用\n18:00 - 19:00 エクササイズ\n19:30 夕食\n20:00 - 22:00 創造的な仕事\n23:00 就寝";
+                    } else if(t.includes('オオカミ')) {
+                        desc = "【 オオカミ型（夜型）🐺 】\n全人口の15〜20%の夜型。朝は弱く、夕方以降に集中力と創造性がピークに達するクリエイター気質です。";
+                        routine = "07:30 起床して朝食（タンパク質多め）\n08:30 軽いエクササイズ\n09:00 1日の計画\n11:00 - 13:00 カフェイン投入、雑用\n13:00 昼食 → 散歩\n15:00 - 18:00 集中力が必要な仕事\n18:00 - 19:00 エクササイズ\n20:00 夕食\n21:00 - 23:00 創造的な仕事（🔥 ゴールデンタイム！）\n24:00 就寝";
+                    } else if(t.includes('イルカ')) {
+                        desc = "【 イルカ型（不規則型）🐬 】\n全人口の10%の不規則型。眠りが浅く神経質ですが、知性が高く完璧主義な一面があります。";
+                        routine = "06:30 起床して軽くエクササイズ\n07:30 朝食（タンパク質多め）\n09:30 カフェイン投入\n10:00 - 12:00 創造的な仕事\n12:00 昼食\n13:00 - 16:00 雑用またはエクササイズ\n17:00 - 18:00 集中力が必要な仕事（🔥 ゴールデンタイム！）\n18:00 瞑想やヨガ\n19:00 夕食\n23:30 就寝";
+                    }
+
+                    if(desc) {
+                        text = desc;
+                        extraHTML = `
+                            <div class="mt-4 bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+                                <h5 class="text-xs font-black text-indigo-800 mb-2">📚 診断の根拠</h5>
+                                <p class="text-[10px] text-indigo-700 leading-relaxed">米国の睡眠専門医・臨床心理学者である<br><strong>マイケル・ブレウス博士（Dr. Michael Breus）</strong>の調査と著書『The Power of When』に基づいています。</p>
+                            </div>
+                            
+                            <div class="mt-5 border-t border-slate-200 pt-5">
+                                <h5 class="text-sm font-black text-slate-800 mb-3">🗓️ 推奨タイムスケジュール</h5>
+                                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-inner">
+                                    <pre class="text-[10px] text-slate-700 font-bold whitespace-pre-wrap font-sans leading-relaxed">${routine}</pre>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-6 border-t border-slate-200 pt-5">
+                                <h5 class="text-sm font-black text-slate-800 mb-3">🔍 他のクロノタイプ</h5>
+                                <div class="space-y-2">
+                                    <details class="group bg-white rounded-xl shadow-sm border border-slate-200">
+                                        <summary class="flex justify-between items-center p-3 cursor-pointer font-black text-slate-700 list-none [&::-webkit-details-marker]:hidden hover:bg-slate-50 transition">
+                                            <span class="text-xs">🦁 ライオン（朝型）</span><span class="text-slate-400 group-open:rotate-180 transition">▼</span>
+                                        </summary>
+                                        <div class="p-3 border-t border-slate-100 text-[10px] text-slate-600 font-bold">全人口の15〜20%。朝イチから全開で、午前中に重いタスクをこなすのが得意。午後は早い段階でエネルギー切れになりがち。</div>
+                                    </details>
+                                    <details class="group bg-white rounded-xl shadow-sm border border-slate-200">
+                                        <summary class="flex justify-between items-center p-3 cursor-pointer font-black text-slate-700 list-none [&::-webkit-details-marker]:hidden hover:bg-slate-50 transition">
+                                            <span class="text-xs">🐻 クマ（昼型）</span><span class="text-slate-400 group-open:rotate-180 transition">▼</span>
+                                        </summary>
+                                        <div class="p-3 border-t border-slate-100 text-[10px] text-slate-600 font-bold">全人口の50%。太陽の動きに合わせた標準的な体内時計。親切で開放的な性格が多い。</div>
+                                    </details>
+                                    <details class="group bg-white rounded-xl shadow-sm border border-slate-200">
+                                        <summary class="flex justify-between items-center p-3 cursor-pointer font-black text-slate-700 list-none [&::-webkit-details-marker]:hidden hover:bg-slate-50 transition">
+                                            <span class="text-xs">🐺 オオカミ（夜型）</span><span class="text-slate-400 group-open:rotate-180 transition">▼</span>
+                                        </summary>
+                                        <div class="p-3 border-t border-slate-100 text-[10px] text-slate-600 font-bold">全人口の15〜20%。夕方以降から本領発揮するクリエイター気質。朝は非常に弱い。</div>
+                                    </details>
+                                    <details class="group bg-white rounded-xl shadow-sm border border-slate-200">
+                                        <summary class="flex justify-between items-center p-3 cursor-pointer font-black text-slate-700 list-none [&::-webkit-details-marker]:hidden hover:bg-slate-50 transition">
+                                            <span class="text-xs">🐬 イルカ（不規則型）</span><span class="text-slate-400 group-open:rotate-180 transition">▼</span>
+                                        </summary>
+                                        <div class="p-3 border-t border-slate-100 text-[10px] text-slate-600 font-bold">全人口の10%。眠りが浅く神経質だが、知性が高く完璧主義。ちょっとした音で目が覚めやすい。</div>
+                                    </details>
+                                </div>
+                            </div>
+                        `;
+                    } else { text = t; }
                 } 
                 else if (testType === 'coffee') {
-                    showChart = false; title = "コーヒー性格 分析 ☕";
+                    showChart = false;
+                    title = "コーヒー性格 分析 ☕";
                     const t = safeString(userData.coffeeResult);
-                    if(t.includes('ブラック')) text = "【 ブラック 】\n無駄を嫌い、忍耐強く効率的。ゼミの進行役やマネージャーに向いています。";
-                    else if(t.includes('カフェラテ')) text = "【 カフェラテ 】\n人助けが好きで周囲を和ませる才能があります。ゼミの人間関係の潤滑油です。";
-                    else if(t.includes('フローズン')) text = "【 フローズン 】\n流行に敏感で想像力豊か。イベント企画など、0から1を生む場面で輝きます。";
-                    else if(t.includes('特殊')) text = "【 特殊オーダー 】\nこだわりが強く、常に正しい選択を求める完璧主義。緻密なデータ分析が得意です。";
-                    else if(t.includes('インスタント')) text = "【 インスタント 】\n些細なことに動じないのんびり屋。冷静さを保てるのが最大の強みです。";
-                    else text = t;
+                    let desc = "", strong = "", weak = "", psycho = "";
+                    
+                    if(t.includes('ブラック')) {
+                        desc = "【 ブラックコーヒー ☕ 】\n苦味をそのまま受け入れる、合理的でストレートな性格。";
+                        strong = "無駄を嫌い、効率を重んじて物事をシンプルに解決する能力に長けています。目標に向かって一直線に進む忍耐力があります。";
+                        weak = "他人のやり方に合わせるのが苦手で、少し頑固（気分屋）になりがちです。";
+                        psycho = "白黒はっきりさせたい「合理主義」の傾向。物事を複雑にせず、本質だけを見極めようとするため、ゼミのリーダーやマネージャーとしての適性が高いです。";
+                    } else if(t.includes('カフェラテ')) {
+                        desc = "【 カフェラテ（ミルク入り） 🥛 】\nコーヒーの苦味をミルクで和らげるように、人生のストレスも和らげようとする平和主義者。";
+                        strong = "非常に協調性が高く、周囲を気遣うお人好し。人間関係の潤滑油になれる天性の優しさがあります。";
+                        weak = "他人のために自分を犠牲にしすぎたり、頼み事を断れずにキャパオーバーになりがちです。";
+                        psycho = "「苦痛を和らげたい」という深層心理があり、他人に優しくすることで自分も満たされる「ギバー（与える人）」の傾向が強いです。チームの癒やし担当にぴったりです。";
+                    } else if(t.includes('フローズン')) {
+                        desc = "【 フローズン / ブレンド 🧊 】\n新しい刺激や甘いご褒美を求める、好奇心旺盛なトレンドセッター。";
+                        strong = "子どものような豊かな想像力を持ち、直感やひらめきでゼロからイチを生み出すのが得意です。社交的でノリが良いのも特徴。";
+                        weak = "計画性がやや低く、目先の楽しさや安易な解決策に飛びついて無謀な選択をしやすい一面があります。";
+                        psycho = "心理学でいう「刺激希求性（新しい体験を求める傾向）」が非常に高く、ルーティンワークよりも、イベント企画やSNS運用など変化のあるクリエイティブな場面で輝きます。";
+                    } else if(t.includes('特殊')) {
+                        desc = "【 特殊オーダー（カフェインレス・ソイ等） ✨ 】\n自分の体調やルールのコントロールを重視する、こだわりの強い完璧主義タイプ。";
+                        strong = "健康意識が高く、自分の状態を客観的に分析して正しい選択ができる自立心があります。";
+                        weak = "秩序やルールにこだわりすぎるあまり、予定が狂うと強い不安やストレスを感じやすい繊細さがあります。";
+                        psycho = "「コントロール欲求」が高く、自分の環境を細部まで自分自身で管理したい傾向があります。研究データの分析や論文のチェックなど、緻密さが求められるタスクで右に出る者はいません。";
+                    } else if(t.includes('インスタント')) {
+                        desc = "【 インスタントコーヒー 🍵 】\n手軽さや伝統的な方法を好む、究極のマイペース＆のんびり屋。";
+                        strong = "どんな状況でも気楽に構えることができ、細かいことに動じない圧倒的なスルースキルを持っています。";
+                        weak = "大事な決断やタスクをつい後回しにしてしまう、先延ばし癖（プロクラスティネーション）があります。";
+                        psycho = "「現状維持バイアス」が強く、効率や新しさよりも「いつもの安心感」を優先します。周囲が焦っている状況でも平常心を保てる、ゼミの貴重なメンタル安定剤です。";
+                    }
+
+                    if(desc) {
+                        text = desc;
+                        extraHTML = `
+                            <div class="mt-4 bg-orange-50 p-4 rounded-xl border border-orange-100 space-y-3">
+                                <div>
+                                    <span class="inline-block text-[10px] font-black text-orange-600 bg-orange-100 px-2 py-1 rounded mb-1">✨ 長所 (強み)</span>
+                                    <p class="text-[11px] text-slate-700 font-bold leading-relaxed ml-1">${strong}</p>
+                                </div>
+                                <div class="pt-2 border-t border-orange-100/50">
+                                    <span class="inline-block text-[10px] font-black text-blue-600 bg-blue-100 px-2 py-1 rounded mb-1">💦 短所 (注意点)</span>
+                                    <p class="text-[11px] text-slate-700 font-bold leading-relaxed ml-1">${weak}</p>
+                                </div>
+                            </div>
+
+                            <div class="mt-4 bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+                                <h5 class="text-xs font-black text-indigo-800 mb-2">🧠 心理メカニズムの解説</h5>
+                                <p class="text-[11px] text-indigo-700 leading-relaxed font-bold">${psycho}</p>
+                            </div>
+
+                            <div class="mt-5 bg-amber-50 p-4 rounded-xl border border-amber-100">
+                                <h5 class="text-xs font-black text-amber-800 mb-2">📚 診断の根拠</h5>
+                                <p class="text-[10px] text-amber-700 leading-relaxed">カリフォルニア州立大学の臨床心理学者<br><strong>ラマニ・ドゥルバスラ博士</strong>が1000人を対象に行った行動心理学の観察研究に基づいています。</p>
+                            </div>
+
+                            <div class="mt-6 border-t border-slate-200 pt-5">
+                                <h5 class="text-sm font-black text-slate-800 mb-3">🔍 他のコーヒー性格</h5>
+                                <div class="space-y-2">
+                                    <details class="group bg-white rounded-xl shadow-sm border border-slate-200">
+                                        <summary class="flex justify-between items-center p-3 cursor-pointer font-black text-slate-700 list-none [&::-webkit-details-marker]:hidden hover:bg-slate-50 transition">
+                                            <span class="text-xs">☕ ブラック</span><span class="text-slate-400 group-open:rotate-180 transition">▼</span>
+                                        </summary>
+                                        <div class="p-3 border-t border-slate-100 text-[10px] text-slate-600 font-bold leading-relaxed">忍耐強くて効率的。物事をシンプルに考えるのが得意だが、気分屋で自分のやり方に固執しがち。白黒はっきりさせたい合理主義者。</div>
+                                    </details>
+                                    <details class="group bg-white rounded-xl shadow-sm border border-slate-200">
+                                        <summary class="flex justify-between items-center p-3 cursor-pointer font-black text-slate-700 list-none [&::-webkit-details-marker]:hidden hover:bg-slate-50 transition">
+                                            <span class="text-xs">🥛 カフェラテ</span><span class="text-slate-400 group-open:rotate-180 transition">▼</span>
+                                        </summary>
+                                        <div class="p-3 border-t border-slate-100 text-[10px] text-slate-600 font-bold leading-relaxed">お人好しで世話焼き。他人の面倒を見すぎるあまり、自分を犠牲にしてしまいがち。「苦痛を和らげたい」という深層心理を持つギバー。</div>
+                                    </details>
+                                    <details class="group bg-white rounded-xl shadow-sm border border-slate-200">
+                                        <summary class="flex justify-between items-center p-3 cursor-pointer font-black text-slate-700 list-none [&::-webkit-details-marker]:hidden hover:bg-slate-50 transition">
+                                            <span class="text-xs">🧊 フローズン / ブレンド</span><span class="text-slate-400 group-open:rotate-180 transition">▼</span>
+                                        </summary>
+                                        <div class="p-3 border-t border-slate-100 text-[10px] text-slate-600 font-bold leading-relaxed">流行に敏感で創造性が高いが、無謀な選択をしやすく、安易な解決策に飛びつきやすい。常に新しい体験を求める「刺激希求性」が高い。</div>
+                                    </details>
+                                    <details class="group bg-white rounded-xl shadow-sm border border-slate-200">
+                                        <summary class="flex justify-between items-center p-3 cursor-pointer font-black text-slate-700 list-none [&::-webkit-details-marker]:hidden hover:bg-slate-50 transition">
+                                            <span class="text-xs">✨ 特殊オーダー</span><span class="text-slate-400 group-open:rotate-180 transition">▼</span>
+                                        </summary>
+                                        <div class="p-3 border-t border-slate-100 text-[10px] text-slate-600 font-bold leading-relaxed">自立心が強く健康志向。完璧主義がゆえにルールにこだわりすぎ、不安を感じやすい。自分の環境を管理したい「コントロール欲求」が高い。</div>
+                                    </details>
+                                    <details class="group bg-white rounded-xl shadow-sm border border-slate-200">
+                                        <summary class="flex justify-between items-center p-3 cursor-pointer font-black text-slate-700 list-none [&::-webkit-details-marker]:hidden hover:bg-slate-50 transition">
+                                            <span class="text-xs">🍵 インスタント</span><span class="text-slate-400 group-open:rotate-180 transition">▼</span>
+                                        </summary>
+                                        <div class="p-3 border-t border-slate-100 text-[10px] text-slate-600 font-bold leading-relaxed">気楽でのんびり屋。些細なことに動じないが、大事なことでも先送りにしがち。新しさよりも安心感を好む「現状維持バイアス」が強い。</div>
+                                    </details>
+                                </div>
+                            </div>
+                        `;
+                    } else { text = t; }
                 }
 
                 document.getElementById('modal-title').innerText = title;
@@ -373,22 +535,10 @@ function openModal(testType) {
 
             } catch (e) { 
                 console.error("データ処理エラー:", e); 
-                // ★万が一エラーが起きても、赤い文字で「何のエラーか」を画面に出すようにしました
                 document.getElementById('modal-title').innerText = "エラーが発生しました 💥";
                 modalText.innerHTML = `データの解析中に予期せぬエラーが起きました。<br><br><span class="text-red-500 text-[10px] bg-red-50 p-2 rounded block break-words">${e.message}</span>`;
                 chartContainer.style.display = 'none';
             }
-        }
-        function closeModal() { document.getElementById('detail-modal').style.display = 'none'; }
-
-        function drawChart(labels, dataPoints, maxScore) {
-            const ctx = document.getElementById('radarChart').getContext('2d');
-            if(myChart) { myChart.destroy(); }
-            myChart = new Chart(ctx, {
-                type: 'radar',
-                data: { labels: labels, datasets: [{ label: 'スコア', data: dataPoints, backgroundColor: 'rgba(99, 102, 241, 0.2)', borderColor: 'rgba(99, 102, 241, 1)', pointBackgroundColor: 'rgba(99, 102, 241, 1)', borderWidth: 2 }] },
-                options: { scales: { r: { min: 0, max: maxScore, ticks: { stepSize: maxScore/5, display: false } } }, plugins: { legend: { display: false } } }
-            });
         }
 
         initializePortal();
