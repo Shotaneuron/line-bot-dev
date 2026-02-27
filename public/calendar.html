@@ -101,16 +101,15 @@
         let currentDate = new Date();
         let allEvents = []; 
         let allUsersData = []; 
+        let usersDict = {}; // ★ 爆速でプロフィールを探すための辞書
         let myUserId = "";
-        
-        // ★現在のイベントを管理する変数
         let currentEventIndex = -1;
 
         async function initCalendar() {
             try {
-                await liff.init({ liffId: "2009176797-7MWNttly" }); 
+                await liff.init({ liffId: "2009176797-qGY6VB64" }); 
                 if (liff.isLoggedIn()) { myUserId = liff.getDecodedIDToken()?.sub; }
-                fetchUsersData();
+                await fetchUsersData(); // 先にユーザーデータを取っておく
                 await fetchCalendarEvents();
                 renderCalendar();
             } catch(e) { console.error(e); }
@@ -120,7 +119,14 @@
             try {
                 const res = await fetch(`https://firestore.googleapis.com/v1/projects/shinrizemi-linebot/databases/default/documents/users?pageSize=1000`);
                 const json = await res.json();
-                if(json.documents) allUsersData = json.documents;
+                if(json.documents) {
+                    allUsersData = json.documents;
+                    // ★ ドキュメントID（＝LINE ID）をキーにした辞書を作る
+                    allUsersData.forEach(doc => {
+                        const lineId = doc.name.split('/').pop();
+                        usersDict[lineId] = doc;
+                    });
+                }
             } catch(e){}
         }
 
@@ -160,7 +166,6 @@
                 const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
                 const isToday = isCurrentMonth && i === today.getDate() ? "today" : "";
                 
-                // その日のイベントを描画
                 let eventsHtml = "";
                 allEvents.forEach((ev, index) => {
                     if (ev.date === dateStr) {
@@ -177,13 +182,11 @@
                 html += `<div class="calendar-cell ${isToday}"><div class="text-[10px] font-black text-slate-500 pl-1 ${isToday ? 'text-indigo-600' : ''}">${i}</div><div class="flex flex-col gap-1 overflow-y-auto no-scrollbar max-h-16 pb-1">${eventsHtml}</div></div>`;
             }
             document.getElementById('calendar-body').innerHTML = html;
-            renderPickupEvents(); // カレンダー描画時にピックアップも更新
+            renderPickupEvents();
         }
 
         function renderPickupEvents() {
             const today = new Date().toISOString().split('T')[0];
-            
-            // ピックアップ描画時も index を渡せるように処理
             let html = "";
             let count = 0;
             for (let i = 0; i < allEvents.length; i++) {
@@ -201,25 +204,57 @@
                     if (count >= 5) break;
                 }
             }
-
             if (count === 0) { document.getElementById('pickup-events').innerHTML = '<p class="text-xs text-slate-400 font-bold px-2">直近のイベントはありません</p>'; return; }
             document.getElementById('pickup-events').innerHTML = html;
         }
 
         // =====================================
-        // イベント詳細 ＆ 前後ナビゲーション
+        // イベント詳細 ＆ プロフィール表示
         // =====================================
+        
+        function getSafe(f) { if (!f) return ""; if (f.stringValue !== undefined) return f.stringValue; return ""; }
+        function getRoleBadgeHtml(role) {
+            let badgeClass = "", badgeIcon = "";
+            if (role === "代表") { badgeIcon = "👑"; badgeClass = "bg-yellow-500/20 text-yellow-800 border border-yellow-400"; } 
+            else if (["秘書", "統括", "広報", "補佐"].some(r => role.includes(r))) { badgeIcon = "🛡️"; badgeClass = "bg-slate-200/50 text-slate-700 border border-slate-400"; } 
+            else if (role.includes("部") || role.includes("PJ") || ["ゼミ", "講義"].some(r => role.includes(r))) { badgeIcon = "✨"; badgeClass = "bg-indigo-500/10 text-indigo-700 border border-indigo-300"; } 
+            else { badgeIcon = "🔖"; badgeClass = "bg-slate-100 text-slate-600 border border-slate-200"; }
+            return `<span class="inline-block ${badgeClass} text-[10px] font-black tracking-widest px-2 py-0.5 rounded shadow-sm">${badgeIcon} ${role}</span>`;
+        }
 
-        // ★ 新機能：インデックス番号からイベントを開く（爆速UI）
+        // 🌟 強化版：LINE IDから100%確実にプロフィールを開く
+        function openProfileByLineId(lineId) {
+            if (!lineId) return;
+            if (lineId === myUserId) { alert("これはあなた自身です！マイページから確認してください。"); return; }
+            
+            const doc = usersDict[lineId]; // 辞書から一瞬で検索
+            if (doc) {
+                closeEventDetail();
+                const p = doc.fields.profile.mapValue.fields;
+                document.getElementById('other-name').innerText = getSafe(p.name) + " さん";
+                document.getElementById('other-icon').src = getSafe(p.iconUrl) || "https://via.placeholder.com/150";
+                
+                let roles = []; if (p.roles && p.roles.arrayValue && p.roles.arrayValue.values) roles = p.roles.arrayValue.values.map(v => getSafe(v)); else if (p.role) roles = [getSafe(p.role)];
+                const badgesContainer = document.getElementById('other-role-badges'); badgesContainer.innerHTML = "";
+                if (roles.length > 0 && !roles.includes("一般メンバー") && !roles.includes("未設定")) {
+                     roles.forEach(role => { badgesContainer.innerHTML += getRoleBadgeHtml(role); });
+                }
+                const uni = getSafe(p.uni); const grade = getSafe(p.grade);
+                document.getElementById('other-univ').innerText = (uni || grade) ? `${uni} ${grade}` : "";
+                document.getElementById('other-intro').innerText = getSafe(p.intro) || getSafe(p.selfIntro) || "よろしくお願いします！";
+                
+                document.getElementById('other-profile-modal').classList.remove('hidden'); document.getElementById('other-profile-modal').classList.add('flex');
+            } else { alert("このメンバーはまだマイページを作成していません。"); }
+        }
+        function closeOtherProfile() { document.getElementById('other-profile-modal').classList.add('hidden'); document.getElementById('other-profile-modal').classList.remove('flex'); }
+
         function openEventDetailByIndex(index) {
             currentEventIndex = index;
             const ev = allEvents[index];
 
-            // ボタンの有効/無効を切り替え
             document.getElementById('btn-prev-event').disabled = currentEventIndex <= 0;
             document.getElementById('btn-next-event').disabled = currentEventIndex >= allEvents.length - 1;
 
-            // 瞬間的にタイトルとカテゴリだけ表示してモーダルを開く（爆速！）
             document.getElementById('event-modal-title').innerText = ev.title;
             document.getElementById('event-modal-category').innerHTML = `<span class="${getCategoryStyle(ev.category)} px-3 py-1 rounded-full font-black text-[10px] shadow-sm">${ev.category}</span>`;
             document.getElementById('event-modal-content').innerHTML = `
@@ -230,16 +265,26 @@
             document.getElementById('event-detail-modal').classList.remove('hidden'); 
             document.getElementById('event-detail-modal').classList.add('flex');
 
-            // 裏で詳細を取りに行く
             fetchEventDetailsData(ev.id);
         }
 
-        // 前後のイベントへ移動する関数
         function navigateEvent(direction) {
             const newIndex = currentEventIndex + direction;
-            if (newIndex >= 0 && newIndex < allEvents.length) {
-                openEventDetailByIndex(newIndex);
-            }
+            if (newIndex >= 0 && newIndex < allEvents.length) { openEventDetailByIndex(newIndex); }
+        }
+
+        // ★ユーザーチップを辞書から生成する関数（爆速！）
+        function createUserChip(lineId, colorClass, borderClass, textClass) {
+            const doc = usersDict[lineId];
+            if (!doc) return `<span class="text-[9px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-full">匿名</span>`;
+            const p = doc.fields?.profile?.mapValue?.fields;
+            const name = getSafe(p.name) || "匿名";
+            const icon = getSafe(p.iconUrl) || "https://via.placeholder.com/150";
+            return `
+                <div onclick="openProfileByLineId('${lineId}')" class="flex items-center gap-1.5 ${colorClass} px-2 py-1 rounded-full border ${borderClass} cursor-pointer active:scale-95 shadow-sm transition">
+                    <img src="${icon}" class="w-5 h-5 rounded-full object-cover">
+                    <span class="text-[10px] font-bold ${textClass}">${name}</span>
+                </div>`;
         }
 
         async function fetchEventDetailsData(eventId) {
@@ -247,33 +292,21 @@
                 const res = await fetch(`https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/getEventDetails?eventId=${eventId}`);
                 const data = await res.json();
 
-                const isJoin = data.joins.some(u => u.lineId === myUserId);
-                const isMaybe = data.maybes.some(u => u.lineId === myUserId);
-                const isDecline = data.declines.some(u => u.lineId === myUserId);
+                const isJoin = data.joinsLineIds && data.joinsLineIds.includes(myUserId);
+                const isMaybe = data.maybesLineIds && data.maybesLineIds.includes(myUserId);
+                const isDecline = data.declinesLineIds && data.declinesLineIds.includes(myUserId);
 
                 let html = `<div class="bg-slate-50 p-4 rounded-xl border border-slate-200 whitespace-pre-wrap text-xs text-slate-700 leading-relaxed font-medium mb-4">${data.details}</div>`;
 
-                // 🌟 プロフィールリンク強化版：LINE IDが無い場合は名前で検索をかけるように変更！
-                const createUserChip = (u, colorClass, borderClass, textClass) => `
-                    <div onclick="openProfileByLineId('${u.lineId}', '${u.name}')" class="flex items-center gap-1.5 ${colorClass} px-2 py-1 rounded-full border ${borderClass} cursor-pointer active:scale-95 shadow-sm transition">
-                        <img src="${u.icon}" class="w-5 h-5 rounded-full object-cover">
-                        <span class="text-[10px] font-bold ${textClass}">${u.name}</span>
-                    </div>`;
-
-                html += `<div><p class="text-[10px] font-bold text-indigo-500 mb-2">🙋 参加予定 (${data.joins.length}人)</p>`;
-                if(data.joins.length > 0) html += `<div class="flex flex-wrap gap-1.5">${data.joins.map(u => createUserChip(u, "bg-indigo-50", "border-indigo-200", "text-indigo-700")).join('')}</div>`; 
+                html += `<div><p class="text-[10px] font-bold text-indigo-500 mb-2">🙋 参加予定 (${data.joinsLineIds ? data.joinsLineIds.length : 0}人)</p>`;
+                if(data.joinsLineIds && data.joinsLineIds.length > 0) html += `<div class="flex flex-wrap gap-1.5">${data.joinsLineIds.map(id => createUserChip(id, "bg-white", "border-indigo-200", "text-indigo-700")).join('')}</div>`; 
                 else html += `<p class="text-[10px] text-slate-400">まだ参加者はいません</p>`; 
                 html += `</div>`;
 
-                html += `<div class="mt-4"><p class="text-[10px] font-bold text-orange-500 mb-2">🤔 迷い中 (${data.maybes.length}人)</p>`;
-                if(data.maybes.length > 0) html += `<div class="flex flex-wrap gap-1.5">${data.maybes.map(u => createUserChip(u, "bg-orange-50", "border-orange-200", "text-orange-700")).join('')}</div>`; 
+                html += `<div class="mt-4"><p class="text-[10px] font-bold text-orange-500 mb-2">🤔 迷い中 (${data.maybesLineIds ? data.maybesLineIds.length : 0}人)</p>`;
+                if(data.maybesLineIds && data.maybesLineIds.length > 0) html += `<div class="flex flex-wrap gap-1.5">${data.maybesLineIds.map(id => createUserChip(id, "bg-white", "border-orange-200", "text-orange-700")).join('')}</div>`; 
                 else html += `<p class="text-[10px] text-slate-400">迷い中の人はいません</p>`; 
                 html += `</div>`;
-
-                if(data.declines && data.declines.length > 0) {
-                    html += `<div class="mt-4"><p class="text-[9px] font-bold text-slate-400 mb-1">🙅 不参加 (${data.declines.length}人)</p>`;
-                    html += `<div class="flex flex-wrap gap-1">${data.declines.map(u => `<span class="text-[9px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-full">${u.name}</span>`).join('')}</div></div>`;
-                }
 
                 html += `
                     <div class="flex gap-2 mt-6 pt-4 border-t border-slate-100">
@@ -282,7 +315,6 @@
                         <button onclick="submitEventStatus('${eventId}', 'decline')" class="flex-1 font-bold py-3 rounded-xl text-xs transition border shadow-sm ${isDecline ? 'bg-slate-500 text-white border-slate-600' : 'bg-white text-slate-500 border-slate-200'}">🙅 不参加</button>
                     </div>
                 `;
-
                 document.getElementById('event-modal-content').innerHTML = html;
             } catch(e) { document.getElementById('event-modal-content').innerHTML = '<p class="text-center text-red-400 py-4 text-xs font-bold">エラーが発生しました</p>'; }
         }
@@ -301,59 +333,9 @@
                     body: JSON.stringify({ userId: myUserId, eventId: eventId, status: status })
                 });
                 if (!res.ok) throw new Error("登録エラー");
-                fetchEventDetailsData(eventId); // 再読み込み
+                fetchEventDetailsData(eventId); 
             } catch(e) { alert("登録に失敗しました"); closeEventDetail(); }
         }
-
-        // =====================================
-        // プロフィール表示ロジック（強化版）
-        // =====================================
-        function getSafe(f) { if (!f) return ""; if (f.stringValue !== undefined) return f.stringValue; return ""; }
-        function getRoleBadgeHtml(role) {
-            let badgeClass = "", badgeIcon = "";
-            if (role === "代表") { badgeIcon = "👑"; badgeClass = "bg-yellow-500/20 text-yellow-800 border border-yellow-400"; } 
-            else if (["秘書", "統括", "広報", "補佐"].some(r => role.includes(r))) { badgeIcon = "🛡️"; badgeClass = "bg-slate-200/50 text-slate-700 border border-slate-400"; } 
-            else if (role.includes("部") || role.includes("PJ") || ["ゼミ", "講義"].some(r => role.includes(r))) { badgeIcon = "✨"; badgeClass = "bg-indigo-500/10 text-indigo-700 border border-indigo-300"; } 
-            else { badgeIcon = "🔖"; badgeClass = "bg-slate-100 text-slate-600 border border-slate-200"; }
-            return `<span class="inline-block ${badgeClass} text-[10px] font-black tracking-widest px-2 py-0.5 rounded shadow-sm">${badgeIcon} ${role}</span>`;
-        }
-
-        // ★ LINE IDだけでなく「名前」でも検索をかけるように強化！
-        function openProfileByLineId(lineId, name) {
-            let index = -1;
-            if (lineId) index = allUsersData.findIndex(doc => doc.name.includes(lineId));
-            
-            // LINE IDで見つからなかった場合、名前で強引に検索！
-            if (index === -1 && name) {
-                index = allUsersData.findIndex(doc => {
-                    const p = doc.fields?.profile?.mapValue?.fields;
-                    return p && getSafe(p.name) === name;
-                });
-            }
-
-            if (index !== -1) {
-                const doc = allUsersData[index];
-                if (doc.name.includes(myUserId)) { alert("これはあなた自身です！マイページから確認してください。"); return; }
-                
-                closeEventDetail();
-                const p = doc.fields.profile.mapValue.fields;
-                document.getElementById('other-name').innerText = getSafe(p.name) + " さん";
-                document.getElementById('other-icon').src = getSafe(p.iconUrl) || "https://via.placeholder.com/150";
-                
-                let roles = []; if (p.roles && p.roles.arrayValue && p.roles.arrayValue.values) roles = p.roles.arrayValue.values.map(v => getSafe(v)); else if (p.role) roles = [getSafe(p.role)];
-                const badgesContainer = document.getElementById('other-role-badges'); badgesContainer.innerHTML = "";
-                if (roles.length > 0 && !roles.includes("一般メンバー") && !roles.includes("未設定")) {
-                     roles.forEach(role => { badgesContainer.innerHTML += getRoleBadgeHtml(role); });
-                }
-                const uni = getSafe(p.uni); const grade = getSafe(p.grade);
-                document.getElementById('other-univ').innerText = (uni || grade) ? `${uni} ${grade}` : "";
-                document.getElementById('other-intro').innerText = getSafe(p.intro) || getSafe(p.selfIntro) || "よろしくお願いします！";
-                
-                document.getElementById('other-profile-modal').classList.remove('hidden'); document.getElementById('other-profile-modal').classList.add('flex');
-            } else { alert("このメンバーはまだマイページを作成していません。"); }
-        }
-
-        function closeOtherProfile() { document.getElementById('other-profile-modal').classList.add('hidden'); document.getElementById('other-profile-modal').classList.remove('flex'); }
 
         initCalendar();
     </script>

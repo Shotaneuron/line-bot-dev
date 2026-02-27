@@ -1207,48 +1207,54 @@ export const getEventDetails = functions.region("asia-northeast1").https.onReque
     if (!eventId) { res.status(400).json({ error: "No eventId" }); return; }
 
     try {
+        const docRef = db.collection("events").doc(eventId);
+        const docSnap = await docRef.get();
+
+        // 🌟 魔法：すでにFirestoreに詳細データ(details)がキャッシュされていれば、0.1秒で即リターン！！
+        if (docSnap.exists) {
+            const data = docSnap.data();
+            if (data && data.details !== undefined) {
+                return res.json({
+                    details: data.details,
+                    joinsLineIds: data.joinsLineIds || [],
+                    maybesLineIds: data.maybesLineIds || [],
+                    declinesLineIds: data.declinesLineIds || []
+                });
+            }
+        }
+
+        // キャッシュがない場合のみ、Notionから取得してFirestoreに保存する（最初の1回だけ！）
         const eventPage: any = await notion.pages.retrieve({ page_id: eventId });
         const joinsIds = eventPage.properties[PROP_JOIN]?.relation?.map((r:any) => r.id) || [];
         const maybesIds = eventPage.properties[PROP_MAYBE]?.relation?.map((r:any) => r.id) || [];
         const declinesIds = eventPage.properties[PROP_DECLINE]?.relation?.map((r:any) => r.id) || []; 
 
-        const getParticipants = async (ids: string[]) => {
+        const getLineIds = async (ids: string[]) => {
             if(ids.length === 0) return [];
-            const participants = [];
+            const lineIds = [];
             for(const id of ids) {
                 try {
                     const p: any = await notion.pages.retrieve({ page_id: id });
-                    let iconUrl = "https://via.placeholder.com/150";
-                    if (p.icon && p.icon.type === "external") iconUrl = p.icon.external.url;
-                    else if (p.icon && p.icon.type === "file") iconUrl = p.icon.file.url;
-
-                    participants.push({
-                        name: p.properties[PROP_MEMBER_NAME]?.title[0]?.plain_text || "匿名",
-                        lineId: p.properties[PROP_LINE_USER_ID]?.rich_text[0]?.plain_text || "",
-                        icon: iconUrl
-                    });
+                    const lineId = p.properties[PROP_LINE_USER_ID]?.rich_text[0]?.plain_text;
+                    if (lineId) lineIds.push(lineId);
                 } catch(e) {}
             }
-            return participants;
+            return lineIds;
         };
 
-        const [joinsUsers, maybesUsers, declinesUsers] = await Promise.all([
-            getParticipants(joinsIds), getParticipants(maybesIds), getParticipants(declinesIds)
+        const [joinsLineIds, maybesLineIds, declinesLineIds] = await Promise.all([
+            getLineIds(joinsIds), getLineIds(maybesIds), getLineIds(declinesIds)
         ]);
 
         const blocks = await notion.blocks.children.list({ block_id: eventId });
         let textContent = "";
-        
         for (const block of blocks.results) {
             let blockText = "";
             if (block.type === 'paragraph' && block.paragraph.rich_text.length > 0) blockText = block.paragraph.rich_text.map((t:any)=>t.plain_text).join("");
             else if (block.type === 'heading_2' || block.type === 'heading_3') blockText = block[block.type].rich_text.map((t:any)=>t.plain_text).join("");
             else if (block.type === 'bulleted_list_item') blockText = block.bulleted_list_item.rich_text.map((t:any)=>t.plain_text).join("");
 
-            // 🚨 運営用エリアを見つけたら、ここで読み込みを完全にストップ！！
-            if (blockText.includes("運営用") || blockText.includes("以下は運営用")) {
-                break;
-            }
+            if (blockText.includes("運営用") || blockText.includes("以下は運営用")) break;
 
             if (block.type === 'paragraph' && blockText) textContent += blockText + "\n";
             else if (block.type === 'heading_2' || block.type === 'heading_3') textContent += "\n■ " + blockText + "\n";
@@ -1257,10 +1263,14 @@ export const getEventDetails = functions.region("asia-northeast1").https.onReque
 
         if(!textContent.trim()) textContent = eventPage.properties[PROP_DETAIL_TEXT]?.rich_text?.map((t:any)=>t.plain_text).join("") || "詳細情報（本文）はまだ書かれていません。";
 
-        res.json({ details: textContent.trim(), joins: joinsUsers, maybes: maybesUsers, declines: declinesUsers });
-    } catch(e: any) {
-        res.status(500).json({ error: e.message });
-    }
+        // 取得したデータをFirestoreにキャッシュとして書き込む
+        await docRef.set({
+            details: textContent.trim(),
+            joinsLineIds, maybesLineIds, declinesLineIds
+        }, { merge: true });
+
+        res.json({ details: textContent.trim(), joinsLineIds, maybesLineIds, declinesLineIds });
+    } catch(e: any) { res.status(500).json({ error: e.message }); }
 });
 
 // ───────────────────────────────────────────
@@ -1421,9 +1431,11 @@ export const manualSyncEvents = functions.region("asia-northeast1").https.onRequ
     } catch(e:any) { res.status(500).json({ error: e.message }); }
 });
 
-
 // ───────────────────────────────────────────
-// 7. 出欠ステータスの更新 API（★NotionとFirestoreの両方を更新する最強版！）
+// 7. 出欠ステータスの更新 API
+// ───────────────────────────────────────────
+// ───────────────────────────────────────────
+// 7. 出欠ステータスの更新 API
 // ───────────────────────────────────────────
 export const updateEventStatus = functions.region("asia-northeast1").https.onRequest(async (req: any, res: any) => {
     res.set('Access-Control-Allow-Origin', '*');
@@ -1442,23 +1454,20 @@ export const updateEventStatus = functions.region("asia-northeast1").https.onReq
         if (memberSearch.results.length === 0) { res.status(404).json({ error: "User not found" }); return; }
         const memberId = memberSearch.results[0].id;
 
-        // 1. Notion側の現在のリストを取得
+        // Notion側の更新
         const eventPage: any = await notion.pages.retrieve({ page_id: eventId });
         let joins = eventPage.properties[PROP_JOIN]?.relation?.map((r:any) => r.id) || [];
         let maybes = eventPage.properties[PROP_MAYBE]?.relation?.map((r:any) => r.id) || [];
         let declines = eventPage.properties[PROP_DECLINE]?.relation?.map((r:any) => r.id) || [];
 
-        // 一旦すべてのリストから自分を消す
         joins = joins.filter((id: string) => id !== memberId);
         maybes = maybes.filter((id: string) => id !== memberId);
         declines = declines.filter((id: string) => id !== memberId);
 
-        // 新しいステータスに追加する
         if (status === "join") joins.push(memberId);
         else if (status === "maybe") maybes.push(memberId);
         else if (status === "decline") declines.push(memberId);
 
-        // 2. Notionを更新（マスターデータの更新）
         await notion.pages.update({
             page_id: eventId,
             properties: {
@@ -1468,17 +1477,35 @@ export const updateEventStatus = functions.region("asia-northeast1").https.onReq
             }
         });
 
-        // 3. 🚀 Firestoreのキャッシュも即座に上書き！（これが爆速の秘訣）
-        await db.collection("events").doc(eventId).set({
-            joins: joins,
-            maybes: maybes,
-            declines: declines,
+        // 🚀 Firestoreのキャッシュ（LINE IDの配列）も同時に更新する
+        const docRef = db.collection("events").doc(eventId);
+        const docSnap = await docRef.get();
+        
+        // ★ 修正：型を明示的に string[] と宣言する
+        let joinsLineIds: string[] = [], maybesLineIds: string[] = [], declinesLineIds: string[] = [];
+        
+        if (docSnap.exists) {
+            const data = docSnap.data();
+            joinsLineIds = data?.joinsLineIds || []; 
+            maybesLineIds = data?.maybesLineIds || []; 
+            declinesLineIds = data?.declinesLineIds || [];
+        }
+        
+        // ★ 修正：id に (id: string) と型をつける
+        joinsLineIds = joinsLineIds.filter((id: string) => id !== userId);
+        maybesLineIds = maybesLineIds.filter((id: string) => id !== userId);
+        declinesLineIds = declinesLineIds.filter((id: string) => id !== userId);
+
+        if (status === "join") joinsLineIds.push(userId);
+        else if (status === "maybe") maybesLineIds.push(userId);
+        else if (status === "decline") declinesLineIds.push(userId);
+
+        await docRef.set({
+            joins, maybes, declines, // Notion ID
+            joinsLineIds, maybesLineIds, declinesLineIds, // LINE ID
             updatedAt: new Date().toISOString()
         }, { merge: true });
 
         res.json({ success: true });
-    } catch(e: any) {
-        console.error(e);
-        res.status(500).json({ error: e.message });
-    }
+    } catch(e: any) { res.status(500).json({ error: e.message }); }
 });
