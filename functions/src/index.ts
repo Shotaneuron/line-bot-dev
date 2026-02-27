@@ -536,23 +536,18 @@ async function replyTagMenuCarousel(replyToken: string, userId: string) {
 // ───────────────────────────────────────────
 // 👤 マイページ ＆ プロフィール更新
 // ───────────────────────────────────────────
-// ───────────────────────────────────────────
-// 👤 マイページ ＆ プロフィール更新
-// ───────────────────────────────────────────
-// ───────────────────────────────────────────
-// 👤 マイページ ＆ プロフィール更新
-// ───────────────────────────────────────────
 async function handleProfileUpdate(replyToken: string, userId: string, text: string) {
     const lines = text.split('\n');
-    let name = "", uni = "", faculty = "", grade = "", selfIntro = "";
+    let name = "", uni = "", faculty = "", grade = "", selfIntro = "", tagsText = "";
     let isIntro = false;
 
-    // テキストから各項目を抽出
+    // テキストから各項目を抽出（★興味タグを追加）
     for (const line of lines) {
         if (line.startsWith("名前:")) { name = line.replace("名前:", "").trim(); continue; }
         if (line.startsWith("大学:")) { uni = line.replace("大学:", "").trim(); continue; }
         if (line.startsWith("学部:")) { faculty = line.replace("学部:", "").trim(); continue; }
         if (line.startsWith("学年:")) { grade = line.replace("学年:", "").trim(); continue; }
+        if (line.startsWith("興味タグ:")) { tagsText = line.replace("興味タグ:", "").trim(); continue; }
         if (line.startsWith("自己紹介:")) { isIntro = true; selfIntro += line.replace("自己紹介:", "") + "\n"; continue; }
         if (isIntro) { selfIntro += line + "\n"; }
     }
@@ -574,17 +569,20 @@ async function handleProfileUpdate(replyToken: string, userId: string, text: str
         const profile = await lineClient.getProfile(userId);
         const iconUrl = profile.pictureUrl;
 
-// ★ Notion側の既存の「役職」や「ひとこと」を保持・取得
-        let roles: string[] = []; // ★配列に変更！
+        let roles: string[] = []; 
         let currentIntro = "";
         let currentTags: string[] = [];
         if (memberPage) {
-            // ★マルチセレクトとして取得するように変更！
             roles = memberPage.properties[PROP_MEMBER_ROLE]?.multi_select?.map((t:any)=>t.name) || [];
             if (roles.length === 0) roles = ["一般メンバー"];
-
             currentIntro = memberPage.properties[PROP_MEMBER_INTRO]?.rich_text[0]?.plain_text || "";
             currentTags = memberPage.properties[PROP_MEMBER_TAGS]?.multi_select?.map((t:any)=>t.name) || [];
+        }
+
+        // ★ 新しい興味タグの配列を作成
+        let newTags = currentTags;
+        if (text.includes("興味タグ:")) {
+            newTags = tagsText.split(",").map(t => t.trim()).filter(t => t !== "");
         }
 
         const propertiesToUpdate: any = {
@@ -592,7 +590,8 @@ async function handleProfileUpdate(replyToken: string, userId: string, text: str
             [PROP_MEMBER_UNI]: { rich_text: [{ text: { content: uni } }] },
             [PROP_MEMBER_FACULTY]: { rich_text: [{ text: { content: faculty } }] },
             [PROP_MEMBER_GRADE]: { select: { name: grade } },
-            [PROP_LINE_USER_ID]: { rich_text: [{ text: { content: userId } }] }
+            [PROP_LINE_USER_ID]: { rich_text: [{ text: { content: userId } }] },
+            [PROP_MEMBER_TAGS]: { multi_select: newTags.map(t => ({ name: t })) } // ★タグを更新
         };
 
         const updateParams: any = { properties: propertiesToUpdate };
@@ -605,24 +604,20 @@ async function handleProfileUpdate(replyToken: string, userId: string, text: str
             await notion.pages.update(updateParams);
             targetPageId = memberPage.id;
         } else {
-            propertiesToUpdate[PROP_MEMBER_TAGS] = { multi_select: [] };
             updateParams.parent = { database_id: MEMBER_DB_ID };
             const newPage = await notion.pages.create(updateParams);
             targetPageId = newPage.id;
         }
 
-        // ★ 賢い自己紹介の更新（他のメモを消さない魔法）
         if (selfIntro) {
             const blocksResponse = await notion.blocks.children.list({ block_id: targetPageId });
             const blocks = blocksResponse.results;
             
             let introBlockId = null;
 
-            // 「📝 自己紹介」という見出しを探す
             for (let i = 0; i < blocks.length; i++) {
                 const block = blocks[i];
                 if (block.type === "heading_3" && block.heading_3.rich_text.some((t:any) => t.plain_text.includes("📝 自己紹介"))) {
-                    // 見出しの「次」のブロックが段落なら、それを更新対象としてロックオン！
                     if (blocks[i+1] && blocks[i+1].type === "paragraph") {
                         introBlockId = blocks[i+1].id;
                     }
@@ -631,13 +626,11 @@ async function handleProfileUpdate(replyToken: string, userId: string, text: str
             }
 
             if (introBlockId) {
-                // 既存の自己紹介ブロックだけをピンポイントで上書き
                 await notion.blocks.update({
                     block_id: introBlockId,
                     paragraph: { rich_text: [{ type: "text", text: { content: selfIntro } }] }
                 });
             } else {
-                // 見出しがない場合は、ページの末尾に新しく追加する（他のメモの下に追加される）
                 await notion.blocks.children.append({
                     block_id: targetPageId,
                     children: [
@@ -648,18 +641,16 @@ async function handleProfileUpdate(replyToken: string, userId: string, text: str
             }
         }
 
-        // マイページで表示するために、Firestoreにも全データを保存
-await db.collection("users").doc(userId).set({
+        await db.collection("users").doc(userId).set({
             profile: { 
                 name: name, uni: uni, faculty: faculty, grade: grade, 
-                selfIntro: selfIntro, intro: currentIntro, 
-                roles: roles, // ★role ではなく roles(複数形) として配列を保存！
-                iconUrl: iconUrl, tags: currentTags
+                selfIntro: selfIntro, intro: currentIntro, roles: roles, 
+                iconUrl: iconUrl, tags: newTags // ★Firestoreにも新しいタグを保存
             }
         }, { merge: true });
 
-        await reply(replyToken, `🎉 プロフィールを保存しました！\nマイページを開き直して確認してみてください。`);
-        
+        await reply(replyToken, `🎉 プロフィールと興味タグを更新しました！\nあなたに合った情報をお届けします👀`);
+
     } catch (e: any) {
         console.error("Profile Update Error:", e);
         await reply(replyToken, "❌ エラー: プロフィールの保存に失敗しました。");
