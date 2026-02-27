@@ -532,6 +532,7 @@ async function replyTagMenuCarousel(replyToken: string, userId: string) {
     await lineClient.replyMessage(replyToken, { type: "flex", altText: "興味タグ設定メニュー", contents: { type: "carousel", contents: bubbles } });
 }
 
+
 // ───────────────────────────────────────────
 // 👤 マイページ ＆ プロフィール更新
 // ───────────────────────────────────────────
@@ -543,7 +544,6 @@ async function handleProfileUpdate(replyToken: string, userId: string, text: str
     let name = "", uni = "", faculty = "", grade = "", intro = "";
     let isIntro = false;
 
-    // テキストから各項目を抽出（複数行の自己紹介にも対応）
     for (const line of lines) {
         if (line.startsWith("名前:")) { name = line.replace("名前:", "").trim(); continue; }
         if (line.startsWith("大学:")) { uni = line.replace("大学:", "").trim(); continue; }
@@ -559,7 +559,6 @@ async function handleProfileUpdate(replyToken: string, userId: string, text: str
     try {
         let memberPage = await getMemberPage(userId);
 
-        // LINE IDで見つからない場合、「名前」で探して紐付け
         if (!memberPage) {
             const nameSearch = await notion.databases.query({
                 database_id: MEMBER_DB_ID,
@@ -568,51 +567,39 @@ async function handleProfileUpdate(replyToken: string, userId: string, text: str
             if (nameSearch.results.length > 0) memberPage = nameSearch.results[0];
         }
 
-        // ★魔法の仕掛け：LINEのプロフィール画像URLを取得
         const profile = await lineClient.getProfile(userId);
         const iconUrl = profile.pictureUrl;
 
+        // ★修正①：[PROP_MEMBER_INTRO] をここで指定し、Notionの「ひとこと」プロパティを【上書き】する！
         const propertiesToUpdate: any = {
             [PROP_MEMBER_NAME]: { title: [{ text: { content: name } }] },
             [PROP_MEMBER_UNI]: { rich_text: [{ text: { content: uni } }] },
             [PROP_MEMBER_FACULTY]: { rich_text: [{ text: { content: faculty } }] },
             [PROP_MEMBER_GRADE]: { select: { name: grade } },
-            [PROP_LINE_USER_ID]: { rich_text: [{ text: { content: userId } }] }
+            [PROP_LINE_USER_ID]: { rich_text: [{ text: { content: userId } }] },
+            [PROP_MEMBER_INTRO]: { rich_text: [{ text: { content: intro } }] } 
         };
 
         const updateParams: any = { properties: propertiesToUpdate };
-
-        // 画像URLがあれば、Notionのアイコンに設定する！
-        if (iconUrl) {
-            // ★修正点：Notionが「画像」として認識できるようにダミーの拡張子（#.jpg）をつける
-            updateParams.icon = { type: "external", external: { url: iconUrl + "#.jpg" } };
-        }
-
-        let targetPageId = "";
+        if (iconUrl) { updateParams.icon = { type: "external", external: { url: iconUrl + "#.jpg" } }; }
 
         if (memberPage) {
             updateParams.page_id = memberPage.id;
             await notion.pages.update(updateParams);
-            targetPageId = memberPage.id;
         } else {
             propertiesToUpdate[PROP_MEMBER_TAGS] = { multi_select: [] };
             updateParams.parent = { database_id: MEMBER_DB_ID };
-            const newPage = await notion.pages.create(updateParams);
-            targetPageId = newPage.id;
+            await notion.pages.create(updateParams);
         }
 
-        // ★自己紹介があれば、Notionの「本文」に追記する
-        if (intro) {
-            await notion.blocks.children.append({
-                block_id: targetPageId,
-                children: [
-                    { object: "block", type: "heading_3", heading_3: { rich_text: [{ type: "text", text: { content: "📝 プロフィール設定から追記" } }] } },
-                    { object: "block", type: "paragraph", paragraph: { rich_text: [{ type: "text", text: { content: intro } }] } }
-                ]
-            });
-        }
+        // ★修正②：本文への追記（notion.blocks.children.append）は邪魔になるので削除しました！
 
-        await reply(replyToken, `🎉 プロフィールを保存しました！\nLINEのアイコンもNotionに自動設定されています👀\n「個人設定」から確認してみてください。`);
+        // ★修正③：マイページ（LIFF）で前回入力した文字を引き継げるように、Firestoreにも保存！
+        await db.collection("users").doc(userId).set({
+            profile: { name: name, uni: uni, faculty: faculty, grade: grade, intro: intro }
+        }, { merge: true });
+
+        await reply(replyToken, `🎉 プロフィールを保存しました！\nLINEのアイコンもNotionに自動設定されています👀\nメニューの「マイページ」から確認してみてください。`);
 
     } catch (e: any) {
         console.error("Profile Update Error:", e);
