@@ -1184,3 +1184,62 @@ export const getUserEvents = functions.region("asia-northeast1").https.onRequest
         res.status(500).json({ error: e.message });
     }
 });
+
+// ───────────────────────────────────────────
+// 6. マイページ用 API: イベント詳細の取得（本文・参加者リスト）
+// ───────────────────────────────────────────
+export const getEventDetails = functions.region("asia-northeast1").https.onRequest(async (req: any, res: any) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+
+    const eventId = req.query.eventId;
+    if (!eventId) { res.status(400).json({ error: "No eventId" }); return; }
+
+    try {
+        const eventPage: any = await notion.pages.retrieve({ page_id: eventId });
+        const joinsIds = eventPage.properties[PROP_JOIN]?.relation?.map((r:any) => r.id) || [];
+        const maybesIds = eventPage.properties[PROP_MAYBE]?.relation?.map((r:any) => r.id) || [];
+
+        // 参加者の名前を取得するヘルパー関数（処理を軽くするためPromise.allを使用）
+        const getNames = async (ids: string[]) => {
+            if(ids.length === 0) return [];
+            const names = [];
+            for(const id of ids) {
+                try {
+                    const p: any = await notion.pages.retrieve({ page_id: id });
+                    names.push(p.properties[PROP_MEMBER_NAME]?.title[0]?.plain_text || "匿名メンバー");
+                } catch(e) {}
+            }
+            return names;
+        };
+
+        const [joinsNames, maybesNames] = await Promise.all([
+            getNames(joinsIds),
+            getNames(maybesIds)
+        ]);
+
+        // Notionのページ本文（ブロック）を取得してテキスト化
+        const blocks = await notion.blocks.children.list({ block_id: eventId });
+        let textContent = "";
+        blocks.results.forEach((block: any) => {
+            if(block.type === 'paragraph' && block.paragraph.rich_text.length > 0) {
+                textContent += block.paragraph.rich_text.map((t:any)=>t.plain_text).join("") + "\n";
+            } else if (block.type === 'heading_2' || block.type === 'heading_3') {
+                const heading = block[block.type];
+                textContent += "\n■ " + heading.rich_text.map((t:any)=>t.plain_text).join("") + "\n";
+            } else if (block.type === 'bulleted_list_item') {
+                textContent += "・ " + block.bulleted_list_item.rich_text.map((t:any)=>t.plain_text).join("") + "\n";
+            }
+        });
+
+        if(!textContent.trim()) {
+            textContent = eventPage.properties[PROP_DETAIL_TEXT]?.rich_text?.map((t:any)=>t.plain_text).join("") || "詳細情報（本文）はまだ書かれていません。";
+        }
+
+        res.json({ details: textContent.trim(), joins: joinsNames, maybes: maybesNames });
+    } catch(e: any) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    }
+});

@@ -202,6 +202,24 @@
         </div>
     </div>
 
+    <div id="event-detail-modal" class="fixed inset-0 z-[70] hidden flex-col justify-end bg-slate-900/60 backdrop-blur-sm">
+        <div class="bg-white rounded-t-[2rem] p-6 shadow-2xl border-t border-slate-200 max-h-[85vh] flex flex-col w-full max-w-md mx-auto relative animate-[translateY_0.2s_ease-out]">
+            <button onclick="closeEventDetail()" class="absolute top-5 right-5 w-8 h-8 bg-slate-100 rounded-full text-slate-500 text-lg font-bold flex items-center justify-center">&times;</button>
+            <h3 id="event-modal-title" class="text-lg font-black text-slate-800 mb-4 pr-8 leading-tight">イベント名</h3>
+            <div id="event-modal-content" class="overflow-y-auto no-scrollbar pb-6 space-y-4">
+                </div>
+        </div>
+    </div>
+
+    <div id="past-events-modal" class="fixed inset-0 z-[65] hidden flex-col justify-end bg-slate-900/60 backdrop-blur-sm">
+        <div class="bg-white rounded-t-[2rem] p-6 shadow-2xl border-t border-slate-200 max-h-[80vh] flex flex-col w-full max-w-md mx-auto relative animate-[translateY_0.2s_ease-out]">
+            <button onclick="closePastEventsModal()" class="absolute top-5 right-5 w-8 h-8 bg-slate-100 rounded-full text-slate-500 text-lg font-bold flex items-center justify-center">&times;</button>
+            <h3 class="text-lg font-black text-slate-800 mb-4">🏆 活動履歴（すべて）</h3>
+            <div id="past-events-list" class="overflow-y-auto no-scrollbar pb-6 space-y-3">
+                </div>
+        </div>
+    </div>
+
     <script>
         let myData = null;
         let myUserId = "";
@@ -227,63 +245,117 @@
             } catch (e) { console.error("タグ取得エラー", e); }
         }
 
-        // ★ APIを叩いてダッシュボードを描画する機能
+        let globalPastEvents = []; // 履歴をすべて保存しておく変数
+
+        // ★ ダッシュボード描画処理
         async function fetchDashboardEvents() {
             try {
-                // デプロイしたFirebase FunctionsのURLを叩く
                 const url = `https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/getUserEvents?userId=${myUserId}`;
                 const res = await fetch(url);
-                if (!res.ok) throw new Error("Network response was not ok");
+                if (!res.ok) throw new Error("Network response error");
                 const events = await res.json();
 
-                // カードを生成する関数
-                const createEventCard = (ev, borderCol, bgCol) => `
-                    <div class="flex-shrink-0 w-48 bg-white rounded-xl p-4 border ${borderCol} ${bgCol} shadow-sm relative overflow-hidden flex flex-col justify-between">
-                        <div>
-                            <div class="text-[10px] font-bold mb-1 opacity-70">📅 ${ev.date}</div>
-                            <h4 class="text-sm font-black text-slate-800 leading-tight mb-2 line-clamp-2">${ev.title}</h4>
-                        </div>
-                        <div class="flex gap-1 flex-wrap mt-2">
-                            ${ev.tags.slice(0,3).map(t => `<span class="text-[8px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200">${t}</span>`).join('')}
-                        </div>
-                    </div>`;
+                globalPastEvents = events.past; // 履歴をグローバルに保存
 
-                const createListCard = (ev) => `
-                    <div class="bg-white rounded-lg p-3 border border-slate-200 flex items-center justify-between shadow-sm">
-                        <div>
-                            <div class="text-[9px] text-slate-400 font-bold">📅 ${ev.date}</div>
-                            <h4 class="text-sm font-bold text-slate-700">${ev.title}</h4>
-                        </div>
-                        <span class="text-emerald-500 text-xl">🏆</span>
-                    </div>`;
-
+                // 🚀 参加予定（縦表示リスト・タップ可能）
                 if (events.planned.length > 0) {
-                    document.getElementById('dashboard-planned').innerHTML = events.planned.map(e => createEventCard(e, "border-indigo-300", "bg-indigo-50/50")).join('');
+                    document.getElementById('dashboard-planned').className = "space-y-3"; // 縦並びクラスに変更
+                    document.getElementById('dashboard-planned').innerHTML = events.planned.map(ev => `
+                        <div onclick="openEventDetail('${ev.id}', '${ev.title}')" class="bg-white rounded-xl p-4 border border-indigo-200 shadow-sm flex flex-col cursor-pointer hover:bg-slate-50 active:scale-95 transition">
+                            <div class="text-[10px] text-indigo-500 font-bold mb-1">📅 ${ev.date}</div>
+                            <h4 class="text-sm font-black text-slate-800 leading-tight">${ev.title}</h4>
+                            <div class="flex gap-1 flex-wrap mt-2">
+                                ${ev.tags.map(t => `<span class="text-[8px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200">${t}</span>`).join('')}
+                            </div>
+                        </div>`).join('');
                 } else {
                     document.getElementById('dashboard-planned').innerHTML = '<p class="text-xs text-slate-400 font-bold px-2 py-4">参加予定のイベントはありません。ポータルから探そう！</p>';
                 }
 
-                if (events.maybe.length > 0) {
-                    document.getElementById('dashboard-maybe').innerHTML = events.maybe.map(e => createEventCard(e, "border-orange-200", "bg-orange-50/50")).join('');
-                } else {
-                    document.getElementById('dashboard-maybe').innerHTML = '<p class="text-xs text-slate-400 font-bold px-2 py-2">迷い中のイベントはありません</p>';
-                }
+                // 🤔 迷い中 ＆ ✨ おすすめ（横スクロール・タップ可能）
+                const createHorizontalCard = (ev, borderCol, bgCol) => `
+                    <div onclick="openEventDetail('${ev.id}', '${ev.title}')" class="flex-shrink-0 w-48 bg-white rounded-xl p-4 border ${borderCol} ${bgCol} shadow-sm cursor-pointer hover:bg-slate-50 active:scale-95 transition flex flex-col justify-between">
+                        <div>
+                            <div class="text-[10px] font-bold mb-1 opacity-70">📅 ${ev.date}</div>
+                            <h4 class="text-sm font-black text-slate-800 leading-tight mb-2 line-clamp-2">${ev.title}</h4>
+                        </div>
+                    </div>`;
 
-                if (events.recommended.length > 0) {
-                    document.getElementById('dashboard-recommended').innerHTML = events.recommended.map(e => createEventCard(e, "border-pink-200", "bg-pink-50/50")).join('');
-                } else {
-                    document.getElementById('dashboard-recommended').innerHTML = '<p class="text-xs text-slate-400 font-bold px-2 py-2">おすすめを探すには、興味タグを登録してください！</p>';
-                }
+                if (events.maybe.length > 0) document.getElementById('dashboard-maybe').innerHTML = events.maybe.map(e => createHorizontalCard(e, "border-orange-200", "bg-orange-50/50")).join('');
+                if (events.recommended.length > 0) document.getElementById('dashboard-recommended').innerHTML = events.recommended.map(e => createHorizontalCard(e, "border-pink-200", "bg-pink-50/50")).join('');
 
+                // 🏆 活動履歴（横スクロール、直近5件 ＋「すべて見る」ボタン）
                 if (events.past.length > 0) {
-                    document.getElementById('dashboard-past').innerHTML = events.past.map(createListCard).join('');
+                    document.getElementById('dashboard-past').className = "flex gap-3 overflow-x-auto no-scrollbar pb-2 pt-1"; // 横並びクラスに変更
+                    let pastHtml = events.past.slice(0, 5).map(ev => `
+                        <div onclick="openEventDetail('${ev.id}', '${ev.title}')" class="flex-shrink-0 w-40 bg-white rounded-xl p-3 border border-emerald-200 shadow-sm cursor-pointer hover:bg-slate-50 active:scale-95 transition">
+                            <div class="text-[9px] text-emerald-600 font-bold mb-1">📅 ${ev.date}</div>
+                            <h4 class="text-xs font-bold text-slate-700 line-clamp-2 leading-tight">${ev.title}</h4>
+                        </div>`).join('');
+                    
+                    if (events.past.length > 5) {
+                        pastHtml += `
+                        <div onclick="openPastEventsModal()" class="flex-shrink-0 w-24 bg-slate-50 rounded-xl border border-slate-200 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-100 active:scale-95 transition shadow-sm">
+                            <span class="text-lg mb-1">👀</span>
+                            <span class="text-[10px] font-bold text-slate-500">すべて見る</span>
+                        </div>`;
+                    }
+                    document.getElementById('dashboard-past').innerHTML = pastHtml;
                 }
 
             } catch(e) {
-                console.error("Dashboard Fetch Error", e);
                 document.getElementById('dashboard-planned').innerHTML = '<p class="text-xs text-red-400 px-2 py-4">予定の取得に失敗しました</p>';
             }
         }
+
+        // 📄 イベント詳細を開く機能
+        async function openEventDetail(eventId, title) {
+            document.getElementById('event-modal-title').innerText = title;
+            document.getElementById('event-modal-content').innerHTML = `
+                <div class="flex flex-col items-center justify-center py-10">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mb-3"></div>
+                    <p class="text-xs text-slate-400 font-bold">詳細を読み込み中...</p>
+                </div>`;
+            document.getElementById('event-detail-modal').classList.remove('hidden');
+            document.getElementById('event-detail-modal').classList.add('flex');
+
+            try {
+                const res = await fetch(`https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/getEventDetails?eventId=${eventId}`);
+                const data = await res.json();
+
+                let html = `<div class="bg-slate-50 p-4 rounded-xl border border-slate-200 whitespace-pre-wrap text-xs text-slate-700 leading-relaxed font-medium">${data.details}</div>`;
+
+                html += `<div class="mt-4"><p class="text-[10px] font-bold text-indigo-500 mb-2">🙋 参加予定 (${data.joins.length}人)</p>`;
+                if(data.joins.length > 0) {
+                    html += `<div class="flex flex-wrap gap-1.5">${data.joins.map(n => `<span class="bg-indigo-50 text-indigo-600 text-[10px] font-bold px-2 py-1 rounded border border-indigo-200">${n}</span>`).join('')}</div>`;
+                } else { html += `<p class="text-[10px] text-slate-400">まだ参加者はいません</p>`; }
+                html += `</div>`;
+
+                html += `<div class="mt-4"><p class="text-[10px] font-bold text-orange-500 mb-2">🤔 迷い中 (${data.maybes.length}人)</p>`;
+                if(data.maybes.length > 0) {
+                    html += `<div class="flex flex-wrap gap-1.5">${data.maybes.map(n => `<span class="bg-orange-50 text-orange-600 text-[10px] font-bold px-2 py-1 rounded border border-orange-200">${n}</span>`).join('')}</div>`;
+                } else { html += `<p class="text-[10px] text-slate-400">迷い中の人はいません</p>`; }
+                html += `</div>`;
+
+                document.getElementById('event-modal-content').innerHTML = html;
+            } catch(e) {
+                document.getElementById('event-modal-content').innerHTML = '<p class="text-center text-red-400 py-4 text-xs font-bold">エラーが発生しました</p>';
+            }
+        }
+        function closeEventDetail() { document.getElementById('event-detail-modal').classList.add('hidden'); document.getElementById('event-detail-modal').classList.remove('flex'); }
+
+        // 📚 履歴をすべて見るモーダルを開く
+        function openPastEventsModal() {
+            let html = globalPastEvents.map(ev => `
+                <div onclick="closePastEventsModal(); openEventDetail('${ev.id}', '${ev.title}')" class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex flex-col cursor-pointer hover:bg-slate-50 active:scale-95 transition">
+                    <div class="text-[10px] text-emerald-600 font-bold mb-1">📅 ${ev.date}</div>
+                    <h4 class="text-sm font-bold text-slate-800">${ev.title}</h4>
+                </div>`).join('');
+            document.getElementById('past-events-list').innerHTML = html;
+            document.getElementById('past-events-modal').classList.remove('hidden');
+            document.getElementById('past-events-modal').classList.add('flex');
+        }
+        function closePastEventsModal() { document.getElementById('past-events-modal').classList.add('hidden'); document.getElementById('past-events-modal').classList.remove('flex'); }
 
         async function initMyPage() {
             try {
