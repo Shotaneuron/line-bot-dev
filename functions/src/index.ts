@@ -1089,3 +1089,98 @@ async function handleSetupWatch(replyToken: string) {
         await reply(replyToken, `❌ 監視設定エラー: ${e.message}`);
     }
 }
+
+// ───────────────────────────────────────────
+// 5. マイページ用 API: イベント情報の取得（参加予定、迷い中、履歴、おすすめ）
+// ───────────────────────────────────────────
+export const getUserEvents = functions.region("asia-northeast1").https.onRequest(async (req: any, res: any) => {
+    // セキュリティ（CORS）の設定：LIFF画面からのアクセスを許可する
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    if (req.method === 'OPTIONS') {
+        res.status(204).send('');
+        return;
+    }
+
+    const userId = req.query.userId;
+    if (!userId) { res.status(400).json({ error: "No userId provided" }); return; }
+
+    try {
+        // 1. ユーザーのNotionページとタグを取得
+        const memberSearch = await notion.databases.query({
+            database_id: MEMBER_DB_ID,
+            filter: { property: PROP_LINE_USER_ID, rich_text: { equals: userId } }
+        });
+        
+        if (memberSearch.results.length === 0) {
+            res.json({ planned: [], maybe: [], recommended: [], past: [] });
+            return;
+        }
+
+        const memberPage = memberSearch.results[0];
+        const memberId = memberPage.id;
+        const userTags = memberPage.properties[PROP_MEMBER_TAGS]?.multi_select?.map((t: any) => t.name) || [];
+        const today = new Date().toISOString().split('T')[0];
+
+        // 2. 「今日以降」の全イベントを取得
+        const futureEventsResponse = await notion.databases.query({
+            database_id: EVENT_DB_ID,
+            filter: { property: PROP_EVENT_DATE, date: { on_or_after: today } },
+            sorts: [{ property: PROP_EVENT_DATE, direction: "ascending" }]
+        });
+
+        // 3. 「過去」のイベント（自分が参加したもののみ）を直近10件取得
+        const pastEventsResponse = await notion.databases.query({
+            database_id: EVENT_DB_ID,
+            filter: {
+                and: [
+                    { property: PROP_EVENT_DATE, date: { before: today } },
+                    { property: PROP_JOIN, relation: { contains: memberId } }
+                ]
+            },
+            sorts: [{ property: PROP_EVENT_DATE, direction: "descending" }],
+            page_size: 10
+        });
+
+        // イベントデータを整形する便利関数
+        const parseEvent = (page: any) => {
+            const title = page.properties[PROP_EVENT_NAME]?.title[0]?.plain_text || "無題";
+            const date = formatDate(page.properties[PROP_EVENT_DATE]?.date?.start);
+            const tags = page.properties[PROP_EVENT_TAGS]?.multi_select?.map((t: any) => t.name) || [];
+            const cat = page.properties[PROP_EVENT_CAT]?.select?.name || "";
+            if (cat) tags.push(cat);
+            return { id: page.id, title, date, tags };
+        };
+
+        const planned: any[] = [];
+        const maybe: any[] = [];
+        const recommended: any[] = [];
+
+        // 未来のイベントを振り分ける
+        for (const page of futureEventsResponse.results) {
+            const joins = page.properties[PROP_JOIN]?.relation?.map((r: any) => r.id) || [];
+            const maybes = page.properties[PROP_MAYBE]?.relation?.map((r: any) => r.id) || [];
+            const declines = page.properties[PROP_DECLINE]?.relation?.map((r: any) => r.id) || [];
+
+            const ev = parseEvent(page);
+
+            if (joins.includes(memberId)) {
+                planned.push(ev);      // 参加予定
+            } else if (maybes.includes(memberId)) {
+                maybe.push(ev);        // 迷い中
+            } else if (!declines.includes(memberId)) {
+                // 不参加でもなく、タグが一致するなら「おすすめ」
+                const isMatch = userTags.some((tag: string) => ev.tags.includes(tag));
+                if (isMatch) recommended.push(ev);
+            }
+        }
+
+        const past = pastEventsResponse.results.map(parseEvent); // 活動履歴
+
+        res.json({ planned, maybe, recommended, past });
+
+    } catch(e: any) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    }
+});
