@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>マイページ | 北大心理ゼミ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body { font-family: 'Zen Maru Gothic', sans-serif; background: #0f172a; color: white; min-height: 100vh; padding-bottom: 5rem; }
+        .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5); }
+        .id-card { background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%); position: relative; overflow: hidden; }
+        .id-card::after { content: ''; position: absolute; top: -50%; right: -20%; width: 200px; height: 200px; background: rgba(255,255,255,0.1); border-radius: 50%; filter: blur(20px); }
+        .fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* モーダル用 */
+        #edit-modal { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(8px); }
+    </style>
+</head>
+<body class="safe-area-inset-top p-5">
+
+    <header class="id-card rounded-3xl p-6 shadow-2xl mb-6 fade-in relative">
+        <button onclick="openEditModal()" class="absolute top-4 right-4 bg-white/20 hover:bg-white/30 text-white text-[10px] font-bold px-3 py-1.5 rounded-full backdrop-blur-sm transition z-20">
+            ✏️ 編集
+        </button>
+        <div class="relative z-10 flex items-center gap-4">
+            <img id="user-icon" src="https://via.placeholder.com/150" class="w-20 h-20 rounded-full border-2 border-white shadow-md object-cover">
+            <div>
+                <p id="user-univ" class="text-[9px] font-black text-white/80 tracking-widest uppercase mb-1">北海道大学 心理ゼミ</p>
+                <h1 id="user-name" class="text-2xl font-black text-white tracking-tight drop-shadow-md">ゲスト さん</h1>
+                <p id="user-intro" class="text-xs text-indigo-100 mt-1 font-bold line-clamp-2">プロフィールを編集して自己紹介を書こう！</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="space-y-4">
+        <section class="glass-card rounded-[2rem] p-5 fade-in" style="animation-delay: 0.1s;">
+            <h2 class="text-sm font-black text-slate-300 mb-4 tracking-widest flex items-center gap-2">
+                <span>📚</span> わたしのトリセツ
+            </h2>
+            <div id="tags-container" class="flex flex-wrap gap-2">
+                <p class="text-xs text-slate-500 font-bold">まだテストを受けていません。ポータルから診断しよう！</p>
+            </div>
+        </section>
+
+        <section class="glass-card rounded-[2rem] p-5 fade-in" style="animation-delay: 0.2s;">
+            <h2 class="text-sm font-black text-slate-300 mb-4 tracking-widest flex items-center gap-2">
+                <span>👥</span> ゼミ内のつながり
+            </h2>
+            
+            <div class="bg-slate-800/50 rounded-xl p-4 mb-3 border border-slate-700">
+                <p class="text-[10px] text-emerald-400 font-bold mb-1">✨ シンクロ率 第1位</p>
+                <p class="text-xs text-slate-300 font-bold leading-relaxed">
+                    あなたと一番性格タイプが似ているゼミ生は...<br>
+                    <span id="sync-match" class="text-lg text-white font-black bg-emerald-500/20 px-2 py-0.5 rounded mt-1 inline-block">計算中... 🔄</span>
+                </p>
+            </div>
+
+            <div class="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+                <p class="text-[10px] text-pink-400 font-bold mb-1">👑 タイプのレア度</p>
+                <p id="rare-text" class="text-xs text-slate-300 font-bold leading-relaxed">計算中... 🔄</p>
+            </div>
+        </section>
+    </main>
+
+    <div id="edit-modal" class="fixed inset-0 z-50 hidden flex-col justify-end">
+        <div class="bg-slate-800 rounded-t-[2rem] p-6 shadow-2xl border-t border-slate-700 max-h-[90vh] overflow-y-auto w-full max-w-md mx-auto relative animate-[translateY_0.3s_ease-out]">
+            <button onclick="closeEditModal()" class="absolute top-5 right-5 text-slate-400 text-2xl font-bold">&times;</button>
+            <h3 class="text-lg font-black text-white mb-6">プロフィール編集</h3>
+            
+            <div class="space-y-4">
+                <div><label class="text-[10px] font-bold text-slate-400">名前（フルネーム推奨）</label><input type="text" id="edit-name" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-indigo-500"></div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div><label class="text-[10px] font-bold text-slate-400">大学</label><input type="text" id="edit-uni" value="北海道大学" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white"></div>
+                    <div><label class="text-[10px] font-bold text-slate-400">学年</label>
+                        <select id="edit-grade" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white">
+                            <option value="B1">B1 (1年)</option><option value="B2">B2 (2年)</option><option value="B3">B3 (3年)</option><option value="B4">B4 (4年)</option><option value="M1">M1 (院1)</option><option value="M2">M2 (院2)</option><option value="その他">その他</option>
+                        </select>
+                    </div>
+                </div>
+                <div><label class="text-[10px] font-bold text-slate-400">学部・学科</label><input type="text" id="edit-faculty" placeholder="例: 工学部 環境社会工学科" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white"></div>
+                <div><label class="text-[10px] font-bold text-slate-400">今のひとこと (自己紹介)</label><textarea id="edit-intro" rows="3" placeholder="最近ハマってることなど！" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white"></textarea></div>
+            </div>
+            
+            <button onclick="saveProfile()" class="w-full mt-6 bg-indigo-600 text-white font-black py-4 rounded-xl shadow-lg active:scale-95 transition">
+                保存してNotionと同期する 🚀
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let myData = null;
+
+        // フィールドを安全に取得する便利関数
+        function getSafe(field) {
+            if (!field) return "";
+            if (field.stringValue !== undefined) return field.stringValue;
+            if (field.integerValue !== undefined) return field.integerValue;
+            return "";
+        }
+
+        async function initMyPage() {
+            try {
+                // ★LIFF IDはポータルと同じもの！
+                await liff.init({ liffId: "2009176797-S5FV668D" }); 
+                if (!liff.isLoggedIn()) { liff.login(); return; }
+                
+                const profile = await liff.getProfile();
+                document.getElementById('user-icon').src = profile.pictureUrl;
+                document.getElementById('user-name').innerText = profile.displayName + " さん";
+
+                // Firestoreから自分のデータを取得
+                const url = `https://firestore.googleapis.com/v1/projects/shinrizemi-linebot/databases/default/documents/users/${profile.userId}`;
+                const res = await fetch(url);
+                
+                if (res.ok) {
+                    const json = await res.json();
+                    if (json.fields) {
+                        myData = json.fields;
+                        renderProfile(myData);
+                        renderTags(myData);
+                        
+                        // つながり計算のために全ユーザーデータを取得
+                        fetchConnections(profile.userId, myData);
+                    }
+                }
+            } catch (err) { console.error("初期化エラー:", err); }
+        }
+
+        function renderProfile(data) {
+            // Firestoreに保存されている profile を読み込んで表示
+            if (data.profile && data.profile.mapValue && data.profile.mapValue.fields) {
+                const p = data.profile.mapValue.fields;
+                const name = getSafe(p.name);
+                const uni = getSafe(p.uni);
+                const grade = getSafe(p.grade);
+                const intro = getSafe(p.intro);
+                
+                if (name) document.getElementById('user-name').innerText = name + " さん";
+                if (uni || grade) document.getElementById('user-univ').innerText = `${uni} ${grade}`;
+                if (intro) document.getElementById('user-intro').innerText = intro;
+
+                // ★編集モーダルの初期値（前回の入力内容）としてセット！
+                document.getElementById('edit-name').value = name;
+                document.getElementById('edit-uni').value = uni;
+                document.getElementById('edit-faculty').value = getSafe(p.faculty);
+                document.getElementById('edit-grade').value = grade || "B1";
+                document.getElementById('edit-intro').value = intro;
+            }
+        }
+
+        function renderTags(data) {
+            const container = document.getElementById('tags-container');
+            let html = "";
+            if (data.motivationResult) html += `<span class="bg-orange-500/20 text-orange-400 border border-orange-500/30 text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm">🔥 ${getSafe(data.motivationResult).replace('やる気：', '')}</span>`;
+            if (data.bigFiveResult) {
+                const match = getSafe(data.bigFiveResult).match(/Big Five：(.+?)が特徴的/);
+                if (match) html += `<span class="bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm">🧠 ${match[1]}派</span>`;
+            }
+            if (data.chronoResult) html += `<span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm">⏰ ${getSafe(data.chronoResult).split('（')[0]}</span>`;
+            if (data.coffeeResult) html += `<span class="bg-amber-600/20 text-amber-500 border border-amber-600/30 text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm">☕ ${getSafe(data.coffeeResult).split(' ')[0]}好き</span>`;
+            if (data.smResult) html += `<span class="bg-pink-500/20 text-pink-400 border border-pink-500/30 text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm">🌬️ ${getSafe(data.smResult).split('（')[0]}</span>`;
+
+            if (html !== "") container.innerHTML = html;
+        }
+
+        async function fetchConnections(myUserId, myD) {
+            try {
+                const res = await fetch(`https://firestore.googleapis.com/v1/projects/shinrizemi-linebot/databases/default/documents/users?pageSize=1000`);
+                const json = await res.json();
+                
+                if (!json.documents) return;
+
+                // 自分のタイプを抽出
+                const myChrono = getSafe(myD.chronoResult).split('（')[0];
+                const myBigFiveMatch = getSafe(myD.bigFiveResult).match(/Big Five：(.+?)が特徴的/);
+                const myBigFive = myBigFiveMatch ? myBigFiveMatch[1] : "";
+
+                let chronoSameCount = 0;
+                let syncRanking = [];
+
+                json.documents.forEach(doc => {
+                    // 自分自身はスキップ
+                    if (doc.name.includes(myUserId)) return;
+                    const f = doc.fields;
+                    if (!f) return;
+
+                    let otherChrono = getSafe(f.chronoResult).split('（')[0];
+                    if (myChrono && otherChrono === myChrono) chronoSameCount++;
+
+                    // シンクロ率の計算（一致したテスト結果の数）
+                    let score = 0;
+                    if (myChrono && otherChrono === myChrono) score += 20;
+                    if (myBigFive && getSafe(f.bigFiveResult).includes(myBigFive)) score += 30;
+                    if (getSafe(myD.coffeeResult) && getSafe(f.coffeeResult) && getSafe(myD.coffeeResult).split(' ')[0] === getSafe(f.coffeeResult).split(' ')[0]) score += 15;
+                    if (getSafe(myD.smResult) && getSafe(f.smResult) && getSafe(myD.smResult).split('（')[0] === getSafe(f.smResult).split('（')[0]) score += 25;
+
+                    if (score > 0) {
+                        let otherName = "匿名メンバー";
+                        if (f.profile && f.profile.mapValue && f.profile.mapValue.fields && f.profile.mapValue.fields.name) {
+                            otherName = f.profile.mapValue.fields.name.stringValue;
+                        }
+                        syncRanking.push({ name: otherName, score: score });
+                    }
+                });
+
+                // レア度の表示
+                if (myChrono) {
+                    document.getElementById('rare-text').innerHTML = `あなたと同じ「${myChrono}」のゼミ生は、<br>全体で <strong>${chronoSameCount + 1}人</strong> います！`;
+                } else {
+                    document.getElementById('rare-text').innerHTML = "テストを受けるとここにレア度が出ます！";
+                }
+
+                // シンクロ率トップの表示
+                syncRanking.sort((a,b) => b.score - a.score);
+                if (syncRanking.length > 0) {
+                    document.getElementById('sync-match').innerText = `🤝 ${syncRanking[0].name} さん（シンクロ率 ${syncRanking[0].score}%）`;
+                } else {
+                    document.getElementById('sync-match').innerText = "まだデータが足りません！";
+                }
+
+            } catch (e) { console.error(e); }
+        }
+
+        function openEditModal() { document.getElementById('edit-modal').classList.remove('hidden'); document.getElementById('edit-modal').classList.add('flex'); }
+        function closeEditModal() { document.getElementById('edit-modal').classList.add('hidden'); document.getElementById('edit-modal').classList.remove('flex'); }
+
+        // 🚀 保存ボタンを押したときの処理（ここでLINE Botに裏でメッセージを送る！）
+        function saveProfile() {
+            const name = document.getElementById('edit-name').value;
+            const uni = document.getElementById('edit-uni').value;
+            const faculty = document.getElementById('edit-faculty').value;
+            const grade = document.getElementById('edit-grade').value;
+            const intro = document.getElementById('edit-intro').value;
+
+            if(!name) { alert("名前を入力してください！"); return; }
+
+            // LIFF経由でBotに「魔法の言葉」を送信して、裏側でNotionを更新させる！
+            const text = `【プロフ更新】\n名前:${name}\n大学:${uni}\n学部:${faculty}\n学年:${grade}\n自己紹介:${intro}`;
+            
+            liff.sendMessages([{ type: "text", text: text }]).then(() => {
+                alert("プロフィールを更新しました！\n反映には少し時間がかかります。");
+                window.location.reload(); // 画面を更新して新しいデータを取得
+            }).catch((err) => {
+                alert("エラーが発生しました: " + err);
+            });
+        }
+
+        initMyPage();
+    </script>
+</body>
+</html>
