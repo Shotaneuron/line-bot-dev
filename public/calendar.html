@@ -64,9 +64,15 @@
 
     <div id="event-detail-modal" class="fixed inset-0 z-[70] hidden flex-col justify-end bg-slate-900/50 backdrop-blur-sm">
         <div class="bg-white rounded-t-[2rem] p-6 shadow-2xl border-t border-slate-200 max-h-[90vh] flex flex-col w-full max-w-md mx-auto relative animate-[translateY_0.2s_ease-out]">
-            <button onclick="closeEventDetail()" class="absolute top-5 right-5 w-8 h-8 bg-slate-100 rounded-full text-slate-500 text-lg font-bold flex items-center justify-center">&times;</button>
-            <div id="event-modal-category" class="mb-1"></div>
-            <h3 id="event-modal-title" class="text-xl font-black text-slate-800 mb-4 pr-8 leading-tight"></h3>
+            <button onclick="closeEventDetail()" class="absolute top-5 right-5 w-8 h-8 bg-slate-100 rounded-full text-slate-500 text-lg font-bold flex items-center justify-center z-10">&times;</button>
+            
+            <div class="flex justify-between items-center mb-3 pr-10">
+                <button id="btn-prev-event" onclick="navigateEvent(-1)" class="w-8 h-8 flex items-center justify-center bg-slate-50 border border-slate-200 rounded-full text-indigo-500 active:scale-95 transition disabled:opacity-30 disabled:active:scale-100">◀</button>
+                <div id="event-modal-category" class="flex-1 text-center"></div>
+                <button id="btn-next-event" onclick="navigateEvent(1)" class="w-8 h-8 flex items-center justify-center bg-slate-50 border border-slate-200 rounded-full text-indigo-500 active:scale-95 transition disabled:opacity-30 disabled:active:scale-100">▶</button>
+            </div>
+            
+            <h3 id="event-modal-title" class="text-xl font-black text-slate-800 mb-4 text-center leading-tight"></h3>
             
             <div id="event-modal-content" class="overflow-y-auto no-scrollbar pb-6 flex-1">
                 </div>
@@ -76,12 +82,14 @@
     <div id="other-profile-modal" class="fixed inset-0 z-[80] hidden flex-col justify-end bg-slate-900/50 backdrop-blur-sm">
         <div class="bg-white rounded-t-[2.5rem] p-6 shadow-2xl border-t border-slate-200 max-h-[85vh] w-full max-w-md mx-auto relative animate-[translateY_0.2s_ease-out]">
             <button onclick="closeOtherProfile()" class="absolute top-5 right-5 w-8 h-8 bg-slate-100 rounded-full text-slate-500 text-lg font-bold flex items-center justify-center">&times;</button>
+            
             <div class="flex flex-col items-center mt-2 mb-6">
                 <img id="other-icon" src="" class="w-24 h-24 rounded-full border-4 border-slate-100 mb-3 object-cover shadow-sm">
                 <div id="other-role-badges" class="flex flex-wrap justify-center gap-1 mb-2"></div>
                 <h3 id="other-name" class="text-xl font-black text-slate-800 mb-1"></h3>
                 <p id="other-univ" class="text-[10px] text-slate-500 font-bold"></p>
             </div>
+            
             <div class="bg-slate-50 rounded-xl p-4 mb-4 border border-slate-200">
                 <p class="text-[10px] text-slate-500 font-bold mb-1">💬 今のひとこと</p>
                 <p id="other-intro" class="text-sm text-slate-700 font-bold"></p>
@@ -94,11 +102,13 @@
         let allEvents = []; 
         let allUsersData = []; 
         let myUserId = "";
-        let currentEventId = ""; // 現在開いているイベントを記憶
+        
+        // ★現在のイベントを管理する変数
+        let currentEventIndex = -1;
 
         async function initCalendar() {
             try {
-                await liff.init({ liffId: "2009176797-7MWNttly" }); // ⚠️ 要書き換え
+                await liff.init({ liffId: "2009176797-qGY6VB64" }); 
                 if (liff.isLoggedIn()) { myUserId = liff.getDecodedIDToken()?.sub; }
                 fetchUsersData();
                 await fetchCalendarEvents();
@@ -120,7 +130,6 @@
                 const res = await fetch(`https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/getCalendarEvents`);
                 const data = await res.json();
                 allEvents = data.events || [];
-                renderPickupEvents();
             } catch(e) { alert("イベントの取得に失敗しました"); }
             document.getElementById('calendar-loading').style.display = 'none';
         }
@@ -150,44 +159,155 @@
             for (let i = 1; i <= lastDate; i++) {
                 const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
                 const isToday = isCurrentMonth && i === today.getDate() ? "today" : "";
-                const dayEvents = allEvents.filter(ev => ev.date === dateStr);
                 
+                // その日のイベントを描画
                 let eventsHtml = "";
-                dayEvents.forEach(ev => {
-                    const style = getCategoryStyle(ev.category);
-                    const organizerIcon = ev.organizerIds && ev.organizerIds.length > 0 ? `<span class="mr-0.5 opacity-70">👤</span>` : "";
-                    eventsHtml += `
-                        <div onclick="openEventDetail('${ev.id}', '${ev.title}', '${ev.category}')" class="event-badge ${style}">
-                            <span class="event-cat">${ev.category}</span>
-                            <span class="event-title">${organizerIcon}${ev.title}</span>
-                        </div>`;
+                allEvents.forEach((ev, index) => {
+                    if (ev.date === dateStr) {
+                        const style = getCategoryStyle(ev.category);
+                        const organizerIcon = ev.organizerIds && ev.organizerIds.length > 0 ? `<span class="mr-0.5 opacity-70">👤</span>` : "";
+                        eventsHtml += `
+                            <div onclick="openEventDetailByIndex(${index})" class="event-badge ${style}">
+                                <span class="event-cat">${ev.category}</span>
+                                <span class="event-title">${organizerIcon}${ev.title}</span>
+                            </div>`;
+                    }
                 });
+
                 html += `<div class="calendar-cell ${isToday}"><div class="text-[10px] font-black text-slate-500 pl-1 ${isToday ? 'text-indigo-600' : ''}">${i}</div><div class="flex flex-col gap-1 overflow-y-auto no-scrollbar max-h-16 pb-1">${eventsHtml}</div></div>`;
             }
             document.getElementById('calendar-body').innerHTML = html;
+            renderPickupEvents(); // カレンダー描画時にピックアップも更新
         }
 
         function renderPickupEvents() {
             const today = new Date().toISOString().split('T')[0];
-            const upcoming = allEvents.filter(ev => ev.date >= today).slice(0, 5); 
-            if (upcoming.length === 0) { document.getElementById('pickup-events').innerHTML = '<p class="text-xs text-slate-400 font-bold px-2">直近のイベントはありません</p>'; return; }
-            let html = upcoming.map(ev => {
-                const style = getCategoryStyle(ev.category);
-                return `
-                <div onclick="openEventDetail('${ev.id}', '${ev.title}', '${ev.category}')" class="flex-shrink-0 w-48 bg-white rounded-xl p-3 border border-slate-200 shadow-sm cursor-pointer hover:bg-slate-50 active:scale-95 transition flex flex-col justify-between">
-                    <div>
-                        <div class="flex justify-between items-start mb-2"><span class="text-[10px] font-bold text-slate-500">📅 ${ev.date}</span><span class="${style} text-[8px] px-2 py-0.5 rounded font-black">${ev.category}</span></div>
-                        <h4 class="text-sm font-black text-slate-800 leading-tight line-clamp-2">${ev.title}</h4>
-                    </div>
-                </div>`;
-            }).join('');
+            
+            // ピックアップ描画時も index を渡せるように処理
+            let html = "";
+            let count = 0;
+            for (let i = 0; i < allEvents.length; i++) {
+                const ev = allEvents[i];
+                if (ev.date >= today) {
+                    const style = getCategoryStyle(ev.category);
+                    html += `
+                    <div onclick="openEventDetailByIndex(${i})" class="flex-shrink-0 w-48 bg-white rounded-xl p-3 border border-slate-200 shadow-sm cursor-pointer hover:bg-slate-50 active:scale-95 transition flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-start mb-2"><span class="text-[10px] font-bold text-slate-500">📅 ${ev.date}</span><span class="${style} text-[8px] px-2 py-0.5 rounded font-black">${ev.category}</span></div>
+                            <h4 class="text-sm font-black text-slate-800 leading-tight line-clamp-2">${ev.title}</h4>
+                        </div>
+                    </div>`;
+                    count++;
+                    if (count >= 5) break;
+                }
+            }
+
+            if (count === 0) { document.getElementById('pickup-events').innerHTML = '<p class="text-xs text-slate-400 font-bold px-2">直近のイベントはありません</p>'; return; }
             document.getElementById('pickup-events').innerHTML = html;
         }
 
         // =====================================
-        // イベント詳細・出欠・プロフィール
+        // イベント詳細 ＆ 前後ナビゲーション
         // =====================================
-        
+
+        // ★ 新機能：インデックス番号からイベントを開く（爆速UI）
+        function openEventDetailByIndex(index) {
+            currentEventIndex = index;
+            const ev = allEvents[index];
+
+            // ボタンの有効/無効を切り替え
+            document.getElementById('btn-prev-event').disabled = currentEventIndex <= 0;
+            document.getElementById('btn-next-event').disabled = currentEventIndex >= allEvents.length - 1;
+
+            // 瞬間的にタイトルとカテゴリだけ表示してモーダルを開く（爆速！）
+            document.getElementById('event-modal-title').innerText = ev.title;
+            document.getElementById('event-modal-category').innerHTML = `<span class="${getCategoryStyle(ev.category)} px-3 py-1 rounded-full font-black text-[10px] shadow-sm">${ev.category}</span>`;
+            document.getElementById('event-modal-content').innerHTML = `
+                <div class="flex flex-col items-center justify-center py-10">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mb-3"></div><p class="text-xs text-slate-400 font-bold">詳細を読み込み中...</p>
+                </div>`;
+            
+            document.getElementById('event-detail-modal').classList.remove('hidden'); 
+            document.getElementById('event-detail-modal').classList.add('flex');
+
+            // 裏で詳細を取りに行く
+            fetchEventDetailsData(ev.id);
+        }
+
+        // 前後のイベントへ移動する関数
+        function navigateEvent(direction) {
+            const newIndex = currentEventIndex + direction;
+            if (newIndex >= 0 && newIndex < allEvents.length) {
+                openEventDetailByIndex(newIndex);
+            }
+        }
+
+        async function fetchEventDetailsData(eventId) {
+            try {
+                const res = await fetch(`https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/getEventDetails?eventId=${eventId}`);
+                const data = await res.json();
+
+                const isJoin = data.joins.some(u => u.lineId === myUserId);
+                const isMaybe = data.maybes.some(u => u.lineId === myUserId);
+                const isDecline = data.declines.some(u => u.lineId === myUserId);
+
+                let html = `<div class="bg-slate-50 p-4 rounded-xl border border-slate-200 whitespace-pre-wrap text-xs text-slate-700 leading-relaxed font-medium mb-4">${data.details}</div>`;
+
+                // 🌟 プロフィールリンク強化版：LINE IDが無い場合は名前で検索をかけるように変更！
+                const createUserChip = (u, colorClass, borderClass, textClass) => `
+                    <div onclick="openProfileByLineId('${u.lineId}', '${u.name}')" class="flex items-center gap-1.5 ${colorClass} px-2 py-1 rounded-full border ${borderClass} cursor-pointer active:scale-95 shadow-sm transition">
+                        <img src="${u.icon}" class="w-5 h-5 rounded-full object-cover">
+                        <span class="text-[10px] font-bold ${textClass}">${u.name}</span>
+                    </div>`;
+
+                html += `<div><p class="text-[10px] font-bold text-indigo-500 mb-2">🙋 参加予定 (${data.joins.length}人)</p>`;
+                if(data.joins.length > 0) html += `<div class="flex flex-wrap gap-1.5">${data.joins.map(u => createUserChip(u, "bg-indigo-50", "border-indigo-200", "text-indigo-700")).join('')}</div>`; 
+                else html += `<p class="text-[10px] text-slate-400">まだ参加者はいません</p>`; 
+                html += `</div>`;
+
+                html += `<div class="mt-4"><p class="text-[10px] font-bold text-orange-500 mb-2">🤔 迷い中 (${data.maybes.length}人)</p>`;
+                if(data.maybes.length > 0) html += `<div class="flex flex-wrap gap-1.5">${data.maybes.map(u => createUserChip(u, "bg-orange-50", "border-orange-200", "text-orange-700")).join('')}</div>`; 
+                else html += `<p class="text-[10px] text-slate-400">迷い中の人はいません</p>`; 
+                html += `</div>`;
+
+                if(data.declines && data.declines.length > 0) {
+                    html += `<div class="mt-4"><p class="text-[9px] font-bold text-slate-400 mb-1">🙅 不参加 (${data.declines.length}人)</p>`;
+                    html += `<div class="flex flex-wrap gap-1">${data.declines.map(u => `<span class="text-[9px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-full">${u.name}</span>`).join('')}</div></div>`;
+                }
+
+                html += `
+                    <div class="flex gap-2 mt-6 pt-4 border-t border-slate-100">
+                        <button onclick="submitEventStatus('${eventId}', 'join')" class="flex-1 font-bold py-3 rounded-xl text-xs transition border shadow-sm ${isJoin ? 'bg-indigo-500 text-white border-indigo-600' : 'bg-white text-slate-500 border-slate-200'}">🙋 参加</button>
+                        <button onclick="submitEventStatus('${eventId}', 'maybe')" class="flex-1 font-bold py-3 rounded-xl text-xs transition border shadow-sm ${isMaybe ? 'bg-orange-500 text-white border-orange-600' : 'bg-white text-slate-500 border-slate-200'}">🤔 迷い中</button>
+                        <button onclick="submitEventStatus('${eventId}', 'decline')" class="flex-1 font-bold py-3 rounded-xl text-xs transition border shadow-sm ${isDecline ? 'bg-slate-500 text-white border-slate-600' : 'bg-white text-slate-500 border-slate-200'}">🙅 不参加</button>
+                    </div>
+                `;
+
+                document.getElementById('event-modal-content').innerHTML = html;
+            } catch(e) { document.getElementById('event-modal-content').innerHTML = '<p class="text-center text-red-400 py-4 text-xs font-bold">エラーが発生しました</p>'; }
+        }
+
+        function closeEventDetail() { document.getElementById('event-detail-modal').classList.add('hidden'); document.getElementById('event-detail-modal').classList.remove('flex'); }
+
+        async function submitEventStatus(eventId, status) {
+            if (!myUserId) { alert("ログイン情報が取得できません"); return; }
+            document.getElementById('event-modal-content').innerHTML = `
+                <div class="flex flex-col items-center justify-center py-10">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mb-3"></div><p class="text-xs text-slate-400 font-bold">登録中...</p>
+                </div>`;
+            try {
+                const res = await fetch(`https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/updateEventStatus`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: myUserId, eventId: eventId, status: status })
+                });
+                if (!res.ok) throw new Error("登録エラー");
+                fetchEventDetailsData(eventId); // 再読み込み
+            } catch(e) { alert("登録に失敗しました"); closeEventDetail(); }
+        }
+
+        // =====================================
+        // プロフィール表示ロジック（強化版）
+        // =====================================
         function getSafe(f) { if (!f) return ""; if (f.stringValue !== undefined) return f.stringValue; return ""; }
         function getRoleBadgeHtml(role) {
             let badgeClass = "", badgeIcon = "";
@@ -198,14 +318,25 @@
             return `<span class="inline-block ${badgeClass} text-[10px] font-black tracking-widest px-2 py-0.5 rounded shadow-sm">${badgeIcon} ${role}</span>`;
         }
 
-        function openProfileByLineId(lineId) {
-            if (!lineId) { alert("プロフィールが紐づいていません"); return; }
-            if (lineId === myUserId) { alert("これはあなた自身です！マイページから確認してください。"); return; }
+        // ★ LINE IDだけでなく「名前」でも検索をかけるように強化！
+        function openProfileByLineId(lineId, name) {
+            let index = -1;
+            if (lineId) index = allUsersData.findIndex(doc => doc.name.includes(lineId));
             
-            const index = allUsersData.findIndex(doc => doc.name.includes(lineId));
+            // LINE IDで見つからなかった場合、名前で強引に検索！
+            if (index === -1 && name) {
+                index = allUsersData.findIndex(doc => {
+                    const p = doc.fields?.profile?.mapValue?.fields;
+                    return p && getSafe(p.name) === name;
+                });
+            }
+
             if (index !== -1) {
+                const doc = allUsersData[index];
+                if (doc.name.includes(myUserId)) { alert("これはあなた自身です！マイページから確認してください。"); return; }
+                
                 closeEventDetail();
-                const doc = allUsersData[index]; const p = doc.fields.profile.mapValue.fields;
+                const p = doc.fields.profile.mapValue.fields;
                 document.getElementById('other-name').innerText = getSafe(p.name) + " さん";
                 document.getElementById('other-icon').src = getSafe(p.iconUrl) || "https://via.placeholder.com/150";
                 
@@ -221,100 +352,8 @@
                 document.getElementById('other-profile-modal').classList.remove('hidden'); document.getElementById('other-profile-modal').classList.add('flex');
             } else { alert("このメンバーはまだマイページを作成していません。"); }
         }
+
         function closeOtherProfile() { document.getElementById('other-profile-modal').classList.add('hidden'); document.getElementById('other-profile-modal').classList.remove('flex'); }
-
-        async function openEventDetail(eventId, title, category) {
-            currentEventId = eventId;
-            document.getElementById('event-modal-title').innerText = title;
-            document.getElementById('event-modal-category').innerHTML = `<span class="${getCategoryStyle(category)} px-2 py-0.5 rounded font-black text-[10px]">${category}</span>`;
-            document.getElementById('event-modal-content').innerHTML = `
-                <div class="flex flex-col items-center justify-center py-10">
-                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mb-3"></div><p class="text-xs text-slate-400 font-bold">詳細を読み込み中...</p>
-                </div>`;
-            document.getElementById('event-detail-modal').classList.remove('hidden'); document.getElementById('event-detail-modal').classList.add('flex');
-
-            try {
-                const res = await fetch(`https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/getEventDetails?eventId=${eventId}`);
-                const data = await res.json();
-
-                // 自分の参加状態を判定
-                const isJoin = data.joins.some(u => u.lineId === myUserId);
-                const isMaybe = data.maybes.some(u => u.lineId === myUserId);
-                const isDecline = data.declines.some(u => u.lineId === myUserId);
-
-                // 本文
-                let html = `<div class="bg-slate-50 p-4 rounded-xl border border-slate-200 whitespace-pre-wrap text-xs text-slate-700 leading-relaxed font-medium mb-4">${data.details}</div>`;
-
-                // 🌟 アイコン付きのユーザーチップを生成する関数
-                const createUserChip = (u, colorClass, borderClass, textClass) => `
-                    <div onclick="openProfileByLineId('${u.lineId}')" class="flex items-center gap-1.5 ${colorClass} px-2 py-1 rounded-full border ${borderClass} cursor-pointer active:scale-95 shadow-sm transition">
-                        <img src="${u.icon}" class="w-5 h-5 rounded-full object-cover">
-                        <span class="text-[10px] font-bold ${textClass}">${u.name}</span>
-                    </div>`;
-
-                html += `<div><p class="text-[10px] font-bold text-indigo-500 mb-2">🙋 参加予定 (${data.joins.length}人)</p>`;
-                if(data.joins.length > 0) { html += `<div class="flex flex-wrap gap-1.5">${data.joins.map(u => createUserChip(u, "bg-indigo-50", "border-indigo-200", "text-indigo-700")).join('')}</div>`; } 
-                else { html += `<p class="text-[10px] text-slate-400">まだ参加者はいません</p>`; }
-                html += `</div>`;
-
-                html += `<div class="mt-4"><p class="text-[10px] font-bold text-orange-500 mb-2">🤔 迷い中 (${data.maybes.length}人)</p>`;
-                if(data.maybes.length > 0) { html += `<div class="flex flex-wrap gap-1.5">${data.maybes.map(u => createUserChip(u, "bg-orange-50", "border-orange-200", "text-orange-700")).join('')}</div>`; } 
-                else { html += `<p class="text-[10px] text-slate-400">迷い中の人はいません</p>`; }
-                html += `</div>`;
-
-                // 🙅 不参加（小さく表示）
-                if(data.declines && data.declines.length > 0) {
-                    html += `<div class="mt-4"><p class="text-[9px] font-bold text-slate-400 mb-1">🙅 不参加 (${data.declines.length}人)</p>`;
-                    html += `<div class="flex flex-wrap gap-1">${data.declines.map(u => `<span class="text-[9px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-full">${u.name}</span>`).join('')}</div></div>`;
-                }
-
-                // 🌟 出欠登録ボタン（現在のステータスに合わせて色が変わる！）
-                html += `
-                    <div class="flex gap-2 mt-6 pt-4 border-t border-slate-100">
-                        <button onclick="submitEventStatus('${eventId}', 'join')" class="flex-1 font-bold py-3 rounded-xl text-xs transition border shadow-sm ${isJoin ? 'bg-indigo-500 text-white border-indigo-600' : 'bg-white text-slate-500 border-slate-200'}">🙋 参加</button>
-                        <button onclick="updateEventStatus('${eventId}', 'maybe')" class="flex-1 font-bold py-3 rounded-xl text-xs transition border shadow-sm ${isMaybe ? 'bg-orange-500 text-white border-orange-600' : 'bg-white text-slate-500 border-slate-200'}">🤔 迷い中</button>
-                        <button onclick="updateEventStatus('${eventId}', 'decline')" class="flex-1 font-bold py-3 rounded-xl text-xs transition border shadow-sm ${isDecline ? 'bg-slate-500 text-white border-slate-600' : 'bg-white text-slate-500 border-slate-200'}">🙅 不参加</button>
-                    </div>
-                `;
-
-                document.getElementById('event-modal-content').innerHTML = html;
-            } catch(e) { document.getElementById('event-modal-content').innerHTML = '<p class="text-center text-red-400 py-4 text-xs font-bold">エラーが発生しました</p>'; }
-        }
-        function closeEventDetail() { document.getElementById('event-detail-modal').classList.add('hidden'); document.getElementById('event-detail-modal').classList.remove('flex'); }
-
-        // 🚀 出欠ステータスを更新して、画面を再描画する関数
-        async function updateEventStatus(eventId, status) {
-            if (!myUserId) { alert("ログイン情報が取得できません"); return; }
-            
-            // スピナー表示
-            document.getElementById('event-modal-content').innerHTML = `
-                <div class="flex flex-col items-center justify-center py-10">
-                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mb-3"></div><p class="text-xs text-slate-400 font-bold">登録中...</p>
-                </div>`;
-            
-            try {
-                // APIを叩いてNotionを更新！
-                const res = await fetch(`https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/updateEventStatus`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: myUserId, eventId: eventId, status: status })
-                });
-                
-                if (!res.ok) throw new Error("登録エラー");
-                
-                // タイトルとカテゴリのテキストを取得して、モーダルを再描画！
-                const title = document.getElementById('event-modal-title').innerText;
-                const catText = document.getElementById('event-modal-category').innerText; 
-                openEventDetail(eventId, title, catText);
-                
-            } catch(e) { 
-                alert("登録に失敗しました"); 
-                closeEventDetail();
-            }
-        }
-        
-        // typo対応
-        function submitEventStatus(eventId, status) { updateEventStatus(eventId, status); }
 
         initCalendar();
     </script>

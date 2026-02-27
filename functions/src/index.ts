@@ -1187,8 +1187,7 @@ export const getUserEvents = functions.region("asia-northeast1").https.onRequest
 // 6. カレンダー＆詳細用 API（アップデート版！）
 // ───────────────────────────────────────────
 
-// 📅 カレンダー用：全体公開イベントの取得（爆速軽量版）
-// 📅 カレンダー用：全体公開イベントの取得（爆速軽量版）
+// 📅 カレンダー用：全体公開イベントの取得（最強取得版！）
 export const getCalendarEvents = functions.region("asia-northeast1").https.onRequest(async (req: any, res: any) => {
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -1207,16 +1206,26 @@ export const getCalendarEvents = functions.region("asia-northeast1").https.onReq
 
         const events = [];
         for (const page of response.results) {
-            // ★ カテゴリを取得
-            const cat = page.properties[PROP_EVENT_CAT]?.select?.name;
             
-            // 🚨 強力なフィルター！
-            // 「カテゴリが設定されていない（個人の予定）」「未分類」「運営部」「企画部」をすべて除外！
-            if (!cat || cat === "未分類" || cat.includes("運営部") || cat.includes("企画部")) continue;
+            // 🌟 修正：どんなプロパティの種類でも確実にカテゴリ名を読み取る魔法！
+            let cat = "未分類";
+            const catProp = page.properties[PROP_EVENT_CAT];
+            if (catProp) {
+                if (catProp.type === "select") cat = catProp.select?.name || "未分類";
+                else if (catProp.type === "multi_select") {
+                    const tags = catProp.multi_select?.map((t:any) => t.name) || [];
+                    cat = tags.length > 0 ? tags.join(", ") : "未分類";
+                }
+                else if (catProp.type === "rich_text") {
+                    const text = catProp.rich_text?.map((t:any) => t.plain_text).join("");
+                    cat = text ? text : "未分類";
+                }
+            }
+            
+            // 🚨 強力フィルター：「運営部」か「企画部」が含まれていたら絶対に弾く！
+            if (cat.includes("運営部") || cat.includes("企画部")) continue;
 
             const title = page.properties[PROP_EVENT_NAME]?.title[0]?.plain_text || "無題";
-            
-            // ★ 日付を綺麗に整形（T以降の時間を切り落とす）
             const rawDate = page.properties[PROP_EVENT_DATE]?.date?.start;
             const dateStr = rawDate ? rawDate.split('T')[0] : ""; 
 
@@ -1233,7 +1242,7 @@ export const getCalendarEvents = functions.region("asia-northeast1").https.onReq
     }
 });
 
-// 📄 イベント詳細取得（不参加メンバー ＆ アイコンURL追加版）
+// 📄 イベント詳細取得（運営用エリア非表示 ＆ アイコンURL追加版）
 export const getEventDetails = functions.region("asia-northeast1").https.onRequest(async (req: any, res: any) => {
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -1254,7 +1263,6 @@ export const getEventDetails = functions.region("asia-northeast1").https.onReque
             for(const id of ids) {
                 try {
                     const p: any = await notion.pages.retrieve({ page_id: id });
-                    // ★ アイコンのURLを取得する！
                     let iconUrl = "https://via.placeholder.com/150";
                     if (p.icon && p.icon.type === "external") iconUrl = p.icon.external.url;
                     else if (p.icon && p.icon.type === "file") iconUrl = p.icon.file.url;
@@ -1275,11 +1283,23 @@ export const getEventDetails = functions.region("asia-northeast1").https.onReque
 
         const blocks = await notion.blocks.children.list({ block_id: eventId });
         let textContent = "";
-        blocks.results.forEach((block: any) => {
-            if(block.type === 'paragraph' && block.paragraph.rich_text.length > 0) textContent += block.paragraph.rich_text.map((t:any)=>t.plain_text).join("") + "\n";
-            else if (block.type === 'heading_2' || block.type === 'heading_3') textContent += "\n■ " + block[block.type].rich_text.map((t:any)=>t.plain_text).join("") + "\n";
-            else if (block.type === 'bulleted_list_item') textContent += "・ " + block.bulleted_list_item.rich_text.map((t:any)=>t.plain_text).join("") + "\n";
-        });
+        
+        for (const block of blocks.results) {
+            let blockText = "";
+            if (block.type === 'paragraph' && block.paragraph.rich_text.length > 0) blockText = block.paragraph.rich_text.map((t:any)=>t.plain_text).join("");
+            else if (block.type === 'heading_2' || block.type === 'heading_3') blockText = block[block.type].rich_text.map((t:any)=>t.plain_text).join("");
+            else if (block.type === 'bulleted_list_item') blockText = block.bulleted_list_item.rich_text.map((t:any)=>t.plain_text).join("");
+
+            // 🚨 運営用エリアを見つけたら、ここで読み込みを完全にストップ！！
+            if (blockText.includes("運営用") || blockText.includes("以下は運営用")) {
+                break;
+            }
+
+            if (block.type === 'paragraph' && blockText) textContent += blockText + "\n";
+            else if (block.type === 'heading_2' || block.type === 'heading_3') textContent += "\n■ " + blockText + "\n";
+            else if (block.type === 'bulleted_list_item') textContent += "・ " + blockText + "\n";
+        }
+
         if(!textContent.trim()) textContent = eventPage.properties[PROP_DETAIL_TEXT]?.rich_text?.map((t:any)=>t.plain_text).join("") || "詳細情報（本文）はまだ書かれていません。";
 
         res.json({ details: textContent.trim(), joins: joinsUsers, maybes: maybesUsers, declines: declinesUsers });
@@ -1339,8 +1359,9 @@ export const updateEventStatus = functions.region("asia-northeast1").https.onReq
     }
 });
 
+
 // ───────────────────────────────────────────
-// 8. LINE用：「直近のイベント」カルーセル送信
+// 8. LINE用：「直近のイベント」カルーセル送信（最強取得版！）
 // ───────────────────────────────────────────
 export async function handleRecentEvents(replyToken: string) {
     try {
@@ -1361,9 +1382,24 @@ export async function handleRecentEvents(replyToken: string) {
 
         const bubbles: any[] = [];
         for (const page of response.results) {
-            const cat = page.properties[PROP_EVENT_CAT]?.select?.name;
-            // カレンダー同様、運営部・企画部・未分類は除外
-            if (!cat || cat === "未分類" || cat.includes("運営部") || cat.includes("企画部")) continue;
+            
+            // 🌟 ここもカレンダーと同じ魔法を使う！
+            let cat = "未分類";
+            const catProp = page.properties[PROP_EVENT_CAT];
+            if (catProp) {
+                if (catProp.type === "select") cat = catProp.select?.name || "未分類";
+                else if (catProp.type === "multi_select") {
+                    const tags = catProp.multi_select?.map((t:any) => t.name) || [];
+                    cat = tags.length > 0 ? tags.join(", ") : "未分類";
+                }
+                else if (catProp.type === "rich_text") {
+                    const text = catProp.rich_text?.map((t:any) => t.plain_text).join("");
+                    cat = text ? text : "未分類";
+                }
+            }
+
+            // 🚨 もちろんLINEカルーセルでも弾く
+            if (cat.includes("運営部") || cat.includes("企画部")) continue;
 
             const title = page.properties[PROP_EVENT_NAME]?.title[0]?.plain_text || "無題";
             const dateStr = page.properties[PROP_EVENT_DATE]?.date?.start?.split('T')[0] || "";
@@ -1387,11 +1423,11 @@ export async function handleRecentEvents(replyToken: string) {
                     ]
                 }
             });
-            if (bubbles.length >= 12) break; // カルーセル上限
+            if (bubbles.length >= 12) break; 
         }
 
         if (bubbles.length === 0) {
-            await reply(replyToken, "直近2週間のイベントは現在ありません！"); return;
+            await reply(replyToken, "直近2週間の全体向けイベントは現在ありません！"); return;
         }
 
         await lineClient.replyMessage(replyToken, {
