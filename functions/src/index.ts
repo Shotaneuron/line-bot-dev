@@ -1089,22 +1089,18 @@ async function handleSetupWatch(replyToken: string) {
 }
 
 // ───────────────────────────────────────────
-// 5. マイページ用 API: イベント情報の取得（参加予定、迷い中、履歴、おすすめ）
+// 5. マイページ用 API: イベント情報の取得（🔥Firestore爆速版！）
 // ───────────────────────────────────────────
 export const getUserEvents = functions.region("asia-northeast1").https.onRequest(async (req: any, res: any) => {
-    // セキュリティ（CORS）の設定：LIFF画面からのアクセスを許可する
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
-    if (req.method === 'OPTIONS') {
-        res.status(204).send('');
-        return;
-    }
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
 
     const userId = req.query.userId;
     if (!userId) { res.status(400).json({ error: "No userId provided" }); return; }
 
     try {
-        // 1. ユーザーのNotionページとタグを取得
+        // ユーザー自身のIDだけはNotionから取得
         const memberSearch = await notion.databases.query({
             database_id: MEMBER_DB_ID,
             filter: { property: PROP_LINE_USER_ID, rich_text: { equals: userId } }
@@ -1115,68 +1111,46 @@ export const getUserEvents = functions.region("asia-northeast1").https.onRequest
             return;
         }
 
-        const memberPage = memberSearch.results[0];
-        const memberId = memberPage.id;
-        const userTags = memberPage.properties[PROP_MEMBER_TAGS]?.multi_select?.map((t: any) => t.name) || [];
+        const memberId = memberSearch.results[0].id;
+        const userTags = memberSearch.results[0].properties[PROP_MEMBER_TAGS]?.multi_select?.map((t: any) => t.name) || [];
         const today = new Date().toISOString().split('T')[0];
 
-        // 2. 「今日以降」の全イベントを取得
-        const futureEventsResponse = await notion.databases.query({
-            database_id: EVENT_DB_ID,
-            filter: { property: PROP_EVENT_DATE, date: { on_or_after: today } },
-            sorts: [{ property: PROP_EVENT_DATE, direction: "ascending" }]
-        });
-
-        // 3. 「過去」のイベント（自分が参加したもののみ）を直近10件取得
-        const pastEventsResponse = await notion.databases.query({
-            database_id: EVENT_DB_ID,
-            filter: {
-                and: [
-                    { property: PROP_EVENT_DATE, date: { before: today } },
-                    { property: PROP_JOIN, relation: { contains: memberId } }
-                ]
-            },
-            sorts: [{ property: PROP_EVENT_DATE, direction: "descending" }],
-            page_size: 10
-        });
-
-        // イベントデータを整形する便利関数
-        const parseEvent = (page: any) => {
-            const title = page.properties[PROP_EVENT_NAME]?.title[0]?.plain_text || "無題";
-            const date = formatDate(page.properties[PROP_EVENT_DATE]?.date?.start);
-            const tags = page.properties[PROP_EVENT_TAGS]?.multi_select?.map((t: any) => t.name) || [];
-            const cat = page.properties[PROP_EVENT_CAT]?.select?.name || "";
-            if (cat) tags.push(cat);
-            return { id: page.id, title, date, tags };
-        };
+        // 🚀 イベント一覧はFirestore（超高速DB）から一瞬で全件取得！
+        const snapshot = await db.collection("events").orderBy("date", "asc").get();
 
         const planned: any[] = [];
         const maybe: any[] = [];
         const recommended: any[] = [];
+        let past: any[] = [];
 
-        // 未来のイベントを振り分ける
-        for (const page of futureEventsResponse.results) {
-            const joins = page.properties[PROP_JOIN]?.relation?.map((r: any) => r.id) || [];
-            const maybes = page.properties[PROP_MAYBE]?.relation?.map((r: any) => r.id) || [];
-            const declines = page.properties[PROP_DECLINE]?.relation?.map((r: any) => r.id) || [];
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const ev = { id: doc.id, title: data.title, date: data.date, tags: data.tags || [], category: data.category || "" };
+            
+            const joins = data.joins || [];
+            const maybes = data.maybes || [];
+            const declines = data.declines || [];
 
-            const ev = parseEvent(page);
-
-            if (joins.includes(memberId)) {
-                planned.push(ev);      // 参加予定
-            } else if (maybes.includes(memberId)) {
-                maybe.push(ev);        // 迷い中
-            } else if (!declines.includes(memberId)) {
-                // 不参加でもなく、タグが一致するなら「おすすめ」
-                const isMatch = userTags.some((tag: string) => ev.tags.includes(tag));
-                if (isMatch) recommended.push(ev);
+            if (data.date >= today) {
+                // 未来のイベント
+                if (joins.includes(memberId)) planned.push(ev);
+                else if (maybes.includes(memberId)) maybe.push(ev);
+                else if (!declines.includes(memberId)) {
+                    // おすすめ判定
+                    if (userTags.some((tag: string) => ev.tags.includes(tag) || ev.category === tag)) {
+                        recommended.push(ev);
+                    }
+                }
+            } else {
+                // 過去のイベント
+                if (joins.includes(memberId)) past.push(ev);
             }
-        }
+        });
 
-        const past = pastEventsResponse.results.map(parseEvent); // 活動履歴
+        // 過去のイベントを新しい順に並び替えて直近10件にする
+        past = past.sort((a, b) => (b.date > a.date ? 1 : -1)).slice(0, 10);
 
         res.json({ planned, maybe, recommended, past });
-
     } catch(e: any) {
         console.error(e);
         res.status(500).json({ error: e.message });
@@ -1184,56 +1158,37 @@ export const getUserEvents = functions.region("asia-northeast1").https.onRequest
 });
 
 // ───────────────────────────────────────────
-// 6. カレンダー＆詳細用 API（アップデート版！）
+// 6. カレンダー＆詳細用 API（🔥Firestore爆速版！）
 // ───────────────────────────────────────────
-
-// 📅 カレンダー用：全体公開イベントの取得（最強取得版！）
 export const getCalendarEvents = functions.region("asia-northeast1").https.onRequest(async (req: any, res: any) => {
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
     if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
 
     try {
-        const date = new Date();
-        date.setDate(1); 
-        const startOfMonth = date.toISOString().split('T')[0];
+        const today = new Date();
+        today.setDate(1); 
+        const startOfMonth = today.toISOString().split('T')[0];
 
-        const response = await notion.databases.query({
-            database_id: EVENT_DB_ID,
-            filter: { property: PROP_EVENT_DATE, date: { on_or_after: startOfMonth } },
-            sorts: [{ property: PROP_EVENT_DATE, direction: "ascending" }]
+        // 🚀 カレンダーデータもFirestore（超高速DB）から取得！
+        const snapshot = await db.collection("events").where("date", ">=", startOfMonth).orderBy("date", "asc").get();
+
+        const events: any[] = [];
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            
+            // 🚨 強力なフィルター
+            if (!data.category || data.category === "未分類" || data.category.includes("運営部") || data.category.includes("企画部")) return;
+
+            events.push({
+                id: doc.id,
+                title: data.title || "無題",
+                date: data.date,
+                category: data.category,
+                tags: data.tags || [],
+                organizerIds: data.organizerIds || []
+            });
         });
-
-        const events = [];
-        for (const page of response.results) {
-            
-            // 🌟 修正：どんなプロパティの種類でも確実にカテゴリ名を読み取る魔法！
-            let cat = "未分類";
-            const catProp = page.properties[PROP_EVENT_CAT];
-            if (catProp) {
-                if (catProp.type === "select") cat = catProp.select?.name || "未分類";
-                else if (catProp.type === "multi_select") {
-                    const tags = catProp.multi_select?.map((t:any) => t.name) || [];
-                    cat = tags.length > 0 ? tags.join(", ") : "未分類";
-                }
-                else if (catProp.type === "rich_text") {
-                    const text = catProp.rich_text?.map((t:any) => t.plain_text).join("");
-                    cat = text ? text : "未分類";
-                }
-            }
-            
-            // 🚨 強力フィルター：「運営部」か「企画部」が含まれていたら絶対に弾く！
-            if (cat.includes("運営部") || cat.includes("企画部")) continue;
-
-            const title = page.properties[PROP_EVENT_NAME]?.title[0]?.plain_text || "無題";
-            const rawDate = page.properties[PROP_EVENT_DATE]?.date?.start;
-            const dateStr = rawDate ? rawDate.split('T')[0] : ""; 
-
-            const tags = page.properties[PROP_EVENT_TAGS]?.multi_select?.map((t:any)=>t.name) || [];
-            const organizerIds = page.properties["主催者"]?.relation?.map((r:any) => r.id) || [];
-
-            events.push({ id: page.id, title, date: dateStr, category: cat, tags, organizerIds });
-        }
 
         res.json({ events });
     } catch(e: any) {
@@ -1307,58 +1262,6 @@ export const getEventDetails = functions.region("asia-northeast1").https.onReque
         res.status(500).json({ error: e.message });
     }
 });
-
-// ───────────────────────────────────────────
-// 7. 出欠ステータスの更新 API（カレンダー等から）
-// ───────────────────────────────────────────
-export const updateEventStatus = functions.region("asia-northeast1").https.onRequest(async (req: any, res: any) => {
-    res.set('Access-Control-Allow-Origin', '*');
-    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.set('Access-Control-Allow-Headers', 'Content-Type');
-    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
-
-    try {
-        const { userId, eventId, status } = req.body;
-        if (!userId || !eventId || !status) { res.status(400).json({ error: "Missing parameters" }); return; }
-
-        const memberSearch = await notion.databases.query({
-            database_id: MEMBER_DB_ID,
-            filter: { property: PROP_LINE_USER_ID, rich_text: { equals: userId } }
-        });
-        if (memberSearch.results.length === 0) { res.status(404).json({ error: "User not found" }); return; }
-        const memberId = memberSearch.results[0].id;
-
-        const eventPage: any = await notion.pages.retrieve({ page_id: eventId });
-        let joins = eventPage.properties[PROP_JOIN]?.relation?.map((r:any) => r.id) || [];
-        let maybes = eventPage.properties[PROP_MAYBE]?.relation?.map((r:any) => r.id) || [];
-        let declines = eventPage.properties[PROP_DECLINE]?.relation?.map((r:any) => r.id) || [];
-
-        // 一旦すべてのリストから自分を消す
-        joins = joins.filter((id: string) => id !== memberId);
-        maybes = maybes.filter((id: string) => id !== memberId);
-        declines = declines.filter((id: string) => id !== memberId);
-
-        // 新しいステータスに追加する
-        if (status === "join") joins.push(memberId);
-        else if (status === "maybe") maybes.push(memberId);
-        else if (status === "decline") declines.push(memberId);
-
-        await notion.pages.update({
-            page_id: eventId,
-            properties: {
-                [PROP_JOIN]: { relation: joins.map((id: string) => ({ id })) },
-                [PROP_MAYBE]: { relation: maybes.map((id: string) => ({ id })) },
-                [PROP_DECLINE]: { relation: declines.map((id: string) => ({ id })) }
-            }
-        });
-
-        res.json({ success: true });
-    } catch(e: any) {
-        console.error(e);
-        res.status(500).json({ error: e.message });
-    }
-});
-
 
 // ───────────────────────────────────────────
 // 8. LINE用：「直近のイベント」カルーセル送信（最強取得版！）
@@ -1439,3 +1342,143 @@ export async function handleRecentEvents(replyToken: string) {
         await reply(replyToken, "イベントの取得に失敗しました。");
     }
 }
+
+// ───────────────────────────────────────────
+// 🚀 爆速化ステップ1：NotionからFirestoreへイベントを自動同期
+// （※1時間に1回、自動でNotionの最新状態をFirestoreにコピーします）
+// ───────────────────────────────────────────
+export const syncEventsToFirestore = functions.region("asia-northeast1").pubsub.schedule('every 1 hours').onRun(async (context) => {
+    try {
+        const today = new Date();
+        today.setDate(1); 
+        const startOfMonth = today.toISOString().split('T')[0];
+
+        const response = await notion.databases.query({
+            database_id: EVENT_DB_ID,
+            filter: { property: PROP_EVENT_DATE, date: { on_or_after: startOfMonth } },
+            sorts: [{ property: PROP_EVENT_DATE, direction: "ascending" }]
+        });
+
+        const batch = db.batch();
+
+        for (const page of response.results) {
+            let cat = "未分類";
+            const catProp = page.properties[PROP_EVENT_CAT];
+            if (catProp) {
+                if (catProp.type === "select") cat = catProp.select?.name || "未分類";
+                else if (catProp.type === "multi_select") {
+                    const tags = catProp.multi_select?.map((t:any) => t.name) || [];
+                    cat = tags.length > 0 ? tags.join(", ") : "未分類";
+                }
+                else if (catProp.type === "rich_text") {
+                    const text = catProp.rich_text?.map((t:any) => t.plain_text).join("");
+                    cat = text ? text : "未分類";
+                }
+            }
+
+            const title = page.properties[PROP_EVENT_NAME]?.title[0]?.plain_text || "無題";
+            const rawDate = page.properties[PROP_EVENT_DATE]?.date?.start;
+            const dateStr = rawDate ? rawDate.split('T')[0] : ""; 
+            const tags = page.properties[PROP_EVENT_TAGS]?.multi_select?.map((t:any)=>t.name) || [];
+            const organizerIds = page.properties["主催者"]?.relation?.map((r:any) => r.id) || [];
+
+            // 出欠リストも取得
+            const joins = page.properties[PROP_JOIN]?.relation?.map((r:any) => r.id) || [];
+            const maybes = page.properties[PROP_MAYBE]?.relation?.map((r:any) => r.id) || [];
+            const declines = page.properties[PROP_DECLINE]?.relation?.map((r:any) => r.id) || [];
+
+            // Firestoreに保存するデータ
+            const eventRef = db.collection("events").doc(page.id);
+            batch.set(eventRef, {
+                id: page.id,
+                title: title,
+                date: dateStr,
+                category: cat,
+                tags: tags,
+                organizerIds: organizerIds,
+                joins: joins,
+                maybes: maybes,
+                declines: declines,
+                updatedAt: new Date().toISOString()
+            }, { merge: true });
+        }
+        
+        await batch.commit();
+        console.log("✅ Firestoreへのイベント同期完了！");
+    } catch(e) {
+        console.error("❌ イベント同期エラー:", e);
+    }
+});
+
+// 手動で同期を走らせる用の窓口（テスト用）
+export const manualSyncEvents = functions.region("asia-northeast1").https.onRequest(async (req: any, res: any) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    try {
+        // 同期処理を呼び出すためのトリガー
+        await fetch(`https://asia-northeast1-${process.env.GCLOUD_PROJECT}.cloudfunctions.net/syncEventsToFirestore`);
+        res.json({ success: true, message: "同期を開始しました（バックグラウンド処理）" });
+    } catch(e:any) { res.status(500).json({ error: e.message }); }
+});
+
+
+// ───────────────────────────────────────────
+// 7. 出欠ステータスの更新 API（★NotionとFirestoreの両方を更新する最強版！）
+// ───────────────────────────────────────────
+export const updateEventStatus = functions.region("asia-northeast1").https.onRequest(async (req: any, res: any) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+
+    try {
+        const { userId, eventId, status } = req.body;
+        if (!userId || !eventId || !status) { res.status(400).json({ error: "Missing parameters" }); return; }
+
+        const memberSearch = await notion.databases.query({
+            database_id: MEMBER_DB_ID,
+            filter: { property: PROP_LINE_USER_ID, rich_text: { equals: userId } }
+        });
+        if (memberSearch.results.length === 0) { res.status(404).json({ error: "User not found" }); return; }
+        const memberId = memberSearch.results[0].id;
+
+        // 1. Notion側の現在のリストを取得
+        const eventPage: any = await notion.pages.retrieve({ page_id: eventId });
+        let joins = eventPage.properties[PROP_JOIN]?.relation?.map((r:any) => r.id) || [];
+        let maybes = eventPage.properties[PROP_MAYBE]?.relation?.map((r:any) => r.id) || [];
+        let declines = eventPage.properties[PROP_DECLINE]?.relation?.map((r:any) => r.id) || [];
+
+        // 一旦すべてのリストから自分を消す
+        joins = joins.filter((id: string) => id !== memberId);
+        maybes = maybes.filter((id: string) => id !== memberId);
+        declines = declines.filter((id: string) => id !== memberId);
+
+        // 新しいステータスに追加する
+        if (status === "join") joins.push(memberId);
+        else if (status === "maybe") maybes.push(memberId);
+        else if (status === "decline") declines.push(memberId);
+
+        // 2. Notionを更新（マスターデータの更新）
+        await notion.pages.update({
+            page_id: eventId,
+            properties: {
+                [PROP_JOIN]: { relation: joins.map((id: string) => ({ id })) },
+                [PROP_MAYBE]: { relation: maybes.map((id: string) => ({ id })) },
+                [PROP_DECLINE]: { relation: declines.map((id: string) => ({ id })) }
+            }
+        });
+
+        // 3. 🚀 Firestoreのキャッシュも即座に上書き！（これが爆速の秘訣）
+        await db.collection("events").doc(eventId).set({
+            joins: joins,
+            maybes: maybes,
+            declines: declines,
+            updatedAt: new Date().toISOString()
+        }, { merge: true });
+
+        res.json({ success: true });
+    } catch(e: any) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    }
+});
