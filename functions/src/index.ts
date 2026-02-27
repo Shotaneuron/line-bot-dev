@@ -35,17 +35,17 @@ const calendar = google.calendar({ version: "v3", auth: jwtClient });
 
 // ▼▼▼ 設定エリア ▼▼▼
 const LINE_CONFIG = {
-    channelAccessToken: "70myukIJyGt2yV61/FkoddIsmckCF6eZNpVv/ZSKICqp51a4Z1Ao8acJrE37glTAM2S9m2SwEq5fGIQTgC8e2mV6Mjxk2Tos47Zy7YA/B5tnB+y9ky4+uBy8WznGeNW2J5jMQYSI4j3YYMvKN8eooAdB04t89/1O/w1cDnyilFU=",
-    channelSecret: "0b37f68b8e535c98754490239952ceed",
+    channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN || "",
+    channelSecret: process.env.LINE_CHANNEL_SECRET || "",
 };
 
-// ★GitHubのセキュリティブロックを回避するために文字列を分割
-const NOTION_KEY = "ntn_567627" + "885677nYaxee" + "9kN36lo1qjEXvxJfiL" + "9UlzIc908F";
-const GEMINI_API_KEY = "AIzaSyCKIM" + "ZGj9zZtjL0G8J" + "f5AhUrhf8gS4vCsI"; 
+const NOTION_KEY = process.env.NOTION_KEY || "";
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || ""; 
 const GEMINI_MODEL_NAME = "gemini-2.0-flash";
 
 const MEMBER_DB_ID = "281d37536ad78161903ce60d6afafe59";
-const EVENT_DB_ID = "307d37536ad780f9a72cfb32808fefc9";          // ★新規追加！
+const EVENT_DB_ID = "307d37536ad780f9a72cfb32808fefc9"; 
+// ▲▲▲ 設定エリア終わり ▲▲▲
 
 // プロパティ名
 const PROP_MEMBER_NAME = "名前";
