@@ -8,88 +8,80 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@700;900&family=Zen+Kaku+Gothic+New:wght@700;900&family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        body { font-family: 'Zen Maru Gothic', sans-serif; background: linear-gradient(-45deg, #ffffff, #f8fafc, #eff6ff, #fdf4ff, #fffbeb); background-size: 300% 300%; animation: auroraBG 15s ease infinite; color: #1e293b; min-height: 100vh; padding-bottom: 5rem; }
+        body { font-family: 'Zen Maru Gothic', sans-serif; background: linear-gradient(-45deg, #ffffff, #f8fafc, #eff6ff, #fdf4ff, #fffbeb); background-size: 300% 300%; animation: auroraBG 15s ease infinite; color: #1e293b; min-height: 100vh; padding-bottom: 5rem; overflow-x: hidden; }
         @keyframes auroraBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
         .glass-card { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.9); box-shadow: 0 10px 30px -10px rgba(71, 85, 105, 0.15); }
         .fade-in { animation: fadeIn 0.5s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* カレンダーのグリッドデザイン */
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-        .calendar-cell { min-height: 80px; padding: 4px; border-radius: 8px; background: rgba(255, 255, 255, 0.5); border: 1px solid rgba(226, 232, 240, 0.8); display: flex; flex-direction: column; gap: 2px; }
-        .calendar-cell.today { background: rgba(238, 242, 255, 0.8); border-color: #a5b4fc; box-shadow: inset 0 0 0 2px #c7d2fe; }
-        .calendar-cell.empty { background: transparent; border: none; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
+        .calendar-cell { min-height: 90px; background: rgba(255, 255, 255, 0.8); border: 1px solid rgba(226, 232, 240, 0.6); border-radius: 8px; padding: 3px; display: flex; flex-direction: column; gap: 2px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); overflow: hidden; }
+        .calendar-cell.today { background: linear-gradient(135deg, rgba(238, 242, 255, 0.95) 0%, rgba(224, 231, 255, 0.95) 100%); border: 1px solid #818cf8; box-shadow: 0 4px 10px rgba(99, 102, 241, 0.15), inset 0 0 0 1px #e0e7ff; }
+        .calendar-cell.empty { background: transparent; border: none; box-shadow: none; }
         
+        .event-badge { display: flex; flex-direction: column; padding: 3px; border-radius: 6px; cursor: pointer; transition: transform 0.1s; }
+        .event-badge:active { transform: scale(0.95); }
+        .event-cat { font-size: 7px; font-weight: 900; line-height: 1; margin-bottom: 2px; opacity: 0.8; }
+        .event-title { font-size: 9px; font-weight: 700; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="safe-area-inset-top p-4">
+<body class="safe-area-inset-top p-3 sm:p-5">
 
-    <div class="text-center mb-6 fade-in pt-2 mx-2">
-        <div class="relative p-[3px] rounded-3xl bg-gradient-to-r from-cyan-300 via-indigo-300 to-pink-300 shadow-sm">
+    <div class="text-center mb-5 fade-in pt-2">
+        <div class="relative p-[2px] rounded-3xl bg-gradient-to-r from-cyan-300 via-indigo-300 to-pink-300 shadow-sm mx-1">
             <div class="bg-white/95 backdrop-blur-xl rounded-[1.7rem] py-4 px-4 relative overflow-hidden flex items-center justify-center gap-3">
-                <span class="text-2xl">📅</span>
+                <span class="text-2xl drop-shadow-sm">📅</span>
                 <div>
-                    <h1 class="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-700 to-pink-600 tracking-widest" style="font-family: 'Zen Kaku Gothic New', sans-serif;">
-                        ゼミ スケジュール
-                    </h1>
-                    <p class="text-[9px] font-bold text-slate-400 tracking-[0.2em] mt-0.5">Hokkaido Univ. Psychology Seminar</p>
+                    <h1 class="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-700 to-pink-600 tracking-widest" style="font-family: 'Zen Kaku Gothic New', sans-serif;">ゼミ スケジュール</h1>
+                    <p class="text-[9px] font-bold text-slate-400 tracking-[0.1em] mt-0.5">Hokkaido Univ. Psychology Seminar</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <section class="glass-card rounded-[2rem] p-4 fade-in relative overflow-hidden">
+    <section class="glass-card rounded-[2rem] p-3 sm:p-5 fade-in relative overflow-hidden">
         <div class="flex justify-between items-center mb-4 px-2">
-            <button onclick="changeMonth(-1)" class="w-8 h-8 flex items-center justify-center bg-slate-100 rounded-full text-slate-600 active:scale-95 shadow-sm">◀</button>
-            <h2 id="calendar-month-title" class="text-xl font-black text-slate-800 tracking-widest" style="font-family: 'Zen Kaku Gothic New', sans-serif;">2026年 3月</h2>
-            <button onclick="changeMonth(1)" class="w-8 h-8 flex items-center justify-center bg-slate-100 rounded-full text-slate-600 active:scale-95 shadow-sm">▶</button>
+            <button onclick="changeMonth(-1)" class="w-9 h-9 flex items-center justify-center bg-white border border-slate-200 rounded-full text-indigo-500 active:scale-95 shadow-sm transition">◀</button>
+            <h2 id="calendar-month-title" class="text-xl font-black text-slate-800 tracking-widest" style="font-family: 'Zen Kaku Gothic New', sans-serif;"></h2>
+            <button onclick="changeMonth(1)" class="w-9 h-9 flex items-center justify-center bg-white border border-slate-200 rounded-full text-indigo-500 active:scale-95 shadow-sm transition">▶</button>
         </div>
-
-        <div class="calendar-grid mb-2 text-center text-[10px] font-bold text-slate-400">
-            <div class="text-pink-500">日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div class="text-blue-500">土</div>
-        </div>
-
+        <div class="calendar-grid mb-2 text-center text-[10px] font-black text-slate-400"><div class="text-pink-500">日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div class="text-blue-500">土</div></div>
         <div id="calendar-body" class="calendar-grid relative">
-            <div id="calendar-loading" class="absolute inset-0 bg-white/50 backdrop-blur-sm z-10 flex flex-col items-center justify-center rounded-xl">
+            <div id="calendar-loading" class="absolute inset-0 bg-white/60 backdrop-blur-md z-10 flex flex-col items-center justify-center rounded-xl">
                 <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mb-2"></div>
-                <p class="text-[10px] font-bold text-indigo-500">イベントを同期中...</p>
+                <p class="text-[10px] font-bold text-indigo-600">イベントを同期中...</p>
             </div>
-            </div>
-    </section>
-
-    <section class="glass-card rounded-[2rem] p-5 mt-4 fade-in" style="animation-delay: 0.2s;">
-        <h2 class="text-sm font-black text-slate-800 tracking-widest flex items-center gap-2 mb-3">
-            <span>✨</span> ピックアップイベント
-        </h2>
-        <div id="pickup-events" class="flex gap-3 overflow-x-auto no-scrollbar pb-2">
-            <p class="text-xs text-slate-400 font-bold px-2">読み込み中...</p>
         </div>
     </section>
 
-    <div id="event-detail-modal" class="fixed inset-0 z-[70] hidden flex-col justify-end bg-slate-900/60 backdrop-blur-sm">
-        <div class="bg-white rounded-t-[2rem] p-6 shadow-2xl border-t border-slate-200 max-h-[85vh] flex flex-col w-full max-w-md mx-auto relative animate-[translateY_0.2s_ease-out]">
+    <section class="glass-card rounded-[2rem] p-4 sm:p-5 mt-4 fade-in mb-8" style="animation-delay: 0.2s;">
+        <h2 class="text-sm font-black text-slate-800 tracking-widest flex items-center gap-2 mb-3"><span>✨</span> ピックアップイベント</h2>
+        <div id="pickup-events" class="flex gap-3 overflow-x-auto no-scrollbar pb-2"><p class="text-xs text-slate-400 font-bold px-2">読み込み中...</p></div>
+    </section>
+
+    <div id="event-detail-modal" class="fixed inset-0 z-[70] hidden flex-col justify-end bg-slate-900/50 backdrop-blur-sm">
+        <div class="bg-white rounded-t-[2rem] p-6 shadow-2xl border-t border-slate-200 max-h-[90vh] flex flex-col w-full max-w-md mx-auto relative animate-[translateY_0.2s_ease-out]">
             <button onclick="closeEventDetail()" class="absolute top-5 right-5 w-8 h-8 bg-slate-100 rounded-full text-slate-500 text-lg font-bold flex items-center justify-center">&times;</button>
-            <div id="event-modal-category" class="text-[10px] font-bold mb-1"></div>
+            <div id="event-modal-category" class="mb-1"></div>
             <h3 id="event-modal-title" class="text-xl font-black text-slate-800 mb-4 pr-8 leading-tight"></h3>
             
-            <div id="event-modal-content" class="overflow-y-auto no-scrollbar pb-6 space-y-4">
+            <div id="event-modal-content" class="overflow-y-auto no-scrollbar pb-6 flex-1">
                 </div>
         </div>
     </div>
 
-    <div id="other-profile-modal" class="fixed inset-0 z-[80] hidden flex-col justify-end bg-slate-900/40 backdrop-blur-sm">
+    <div id="other-profile-modal" class="fixed inset-0 z-[80] hidden flex-col justify-end bg-slate-900/50 backdrop-blur-sm">
         <div class="bg-white rounded-t-[2.5rem] p-6 shadow-2xl border-t border-slate-200 max-h-[85vh] w-full max-w-md mx-auto relative animate-[translateY_0.2s_ease-out]">
             <button onclick="closeOtherProfile()" class="absolute top-5 right-5 w-8 h-8 bg-slate-100 rounded-full text-slate-500 text-lg font-bold flex items-center justify-center">&times;</button>
-            
             <div class="flex flex-col items-center mt-2 mb-6">
                 <img id="other-icon" src="" class="w-24 h-24 rounded-full border-4 border-slate-100 mb-3 object-cover shadow-sm">
                 <div id="other-role-badges" class="flex flex-wrap justify-center gap-1 mb-2"></div>
                 <h3 id="other-name" class="text-xl font-black text-slate-800 mb-1"></h3>
                 <p id="other-univ" class="text-[10px] text-slate-500 font-bold"></p>
             </div>
-            
             <div class="bg-slate-50 rounded-xl p-4 mb-4 border border-slate-200">
                 <p class="text-[10px] text-slate-500 font-bold mb-1">💬 今のひとこと</p>
                 <p id="other-intro" class="text-sm text-slate-700 font-bold"></p>
@@ -99,24 +91,18 @@
 
     <script>
         let currentDate = new Date();
-        let allEvents = []; // 取得した全イベントをキャッシュ
-        let allUsersData = []; // プロフィール表示用
+        let allEvents = []; 
+        let allUsersData = []; 
         let myUserId = "";
+        let currentEventId = ""; // 現在開いているイベントを記憶
 
-        // 初期化処理
         async function initCalendar() {
             try {
-                // ⚠️ LIFF IDは環境に合わせて書き換えてください
-                await liff.init({ liffId: "2009176797-7MWNttly" }); 
+                await liff.init({ liffId: "2009176797-7MWNttly" }); // ⚠️ 要書き換え
                 if (liff.isLoggedIn()) { myUserId = liff.getDecodedIDToken()?.sub; }
-
-                // 裏で全ユーザーデータを取得（プロフィール表示のため）
                 fetchUsersData();
-
-                // イベント取得＆カレンダー描画
                 await fetchCalendarEvents();
                 renderCalendar();
-
             } catch(e) { console.error(e); }
         }
 
@@ -128,7 +114,6 @@
             } catch(e){}
         }
 
-        // イベント一覧の取得
         async function fetchCalendarEvents() {
             document.getElementById('calendar-loading').style.display = 'flex';
             try {
@@ -140,85 +125,58 @@
             document.getElementById('calendar-loading').style.display = 'none';
         }
 
-        // 月の変更
-        function changeMonth(diff) {
-            currentDate.setMonth(currentDate.getMonth() + diff);
-            renderCalendar();
-        }
+        function changeMonth(diff) { currentDate.setMonth(currentDate.getMonth() + diff); renderCalendar(); }
 
-        // カテゴリに応じた色を返す関数（視認性重視）
         function getCategoryStyle(cat) {
-            if (cat.includes("すこやか") || cat.includes("運動") || cat.includes("快眠") || cat.includes("瞑想")) return "bg-emerald-100 text-emerald-700 border-emerald-200";
-            if (cat.includes("読書") || cat.includes("ラジオ") || cat.includes("シェア")) return "bg-orange-100 text-orange-700 border-orange-200";
-            if (cat.includes("ゼミ") || cat.includes("講義")) return "bg-blue-100 text-blue-700 border-blue-200";
-            if (cat.includes("カクテル") || cat.includes("ふらっと")) return "bg-pink-100 text-pink-700 border-pink-200";
-            return "bg-indigo-100 text-indigo-700 border-indigo-200"; // デフォルト
+            if (cat.includes("すこやか") || cat.includes("運動") || cat.includes("快眠") || cat.includes("瞑想")) return "bg-emerald-50 text-emerald-700 border border-emerald-200/50";
+            if (cat.includes("読書") || cat.includes("ラジオ") || cat.includes("シェア")) return "bg-orange-50 text-orange-700 border border-orange-200/50";
+            if (cat.includes("ゼミ") || cat.includes("講義")) return "bg-blue-50 text-blue-700 border border-blue-200/50";
+            if (cat.includes("カクテル") || cat.includes("ふらっと")) return "bg-pink-50 text-pink-700 border border-pink-200/50";
+            return "bg-indigo-50 text-indigo-700 border border-indigo-200/50"; 
         }
 
-        // カレンダーの描画
         function renderCalendar() {
             const year = currentDate.getFullYear();
             const month = currentDate.getMonth();
             document.getElementById('calendar-month-title').innerText = `${year}年 ${month + 1}月`;
-
             const firstDay = new Date(year, month, 1).getDay();
             const lastDate = new Date(year, month + 1, 0).getDate();
-            
             const today = new Date();
             const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
 
             let html = "";
-            // 空白セル
             for (let i = 0; i < firstDay; i++) { html += `<div class="calendar-cell empty"></div>`; }
 
-            // 日付セル
             for (let i = 1; i <= lastDate; i++) {
                 const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
                 const isToday = isCurrentMonth && i === today.getDate() ? "today" : "";
-                
-                // その日のイベントを抽出
                 const dayEvents = allEvents.filter(ev => ev.date === dateStr);
                 
                 let eventsHtml = "";
                 dayEvents.forEach(ev => {
                     const style = getCategoryStyle(ev.category);
-                    // 主催者アイコンがあれば表示（今回はダミーとして絵文字を表示。実運用時はallUsersDataから検索可能）
-                    const organizerIcon = ev.organizerIds && ev.organizerIds.length > 0 ? `<span class="mr-0.5">👤</span>` : "";
-                    
+                    const organizerIcon = ev.organizerIds && ev.organizerIds.length > 0 ? `<span class="mr-0.5 opacity-70">👤</span>` : "";
                     eventsHtml += `
-                        <div onclick="openEventDetail('${ev.id}', '${ev.title}', '${ev.category}')" class="${style} text-[8px] sm:text-[9px] font-bold p-1 rounded border shadow-sm cursor-pointer truncate active:scale-95 transition">
-                            ${organizerIcon}${ev.title}
+                        <div onclick="openEventDetail('${ev.id}', '${ev.title}', '${ev.category}')" class="event-badge ${style}">
+                            <span class="event-cat">${ev.category}</span>
+                            <span class="event-title">${organizerIcon}${ev.title}</span>
                         </div>`;
                 });
-
-                html += `
-                    <div class="calendar-cell ${isToday}">
-                        <div class="text-[10px] font-bold text-slate-500 pl-1 ${isToday ? 'text-indigo-600' : ''}">${i}</div>
-                        <div class="flex flex-col gap-1 overflow-y-auto no-scrollbar max-h-16">${eventsHtml}</div>
-                    </div>`;
+                html += `<div class="calendar-cell ${isToday}"><div class="text-[10px] font-black text-slate-500 pl-1 ${isToday ? 'text-indigo-600' : ''}">${i}</div><div class="flex flex-col gap-1 overflow-y-auto no-scrollbar max-h-16 pb-1">${eventsHtml}</div></div>`;
             }
             document.getElementById('calendar-body').innerHTML = html;
         }
 
-        // ピックアップ（おすすめ）の描画
         function renderPickupEvents() {
             const today = new Date().toISOString().split('T')[0];
-            const upcoming = allEvents.filter(ev => ev.date >= today).slice(0, 5); // 直近5件
-            
-            if (upcoming.length === 0) {
-                document.getElementById('pickup-events').innerHTML = '<p class="text-xs text-slate-400 font-bold px-2">直近のイベントはありません</p>';
-                return;
-            }
-
+            const upcoming = allEvents.filter(ev => ev.date >= today).slice(0, 5); 
+            if (upcoming.length === 0) { document.getElementById('pickup-events').innerHTML = '<p class="text-xs text-slate-400 font-bold px-2">直近のイベントはありません</p>'; return; }
             let html = upcoming.map(ev => {
                 const style = getCategoryStyle(ev.category);
                 return `
                 <div onclick="openEventDetail('${ev.id}', '${ev.title}', '${ev.category}')" class="flex-shrink-0 w-48 bg-white rounded-xl p-3 border border-slate-200 shadow-sm cursor-pointer hover:bg-slate-50 active:scale-95 transition flex flex-col justify-between">
                     <div>
-                        <div class="flex justify-between items-start mb-1">
-                            <span class="text-[10px] font-bold text-slate-500">📅 ${ev.date}</span>
-                            <span class="${style} text-[8px] px-1.5 py-0.5 rounded font-bold">${ev.category}</span>
-                        </div>
+                        <div class="flex justify-between items-start mb-2"><span class="text-[10px] font-bold text-slate-500">📅 ${ev.date}</span><span class="${style} text-[8px] px-2 py-0.5 rounded font-black">${ev.category}</span></div>
                         <h4 class="text-sm font-black text-slate-800 leading-tight line-clamp-2">${ev.title}</h4>
                     </div>
                 </div>`;
@@ -227,10 +185,9 @@
         }
 
         // =====================================
-        // イベント詳細 ＆ プロフィール表示ロジック
+        // イベント詳細・出欠・プロフィール
         // =====================================
         
-        // 役職バッジ生成（mypageと共通）
         function getSafe(f) { if (!f) return ""; if (f.stringValue !== undefined) return f.stringValue; return ""; }
         function getRoleBadgeHtml(role) {
             let badgeClass = "", badgeIcon = "";
@@ -241,7 +198,6 @@
             return `<span class="inline-block ${badgeClass} text-[10px] font-black tracking-widest px-2 py-0.5 rounded shadow-sm">${badgeIcon} ${role}</span>`;
         }
 
-        // LINE IDからプロフィールを開く
         function openProfileByLineId(lineId) {
             if (!lineId) { alert("プロフィールが紐づいていません"); return; }
             if (lineId === myUserId) { alert("これはあなた自身です！マイページから確認してください。"); return; }
@@ -267,10 +223,10 @@
         }
         function closeOtherProfile() { document.getElementById('other-profile-modal').classList.add('hidden'); document.getElementById('other-profile-modal').classList.remove('flex'); }
 
-        // イベント詳細を開く
         async function openEventDetail(eventId, title, category) {
+            currentEventId = eventId;
             document.getElementById('event-modal-title').innerText = title;
-            document.getElementById('event-modal-category').innerHTML = `<span class="${getCategoryStyle(category)} px-2 py-0.5 rounded border font-bold">${category}</span>`;
+            document.getElementById('event-modal-category').innerHTML = `<span class="${getCategoryStyle(category)} px-2 py-0.5 rounded font-black text-[10px]">${category}</span>`;
             document.getElementById('event-modal-content').innerHTML = `
                 <div class="flex flex-col items-center justify-center py-10">
                     <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mb-3"></div><p class="text-xs text-slate-400 font-bold">詳細を読み込み中...</p>
@@ -281,34 +237,85 @@
                 const res = await fetch(`https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/getEventDetails?eventId=${eventId}`);
                 const data = await res.json();
 
-                let html = `<div class="bg-slate-50 p-4 rounded-xl border border-slate-200 whitespace-pre-wrap text-xs text-slate-700 leading-relaxed font-medium">${data.details}</div>`;
+                // 自分の参加状態を判定
+                const isJoin = data.joins.some(u => u.lineId === myUserId);
+                const isMaybe = data.maybes.some(u => u.lineId === myUserId);
+                const isDecline = data.declines.some(u => u.lineId === myUserId);
 
-                // 🙋 参加予定（タップでプロフィールへ）
-                html += `<div class="mt-4"><p class="text-[10px] font-bold text-indigo-500 mb-2">🙋 参加予定 (${data.joins.length}人)</p>`;
-                if(data.joins.length > 0) {
-                    html += `<div class="flex flex-wrap gap-1.5">${data.joins.map(u => `<button onclick="openProfileByLineId('${u.lineId}')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-[10px] font-bold px-2.5 py-1 rounded border border-indigo-200 active:scale-95 shadow-sm transition">${u.name}</button>`).join('')}</div>`;
-                } else { html += `<p class="text-[10px] text-slate-400">まだ参加者はいません</p>`; }
+                // 本文
+                let html = `<div class="bg-slate-50 p-4 rounded-xl border border-slate-200 whitespace-pre-wrap text-xs text-slate-700 leading-relaxed font-medium mb-4">${data.details}</div>`;
+
+                // 🌟 アイコン付きのユーザーチップを生成する関数
+                const createUserChip = (u, colorClass, borderClass, textClass) => `
+                    <div onclick="openProfileByLineId('${u.lineId}')" class="flex items-center gap-1.5 ${colorClass} px-2 py-1 rounded-full border ${borderClass} cursor-pointer active:scale-95 shadow-sm transition">
+                        <img src="${u.icon}" class="w-5 h-5 rounded-full object-cover">
+                        <span class="text-[10px] font-bold ${textClass}">${u.name}</span>
+                    </div>`;
+
+                html += `<div><p class="text-[10px] font-bold text-indigo-500 mb-2">🙋 参加予定 (${data.joins.length}人)</p>`;
+                if(data.joins.length > 0) { html += `<div class="flex flex-wrap gap-1.5">${data.joins.map(u => createUserChip(u, "bg-indigo-50", "border-indigo-200", "text-indigo-700")).join('')}</div>`; } 
+                else { html += `<p class="text-[10px] text-slate-400">まだ参加者はいません</p>`; }
                 html += `</div>`;
 
-                // 🤔 迷い中（タップでプロフィールへ）
                 html += `<div class="mt-4"><p class="text-[10px] font-bold text-orange-500 mb-2">🤔 迷い中 (${data.maybes.length}人)</p>`;
-                if(data.maybes.length > 0) {
-                    html += `<div class="flex flex-wrap gap-1.5">${data.maybes.map(u => `<button onclick="openProfileByLineId('${u.lineId}')" class="bg-orange-50 hover:bg-orange-100 text-orange-600 text-[10px] font-bold px-2.5 py-1 rounded border border-orange-200 active:scale-95 shadow-sm transition">${u.name}</button>`).join('')}</div>`;
-                } else { html += `<p class="text-[10px] text-slate-400">迷い中の人はいません</p>`; }
+                if(data.maybes.length > 0) { html += `<div class="flex flex-wrap gap-1.5">${data.maybes.map(u => createUserChip(u, "bg-orange-50", "border-orange-200", "text-orange-700")).join('')}</div>`; } 
+                else { html += `<p class="text-[10px] text-slate-400">迷い中の人はいません</p>`; }
                 html += `</div>`;
 
                 // 🙅 不参加（小さく表示）
                 if(data.declines && data.declines.length > 0) {
                     html += `<div class="mt-4"><p class="text-[9px] font-bold text-slate-400 mb-1">🙅 不参加 (${data.declines.length}人)</p>`;
-                    html += `<div class="flex flex-wrap gap-1">${data.declines.map(u => `<span class="text-[9px] text-slate-400">${u.name}</span>`).join(', ')}</div></div>`;
+                    html += `<div class="flex flex-wrap gap-1">${data.declines.map(u => `<span class="text-[9px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-full">${u.name}</span>`).join('')}</div></div>`;
                 }
+
+                // 🌟 出欠登録ボタン（現在のステータスに合わせて色が変わる！）
+                html += `
+                    <div class="flex gap-2 mt-6 pt-4 border-t border-slate-100">
+                        <button onclick="submitEventStatus('${eventId}', 'join')" class="flex-1 font-bold py-3 rounded-xl text-xs transition border shadow-sm ${isJoin ? 'bg-indigo-500 text-white border-indigo-600' : 'bg-white text-slate-500 border-slate-200'}">🙋 参加</button>
+                        <button onclick="updateEventStatus('${eventId}', 'maybe')" class="flex-1 font-bold py-3 rounded-xl text-xs transition border shadow-sm ${isMaybe ? 'bg-orange-500 text-white border-orange-600' : 'bg-white text-slate-500 border-slate-200'}">🤔 迷い中</button>
+                        <button onclick="updateEventStatus('${eventId}', 'decline')" class="flex-1 font-bold py-3 rounded-xl text-xs transition border shadow-sm ${isDecline ? 'bg-slate-500 text-white border-slate-600' : 'bg-white text-slate-500 border-slate-200'}">🙅 不参加</button>
+                    </div>
+                `;
 
                 document.getElementById('event-modal-content').innerHTML = html;
             } catch(e) { document.getElementById('event-modal-content').innerHTML = '<p class="text-center text-red-400 py-4 text-xs font-bold">エラーが発生しました</p>'; }
         }
         function closeEventDetail() { document.getElementById('event-detail-modal').classList.add('hidden'); document.getElementById('event-detail-modal').classList.remove('flex'); }
 
-        // 起動！
+        // 🚀 出欠ステータスを更新して、画面を再描画する関数
+        async function updateEventStatus(eventId, status) {
+            if (!myUserId) { alert("ログイン情報が取得できません"); return; }
+            
+            // スピナー表示
+            document.getElementById('event-modal-content').innerHTML = `
+                <div class="flex flex-col items-center justify-center py-10">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mb-3"></div><p class="text-xs text-slate-400 font-bold">登録中...</p>
+                </div>`;
+            
+            try {
+                // APIを叩いてNotionを更新！
+                const res = await fetch(`https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/updateEventStatus`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: myUserId, eventId: eventId, status: status })
+                });
+                
+                if (!res.ok) throw new Error("登録エラー");
+                
+                // タイトルとカテゴリのテキストを取得して、モーダルを再描画！
+                const title = document.getElementById('event-modal-title').innerText;
+                const catText = document.getElementById('event-modal-category').innerText; 
+                openEventDetail(eventId, title, catText);
+                
+            } catch(e) { 
+                alert("登録に失敗しました"); 
+                closeEventDetail();
+            }
+        }
+        
+        // typo対応
+        function submitEventStatus(eventId, status) { updateEventStatus(eventId, status); }
+
         initCalendar();
     </script>
 </body>

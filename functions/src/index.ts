@@ -326,6 +326,7 @@ async function handleEvent(event: any) {
 
     if (text === "タグ通知" || text === "新着テスト") { await handleTagNotificationManual(replyToken, userId); return null; }
     if (text === "タグ同期") { await handleSyncTags(replyToken); return null; }
+    if (text === "直近のイベント") { await handleRecentEvents(event.replyToken); return; }
 
     // ★New! カレンダー同期用の隠しコマンド
     if (text === "カレンダー同期") { await handleSyncCalendar(replyToken); return null; }
@@ -752,9 +753,6 @@ async function handleCreateAccount(replyToken: string, userId: string) {
     } catch (e: any) { console.error(e); await reply(replyToken, "❌ エラー: Notionへの登録に失敗しました。"); }
 }
 
-// ───────────────────────────────────────────
-// 管理・Sync・AIロジック
-// ───────────────────────────────────────────
 // ───────────────────────────────────────────
 // 管理・Sync・AIロジック
 // ───────────────────────────────────────────
@@ -1190,15 +1188,15 @@ export const getUserEvents = functions.region("asia-northeast1").https.onRequest
 // ───────────────────────────────────────────
 
 // 📅 カレンダー用：全体公開イベントの取得（爆速軽量版）
+// 📅 カレンダー用：全体公開イベントの取得（爆速軽量版）
 export const getCalendarEvents = functions.region("asia-northeast1").https.onRequest(async (req: any, res: any) => {
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
     if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
 
     try {
-        // 月初から数ヶ月分のデータを一気に取得（軽量化のためプロパティを絞る）
         const date = new Date();
-        date.setDate(1); // 今月の1日
+        date.setDate(1); 
         const startOfMonth = date.toISOString().split('T')[0];
 
         const response = await notion.databases.query({
@@ -1209,16 +1207,20 @@ export const getCalendarEvents = functions.region("asia-northeast1").https.onReq
 
         const events = [];
         for (const page of response.results) {
-            const cat = page.properties[PROP_EVENT_CAT]?.select?.name || "未分類";
+            // ★ カテゴリを取得
+            const cat = page.properties[PROP_EVENT_CAT]?.select?.name;
             
-            // ★ フィルター：「運営部」「企画部」を除外！
-            if (cat.includes("運営部") || cat.includes("企画部")) continue;
+            // 🚨 強力なフィルター！
+            // 「カテゴリが設定されていない（個人の予定）」「未分類」「運営部」「企画部」をすべて除外！
+            if (!cat || cat === "未分類" || cat.includes("運営部") || cat.includes("企画部")) continue;
 
             const title = page.properties[PROP_EVENT_NAME]?.title[0]?.plain_text || "無題";
-            const dateStr = page.properties[PROP_EVENT_DATE]?.date?.start;
-            const tags = page.properties[PROP_EVENT_TAGS]?.multi_select?.map((t:any)=>t.name) || [];
             
-            // ※主催者のNotionリレーションIDを取得（プロパティ「主催者」がある前提。なければ空）
+            // ★ 日付を綺麗に整形（T以降の時間を切り落とす）
+            const rawDate = page.properties[PROP_EVENT_DATE]?.date?.start;
+            const dateStr = rawDate ? rawDate.split('T')[0] : ""; 
+
+            const tags = page.properties[PROP_EVENT_TAGS]?.multi_select?.map((t:any)=>t.name) || [];
             const organizerIds = page.properties["主催者"]?.relation?.map((r:any) => r.id) || [];
 
             events.push({ id: page.id, title, date: dateStr, category: cat, tags, organizerIds });
@@ -1231,7 +1233,7 @@ export const getCalendarEvents = functions.region("asia-northeast1").https.onReq
     }
 });
 
-// 📄 イベント詳細取得（不参加メンバー追加 ＆ アイコン取得用ID追加）
+// 📄 イベント詳細取得（不参加メンバー ＆ アイコンURL追加版）
 export const getEventDetails = functions.region("asia-northeast1").https.onRequest(async (req: any, res: any) => {
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -1244,7 +1246,7 @@ export const getEventDetails = functions.region("asia-northeast1").https.onReque
         const eventPage: any = await notion.pages.retrieve({ page_id: eventId });
         const joinsIds = eventPage.properties[PROP_JOIN]?.relation?.map((r:any) => r.id) || [];
         const maybesIds = eventPage.properties[PROP_MAYBE]?.relation?.map((r:any) => r.id) || [];
-        const declinesIds = eventPage.properties[PROP_DECLINE]?.relation?.map((r:any) => r.id) || []; // ★不参加を追加
+        const declinesIds = eventPage.properties[PROP_DECLINE]?.relation?.map((r:any) => r.id) || []; 
 
         const getParticipants = async (ids: string[]) => {
             if(ids.length === 0) return [];
@@ -1252,9 +1254,15 @@ export const getEventDetails = functions.region("asia-northeast1").https.onReque
             for(const id of ids) {
                 try {
                     const p: any = await notion.pages.retrieve({ page_id: id });
+                    // ★ アイコンのURLを取得する！
+                    let iconUrl = "https://via.placeholder.com/150";
+                    if (p.icon && p.icon.type === "external") iconUrl = p.icon.external.url;
+                    else if (p.icon && p.icon.type === "file") iconUrl = p.icon.file.url;
+
                     participants.push({
-                        name: p.properties[PROP_MEMBER_NAME]?.title[0]?.plain_text || "匿名メンバー",
-                        lineId: p.properties[PROP_LINE_USER_ID]?.rich_text[0]?.plain_text || "" // LINE IDを取得
+                        name: p.properties[PROP_MEMBER_NAME]?.title[0]?.plain_text || "匿名",
+                        lineId: p.properties[PROP_LINE_USER_ID]?.rich_text[0]?.plain_text || "",
+                        icon: iconUrl
                     });
                 } catch(e) {}
             }
@@ -1262,31 +1270,136 @@ export const getEventDetails = functions.region("asia-northeast1").https.onReque
         };
 
         const [joinsUsers, maybesUsers, declinesUsers] = await Promise.all([
-            getParticipants(joinsIds),
-            getParticipants(maybesIds),
-            getParticipants(declinesIds)
+            getParticipants(joinsIds), getParticipants(maybesIds), getParticipants(declinesIds)
         ]);
 
         const blocks = await notion.blocks.children.list({ block_id: eventId });
         let textContent = "";
         blocks.results.forEach((block: any) => {
-            if(block.type === 'paragraph' && block.paragraph.rich_text.length > 0) {
-                textContent += block.paragraph.rich_text.map((t:any)=>t.plain_text).join("") + "\n";
-            } else if (block.type === 'heading_2' || block.type === 'heading_3') {
-                const heading = block[block.type];
-                textContent += "\n■ " + heading.rich_text.map((t:any)=>t.plain_text).join("") + "\n";
-            } else if (block.type === 'bulleted_list_item') {
-                textContent += "・ " + block.bulleted_list_item.rich_text.map((t:any)=>t.plain_text).join("") + "\n";
+            if(block.type === 'paragraph' && block.paragraph.rich_text.length > 0) textContent += block.paragraph.rich_text.map((t:any)=>t.plain_text).join("") + "\n";
+            else if (block.type === 'heading_2' || block.type === 'heading_3') textContent += "\n■ " + block[block.type].rich_text.map((t:any)=>t.plain_text).join("") + "\n";
+            else if (block.type === 'bulleted_list_item') textContent += "・ " + block.bulleted_list_item.rich_text.map((t:any)=>t.plain_text).join("") + "\n";
+        });
+        if(!textContent.trim()) textContent = eventPage.properties[PROP_DETAIL_TEXT]?.rich_text?.map((t:any)=>t.plain_text).join("") || "詳細情報（本文）はまだ書かれていません。";
+
+        res.json({ details: textContent.trim(), joins: joinsUsers, maybes: maybesUsers, declines: declinesUsers });
+    } catch(e: any) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// ───────────────────────────────────────────
+// 7. 出欠ステータスの更新 API（カレンダー等から）
+// ───────────────────────────────────────────
+export const updateEventStatus = functions.region("asia-northeast1").https.onRequest(async (req: any, res: any) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+
+    try {
+        const { userId, eventId, status } = req.body;
+        if (!userId || !eventId || !status) { res.status(400).json({ error: "Missing parameters" }); return; }
+
+        const memberSearch = await notion.databases.query({
+            database_id: MEMBER_DB_ID,
+            filter: { property: PROP_LINE_USER_ID, rich_text: { equals: userId } }
+        });
+        if (memberSearch.results.length === 0) { res.status(404).json({ error: "User not found" }); return; }
+        const memberId = memberSearch.results[0].id;
+
+        const eventPage: any = await notion.pages.retrieve({ page_id: eventId });
+        let joins = eventPage.properties[PROP_JOIN]?.relation?.map((r:any) => r.id) || [];
+        let maybes = eventPage.properties[PROP_MAYBE]?.relation?.map((r:any) => r.id) || [];
+        let declines = eventPage.properties[PROP_DECLINE]?.relation?.map((r:any) => r.id) || [];
+
+        // 一旦すべてのリストから自分を消す
+        joins = joins.filter((id: string) => id !== memberId);
+        maybes = maybes.filter((id: string) => id !== memberId);
+        declines = declines.filter((id: string) => id !== memberId);
+
+        // 新しいステータスに追加する
+        if (status === "join") joins.push(memberId);
+        else if (status === "maybe") maybes.push(memberId);
+        else if (status === "decline") declines.push(memberId);
+
+        await notion.pages.update({
+            page_id: eventId,
+            properties: {
+                [PROP_JOIN]: { relation: joins.map((id: string) => ({ id })) },
+                [PROP_MAYBE]: { relation: maybes.map((id: string) => ({ id })) },
+                [PROP_DECLINE]: { relation: declines.map((id: string) => ({ id })) }
             }
         });
 
-        if(!textContent.trim()) {
-            textContent = eventPage.properties[PROP_DETAIL_TEXT]?.rich_text?.map((t:any)=>t.plain_text).join("") || "詳細情報（本文）はまだ書かれていません。";
-        }
-
-        res.json({ details: textContent.trim(), joins: joinsUsers, maybes: maybesUsers, declines: declinesUsers });
+        res.json({ success: true });
     } catch(e: any) {
         console.error(e);
         res.status(500).json({ error: e.message });
     }
 });
+
+// ───────────────────────────────────────────
+// 8. LINE用：「直近のイベント」カルーセル送信
+// ───────────────────────────────────────────
+export async function handleRecentEvents(replyToken: string) {
+    try {
+        const today = new Date();
+        const twoWeeksLater = new Date();
+        twoWeeksLater.setDate(today.getDate() + 14);
+
+        const response = await notion.databases.query({
+            database_id: EVENT_DB_ID,
+            filter: {
+                and: [
+                    { property: PROP_EVENT_DATE, date: { on_or_after: today.toISOString().split('T')[0] } },
+                    { property: PROP_EVENT_DATE, date: { on_or_before: twoWeeksLater.toISOString().split('T')[0] } }
+                ]
+            },
+            sorts: [{ property: PROP_EVENT_DATE, direction: "ascending" }]
+        });
+
+        const bubbles: any[] = [];
+        for (const page of response.results) {
+            const cat = page.properties[PROP_EVENT_CAT]?.select?.name;
+            // カレンダー同様、運営部・企画部・未分類は除外
+            if (!cat || cat === "未分類" || cat.includes("運営部") || cat.includes("企画部")) continue;
+
+            const title = page.properties[PROP_EVENT_NAME]?.title[0]?.plain_text || "無題";
+            const dateStr = page.properties[PROP_EVENT_DATE]?.date?.start?.split('T')[0] || "";
+
+            bubbles.push({
+                type: "bubble",
+                size: "micro",
+                body: {
+                    type: "box", layout: "vertical",
+                    contents: [
+                        { type: "text", text: cat, size: "xxs", color: "#8b5cf6", weight: "bold" },
+                        { type: "text", text: title, weight: "bold", size: "sm", wrap: true, margin: "sm" },
+                        { type: "text", text: `📅 ${dateStr}`, size: "xs", color: "#888888", margin: "sm" }
+                    ]
+                },
+                footer: {
+                    type: "box", layout: "vertical", spacing: "sm",
+                    contents: [
+                        { type: "button", style: "primary", color: "#4f46e5", height: "sm", action: { type: "postback", label: "🙋 参加", data: `action=join&eventId=${page.id}` } },
+                        { type: "button", style: "secondary", height: "sm", action: { type: "postback", label: "🤔 迷い中", data: `action=maybe&eventId=${page.id}` } }
+                    ]
+                }
+            });
+            if (bubbles.length >= 12) break; // カルーセル上限
+        }
+
+        if (bubbles.length === 0) {
+            await reply(replyToken, "直近2週間のイベントは現在ありません！"); return;
+        }
+
+        await lineClient.replyMessage(replyToken, {
+            type: "flex", altText: "直近のイベント一覧",
+            contents: { type: "carousel", contents: bubbles }
+        });
+    } catch (e) {
+        console.error(e);
+        await reply(replyToken, "イベントの取得に失敗しました。");
+    }
+}
