@@ -211,12 +211,8 @@
         let myUserId = "";
         let allUsersData = [];
 
-        // ★ゼミで用意している興味タグのリスト（ここを自由に追加・変更してください！）
-        const AVAILABLE_TAGS = [
-            "臨床心理", "認知心理", "社会心理", "発達心理", "教育心理",
-            "イベント企画", "デザイン", "マーケティング", "データ分析",
-            "コミュニティ運営", "読書", "運動", "睡眠改善", "プログラミング", "雑談・交流"
-        ];
+        // ★固定のリストを削除し、空の配列にしておきます
+        let AVAILABLE_TAGS = [];
 
         function getSafe(field) {
             if (!field) return "";
@@ -225,9 +221,21 @@
             return "";
         }
 
+        // ★新機能：Firestoreから最新のタグ一覧を取得する
+        async function fetchAvailableTags() {
+            try {
+                const res = await fetch(`https://firestore.googleapis.com/v1/projects/shinrizemi-linebot/databases/default/documents/system/metadata`);
+                if (res.ok) {
+                    const json = await res.json();
+                    if (json.fields && json.fields.tags && json.fields.tags.arrayValue && json.fields.tags.arrayValue.values) {
+                        AVAILABLE_TAGS = json.fields.tags.arrayValue.values.map(v => v.stringValue);
+                    }
+                }
+            } catch (e) { console.error("タグ一覧取得エラー:", e); }
+        }
+
         async function initMyPage() {
             try {
-                // ⚠️ ここは新しいマイページのLIFF ID！
                 await liff.init({ liffId: "2009176797-tgpGsUUz" }); 
                 if (!liff.isLoggedIn()) { liff.login(); return; }
                 
@@ -235,6 +243,9 @@
                 myUserId = profile.userId;
                 document.getElementById('user-icon').src = profile.pictureUrl;
                 document.getElementById('user-name').innerText = profile.displayName + " さん";
+
+                // ★自分のデータを取得する前に、システムから最新のタグ一覧を取得！
+                await fetchAvailableTags();
 
                 const url = `https://firestore.googleapis.com/v1/projects/shinrizemi-linebot/databases/default/documents/users/${myUserId}`;
                 const res = await fetch(url);
@@ -246,6 +257,9 @@
                         renderProfile(myData);
                         renderTags(myData);
                     }
+                } else {
+                    // データがない新規ユーザーの場合でも、空で編集画面を作れるようにする
+                    renderEditTags([]);
                 }
                 
                 fetchConnections();

@@ -755,15 +755,29 @@ async function handleCreateAccount(replyToken: string, userId: string) {
 // ───────────────────────────────────────────
 // 管理・Sync・AIロジック
 // ───────────────────────────────────────────
+// ───────────────────────────────────────────
+// 管理・Sync・AIロジック
+// ───────────────────────────────────────────
 async function handleSyncTags(replyToken: string) {
     try {
         const memberDbInfo: any = await notion.databases.retrieve({ database_id: MEMBER_DB_ID });
         const memberTagsOptions = memberDbInfo.properties[PROP_MEMBER_TAGS]?.multi_select?.options;
         if (!memberTagsOptions) { await reply(replyToken, `❌ 部員名簿に「${PROP_MEMBER_TAGS}」プロパティが見つかりません。`); return; }
+        
         await notion.databases.update({ database_id: EVENT_DB_ID, properties: { [PROP_EVENT_TAGS]: { multi_select: { options: memberTagsOptions } } } });
-        const tagNames = memberTagsOptions.map((o: any) => o.name).join(", ");
-        await reply(replyToken, `✅ タグ同期完了！\n\n[同期されたタグ]\n${tagNames}`);
-    } catch (e: any) { console.error("Sync Error:", e); await reply(replyToken, `❌ エラー: イベント管理DBに「${PROP_EVENT_TAGS}」プロパティがあるか確認してください。`); }
+        
+        const tagNames = memberTagsOptions.map((o: any) => o.name);
+
+        // ★追加：Firestoreの「システム設定」にもタグ一覧を保存する！
+        await db.collection("system").doc("metadata").set({
+            tags: tagNames
+        }, { merge: true });
+
+        await reply(replyToken, `✅ タグ同期完了！\n\n[同期されたタグ]\n${tagNames.join(", ")}`);
+    } catch (e: any) { 
+        console.error("Sync Error:", e); 
+        await reply(replyToken, `❌ エラー: イベント管理DBに「${PROP_EVENT_TAGS}」プロパティがあるか確認してください。`); 
+    }
 }
 
 async function handleTagNotificationManual(replyToken: string, triggerUserId: string) {
