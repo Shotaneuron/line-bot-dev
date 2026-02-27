@@ -1181,7 +1181,7 @@ export const getCalendarEvents = functions.region("asia-northeast1").https.onReq
 });
 
 // ───────────────────────────────────────────
-// 6. カレンダー＆詳細用 API（🔄 強制リフレッシュ機能付き！）
+// 6. カレンダー＆詳細用 API（🛡️ 絶対に落ちない・究極セーフモード版！）
 // ───────────────────────────────────────────
 export const getEventDetails = functions.region("asia-northeast1").https.onRequest(async (req: any, res: any) => {
     res.set('Access-Control-Allow-Origin', '*');
@@ -1189,15 +1189,17 @@ export const getEventDetails = functions.region("asia-northeast1").https.onReque
     if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
 
     const eventId = req.query.eventId;
-    // ★ 追加：強制リフレッシュの合図を受け取る
     const forceRefresh = req.query.forceRefresh === 'true'; 
     
-    if (!eventId) { res.status(400).json({ error: "No eventId" }); return; }
+    // IDがない場合は安全な空データを返す
+    if (!eventId) { 
+        return res.json({ details: "イベントIDが不明です。", joinsLineIds: [], maybesLineIds: [], declinesLineIds: [] }); 
+    }
 
     try {
         const docRef = db.collection("events").doc(eventId);
 
-        // ★ 修正：強制リフレッシュじゃなければ、キャッシュを返す
+        // 強制更新でなければキャッシュを返す
         if (!forceRefresh) {
             const docSnap = await docRef.get();
             if (docSnap.exists) {
@@ -1213,59 +1215,77 @@ export const getEventDetails = functions.region("asia-northeast1").https.onReque
             }
         }
 
-        // --- ここから下はNotionからの取得処理（変更なし） ---
+        // Notionからイベントページを取得
         const eventPage: any = await notion.pages.retrieve({ page_id: eventId });
         const joinsIds = eventPage.properties[PROP_JOIN]?.relation?.map((r:any) => r.id) || [];
         const maybesIds = eventPage.properties[PROP_MAYBE]?.relation?.map((r:any) => r.id) || [];
         const declinesIds = eventPage.properties[PROP_DECLINE]?.relation?.map((r:any) => r.id) || []; 
 
+        // 参加者のLINE IDを安全に取得（0.3秒のインターバル付き）
         const getLineIds = async (ids: string[]) => {
-            if(ids.length === 0) return [];
+            if(!ids || ids.length === 0) return [];
             const lineIds = [];
             for(const id of ids) {
                 try {
                     const p: any = await notion.pages.retrieve({ page_id: id });
-                    const lineId = p.properties[PROP_LINE_USER_ID]?.rich_text[0]?.plain_text;
+                    const lineId = p.properties[PROP_LINE_USER_ID]?.rich_text?.[0]?.plain_text;
                     if (lineId) lineIds.push(lineId);
-                } catch(e) {}
+                } catch(e) {
+                    console.error(`Participant error (${id}):`, e);
+                } finally {
+                    await new Promise(resolve => setTimeout(resolve, 333));
+                }
             }
             return lineIds;
         };
 
-        const [joinsLineIds, maybesLineIds, declinesLineIds] = await Promise.all([
-            getLineIds(joinsIds), getLineIds(maybesIds), getLineIds(declinesIds)
-        ]);
+        const joinsLineIds = await getLineIds(joinsIds);
+        const maybesLineIds = await getLineIds(maybesIds);
+        const declinesLineIds = await getLineIds(declinesIds);
 
-        const blocks = await notion.blocks.children.list({ block_id: eventId });
         let textContent = "";
-        
-        for (const block of blocks.results) {
-            let blockText = "";
-            const contentObj = block[block.type];
-            if (contentObj && contentObj.rich_text) {
-                blockText = contentObj.rich_text.map((t:any) => t.plain_text).join("");
-            }
-            if (blockText.includes("運営用") || blockText.includes("以下は運営用")) break;
+        try {
+            const blocks = await notion.blocks.children.list({ block_id: eventId });
+            for (const block of blocks.results) {
+                let blockText = "";
+                const contentObj = block[block.type];
+                if (contentObj && contentObj.rich_text) {
+                    blockText = contentObj.rich_text.map((t:any) => t.plain_text).join("");
+                }
+                if (blockText.includes("運営用") || blockText.includes("以下は運営用")) break;
 
-            if (blockText.trim()) {
-                if (block.type === 'heading_2' || block.type === 'heading_3') textContent += "\n■ " + blockText + "\n";
-                else if (block.type === 'bulleted_list_item') textContent += "・ " + blockText + "\n";
-                else textContent += blockText + "\n";
+                if (blockText.trim()) {
+                    if (block.type === 'heading_2' || block.type === 'heading_3') textContent += "\n■ " + blockText + "\n";
+                    else if (block.type === 'bulleted_list_item') textContent += "・ " + blockText + "\n";
+                    else textContent += blockText + "\n";
+                }
             }
+        } catch (e) {
+            console.error("Blocks error:", e);
         }
 
-        if(!textContent.trim()) textContent = eventPage.properties[PROP_DETAIL_TEXT]?.rich_text?.map((t:any)=>t.plain_text).join("") || "詳細情報（本文）はまだ書かれていません。";
+        if(!textContent.trim()) {
+            textContent = eventPage.properties[PROP_DETAIL_TEXT]?.rich_text?.map((t:any)=>t.plain_text).join("") || "詳細情報（本文）はまだ書かれていません。";
+        }
 
-        // ★ 取得した最新データをFirestoreに上書き（キャッシュの修復）
+        // キャッシュとして保存
         await docRef.set({
             details: textContent.trim(),
             joinsLineIds, maybesLineIds, declinesLineIds
         }, { merge: true });
 
-        res.json({ details: textContent.trim(), joinsLineIds, maybesLineIds, declinesLineIds });
+        // 正常にデータを返す
+        return res.json({ details: textContent.trim(), joinsLineIds, maybesLineIds, declinesLineIds });
+
     } catch(e: any) { 
-        console.error("Event Detail Error:", e);
-        res.status(500).json({ error: e.message }); 
+        console.error("Event Detail Critical Error:", e);
+        // 🚨 修正：エラーでBotを落とさず、「安全なデータ」としてエラー文を返す！！
+        return res.json({ 
+            details: `⚠️ データの取得に失敗しました。\n\n【エラー詳細】\n${e.message}\n\n※このメッセージが表示された場合は、翔大にお知らせください。`, 
+            joinsLineIds: [], 
+            maybesLineIds: [], 
+            declinesLineIds: [] 
+        });
     }
 });
 
