@@ -64,7 +64,7 @@
 
     <div id="event-detail-modal" class="fixed inset-0 z-[70] hidden flex-col justify-end bg-slate-900/50 backdrop-blur-sm">
         <div class="bg-white rounded-t-[2rem] p-6 shadow-2xl border-t border-slate-200 max-h-[90vh] flex flex-col w-full max-w-md mx-auto relative animate-[translateY_0.2s_ease-out]">
-            <button onclick="closeEventDetail()" class="absolute top-5 right-5 w-8 h-8 bg-slate-100 rounded-full text-slate-500 text-lg font-bold flex items-center justify-center z-10">&times;</button>
+            <button onclick="closeEventDetail()" class="absolute top-5 right-5 w-8 h-8 bg-slate-100 rounded-full text-slate-500 text-lg font-bold flex items-center justify-center z-[100] border border-slate-200">&times;</button>
             
             <div class="flex justify-between items-center mb-3 pr-10">
                 <button id="btn-prev-event" onclick="navigateEvent(-1)" class="w-8 h-8 flex items-center justify-center bg-slate-50 border border-slate-200 rounded-full text-indigo-500 active:scale-95 transition disabled:opacity-30 disabled:active:scale-100">◀</button>
@@ -74,22 +74,20 @@
             
             <h3 id="event-modal-title" class="text-xl font-black text-slate-800 mb-4 text-center leading-tight"></h3>
             
-            <div id="event-modal-content" class="overflow-y-auto no-scrollbar pb-6 flex-1">
+            <div id="event-modal-content" class="overflow-y-auto no-scrollbar pb-6 flex-1 relative">
                 </div>
         </div>
     </div>
 
     <div id="other-profile-modal" class="fixed inset-0 z-[80] hidden flex-col justify-end bg-slate-900/50 backdrop-blur-sm">
         <div class="bg-white rounded-t-[2.5rem] p-6 shadow-2xl border-t border-slate-200 max-h-[85vh] w-full max-w-md mx-auto relative animate-[translateY_0.2s_ease-out]">
-            <button onclick="closeOtherProfile()" class="absolute top-5 right-5 w-8 h-8 bg-slate-100 rounded-full text-slate-500 text-lg font-bold flex items-center justify-center">&times;</button>
-            
+            <button onclick="closeOtherProfile()" class="absolute top-5 right-5 w-8 h-8 bg-slate-100 rounded-full text-slate-500 text-lg font-bold flex items-center justify-center z-[100]">&times;</button>
             <div class="flex flex-col items-center mt-2 mb-6">
                 <img id="other-icon" src="" class="w-24 h-24 rounded-full border-4 border-slate-100 mb-3 object-cover shadow-sm">
                 <div id="other-role-badges" class="flex flex-wrap justify-center gap-1 mb-2"></div>
                 <h3 id="other-name" class="text-xl font-black text-slate-800 mb-1"></h3>
                 <p id="other-univ" class="text-[10px] text-slate-500 font-bold"></p>
             </div>
-            
             <div class="bg-slate-50 rounded-xl p-4 mb-4 border border-slate-200">
                 <p class="text-[10px] text-slate-500 font-bold mb-1">💬 今のひとこと</p>
                 <p id="other-intro" class="text-sm text-slate-700 font-bold"></p>
@@ -101,7 +99,7 @@
         let currentDate = new Date();
         let allEvents = []; 
         let allUsersData = []; 
-        let usersDict = {}; // ★ 爆速でプロフィールを探すための辞書
+        let usersDict = {}; 
         let myUserId = "";
         let currentEventIndex = -1;
 
@@ -109,7 +107,7 @@
             try {
                 await liff.init({ liffId: "2009176797-7MWNttly" }); 
                 if (liff.isLoggedIn()) { myUserId = liff.getDecodedIDToken()?.sub; }
-                await fetchUsersData(); // 先にユーザーデータを取っておく
+                await fetchUsersData(); 
                 await fetchCalendarEvents();
                 renderCalendar();
             } catch(e) { console.error(e); }
@@ -121,7 +119,6 @@
                 const json = await res.json();
                 if(json.documents) {
                     allUsersData = json.documents;
-                    // ★ ドキュメントID（＝LINE ID）をキーにした辞書を作る
                     allUsersData.forEach(doc => {
                         const lineId = doc.name.split('/').pop();
                         usersDict[lineId] = doc;
@@ -208,10 +205,6 @@
             document.getElementById('pickup-events').innerHTML = html;
         }
 
-        // =====================================
-        // イベント詳細 ＆ プロフィール表示
-        // =====================================
-        
         function getSafe(f) { if (!f) return ""; if (f.stringValue !== undefined) return f.stringValue; return ""; }
         function getRoleBadgeHtml(role) {
             let badgeClass = "", badgeIcon = "";
@@ -222,12 +215,10 @@
             return `<span class="inline-block ${badgeClass} text-[10px] font-black tracking-widest px-2 py-0.5 rounded shadow-sm">${badgeIcon} ${role}</span>`;
         }
 
-        // 🌟 強化版：LINE IDから100%確実にプロフィールを開く
         function openProfileByLineId(lineId) {
             if (!lineId) return;
             if (lineId === myUserId) { alert("これはあなた自身です！マイページから確認してください。"); return; }
-            
-            const doc = usersDict[lineId]; // 辞書から一瞬で検索
+            const doc = usersDict[lineId]; 
             if (doc) {
                 closeEventDetail();
                 const p = doc.fields.profile.mapValue.fields;
@@ -273,7 +264,6 @@
             if (newIndex >= 0 && newIndex < allEvents.length) { openEventDetailByIndex(newIndex); }
         }
 
-        // ★ユーザーチップを辞書から生成する関数（爆速！）
         function createUserChip(lineId, colorClass, borderClass, textClass) {
             const doc = usersDict[lineId];
             if (!doc) return `<span class="text-[9px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-full">匿名</span>`;
@@ -287,25 +277,28 @@
                 </div>`;
         }
 
-// ★ 追加：forceRefresh（強制更新）の引数を追加
         async function fetchEventDetailsData(eventId, forceRefresh = false) {
-            
-            // 強制更新の時はローディング表示を出す
             if (forceRefresh) {
                 document.getElementById('event-modal-content').innerHTML = `
                     <div class="flex flex-col items-center justify-center py-10">
                         <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mb-3"></div>
-                        <p class="text-xs text-slate-400 font-bold">キャッシュを再構築中...</p>
+                        <p class="text-xs text-slate-400 font-bold">最新データを取得中...</p>
                     </div>`;
             }
 
             try {
-                // ★ 追加：forceRefresh が true なら API に合図を送る
                 const url = `https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/getEventDetails?eventId=${eventId}${forceRefresh ? '&forceRefresh=true' : ''}`;
                 const res = await fetch(url);
                 
-                if (!res.ok) throw new Error("APIレスポンスエラー");
+                // ★ 修正：APIエラーだった場合に、わかりやすいエラーを投げる
+                if (!res.ok) throw new Error(`サーバーエラー (Status: ${res.status}) - Botのコードが正しく更新されていない可能性があります`);
+                
                 const data = await res.json();
+
+                // バックエンドが「⚠️データの取得に失敗しました」という安全なテキストを返してきた場合
+                if (data.details && data.details.includes("⚠️")) {
+                    throw new Error(data.details);
+                }
 
                 const isJoin = data.joinsLineIds && data.joinsLineIds.includes(myUserId);
                 const isMaybe = data.maybesLineIds && data.maybesLineIds.includes(myUserId);
@@ -338,11 +331,14 @@
                 document.getElementById('event-modal-content').innerHTML = html;
                 
             } catch(e) { 
-                // 🌟 修正：エラーになったら「更新ボタン」を表示してリトライさせる！
+                // ★ 修正：エラー内容を画面に赤文字でデカデカと表示する！
                 document.getElementById('event-modal-content').innerHTML = `
-                    <div class="flex flex-col items-center justify-center py-10">
-                        <span class="text-3xl mb-2">⚠️</span>
-                        <p class="text-xs text-slate-500 font-bold mb-4 text-center">データの読み込みに失敗しました。<br>情報が古くなっている可能性があります。</p>
+                    <div class="flex flex-col items-center justify-center py-6 px-4">
+                        <span class="text-3xl mb-2">🚨</span>
+                        <p class="text-xs text-slate-600 font-bold mb-3 text-center">エラーの原因を特定しました</p>
+                        <div class="bg-red-50 text-red-600 text-[9px] font-mono p-3 rounded-lg w-full mb-4 break-words border border-red-200 shadow-inner">
+                            ${e.message}
+                        </div>
                         <button onclick="fetchEventDetailsData('${eventId}', true)" class="bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-600 px-5 py-2.5 rounded-full text-xs font-bold active:scale-95 transition shadow-sm flex items-center gap-1">
                             <span>🔄</span> キャッシュを作り直す
                         </button>
@@ -350,7 +346,22 @@
                 `; 
             }
         }
-        
+
+        function closeEventDetail() { document.getElementById('event-detail-modal').classList.add('hidden'); document.getElementById('event-detail-modal').classList.remove('flex'); }
+
+        async function submitEventStatus(eventId, status) {
+            if (!myUserId) { alert("ログイン情報が取得できません"); return; }
+            document.getElementById('event-modal-content').innerHTML = `<div class="flex flex-col items-center justify-center py-10"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mb-3"></div><p class="text-xs text-slate-400 font-bold">登録中...</p></div>`;
+            try {
+                const res = await fetch(`https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/updateEventStatus`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: myUserId, eventId: eventId, status: status })
+                });
+                if (!res.ok) throw new Error("登録エラー");
+                fetchEventDetailsData(eventId); 
+            } catch(e) { alert("登録に失敗しました"); closeEventDetail(); }
+        }
+
         initCalendar();
     </script>
 </body>
