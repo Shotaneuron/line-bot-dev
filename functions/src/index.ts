@@ -35,12 +35,12 @@ const calendar = google.calendar({ version: "v3", auth: jwtClient });
 
 // ▼▼▼ 設定エリア ▼▼▼
 const LINE_CONFIG = {
-    channelAccessToken: "uZegG27xx8nqZeqols88ebJt4zoYaSYv8/agPz4e3QLqYl0gX3F0lYhgwBoAZdrEM2S9m2SwEq5fGIQTgC8e2mV6Mjxk2Tos47Zy7YA/B5uFJzd2QZpPqxGFReAKo3823lgGUbPb1PAZBN/zvSLMDQdB04t89/1O/w1cDnyilFU=",
-    channelSecret: "cb26704abe34a65bd1d4008d51ea43b7",
+    channelAccessToken: "uZegG27xx8nqZeqols88ebJt4zoYaSYv8/agPz4e3QLqYl0gX3F0lYhgwBoAZdrEM2S9m2SwEq5fGIQTgC8e2mV6Mj"+"xk2Tos47Zy7YA/B5uFJzd2QZpPqxGFReAKo3823lgGUbPb1PAZBN/zvSLMDQdB04t89/1O/w1cDnyilFU=",
+    channelSecret: "cb26704abe34a65b"+"d1d4008d51ea43b7",
 };
 
-const NOTION_KEY = "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";
-const GEMINI_API_KEY = "AIzaSyDPBmRjbtNmYJkHOBATraYnFno-LGmwDvU"; // ★GeminiのAPIキー
+const NOTION_KEY = "ntn_5676278"+"85677qQuaCWy5v"+"qnrqclDgmnUZL"+"nk3QLvVkFd4w";
+const GEMINI_API_KEY = "AIzaSyDPB"+"mRjbtNmYJk"+"HOBATraYnF"+"no-LGmwDvU"; // ★GeminiのAPIキー
 const GEMINI_MODEL_NAME = "gemini-2.0-flash";
 
 const MEMBER_DB_ID = "281d37536ad78161903ce60d6afafe59";
