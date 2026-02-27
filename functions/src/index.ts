@@ -4,11 +4,9 @@ import * as line from "@line/bot-sdk";
 import { Client } from "@notionhq/client";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { google } from "googleapis";
-
-// Firebase Admin SDK のみを使い、シンプルに初期化します
 import * as admin from "firebase-admin";
 
-// プロジェクトIDを直接指定して、迷子にならないようにします
+// プロジェクトIDを直接指定
 if (admin.apps.length === 0) {
     admin.initializeApp({
         projectId: "shinrizemi-linebot"
@@ -16,16 +14,12 @@ if (admin.apps.length === 0) {
 }
 
 const db = admin.firestore();
-// defaultデータベースを明示的に指定（NOT_FOUND対策）
 db.settings({ databaseId: "default", ignoreUndefinedProperties: true });
 
-// ★New! Googleカレンダー設定
-const calendarKey = require("../calendar-key.json"); // 先ほど置いた秘密鍵を読み込む
+const calendarKey = require("../calendar-key.json"); 
 const GOOGLE_CALENDAR_ID = "c7b5074ec62bd8c6efb51743195e1c7456f7a4c45053316cec023e13b70c5b9e@group.calendar.google.com";
-const PROP_EVENT_GCAL_ID = "カレンダーID"; // 先ほどNotionに追加したプロパティ
+const PROP_EVENT_GCAL_ID = "カレンダーID"; 
 
-
-// Google APIの初期化（ロボットのログイン処理）
 const jwtClient = new google.auth.JWT({
     email: calendarKey.client_email,
     key: calendarKey.private_key,
@@ -34,18 +28,9 @@ const jwtClient = new google.auth.JWT({
 const calendar = google.calendar({ version: "v3", auth: jwtClient });
 
 // ▼▼▼ 設定エリア ▼▼▼
-const LINE_CONFIG = {
-    channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN || "",
-    channelSecret: process.env.LINE_CHANNEL_SECRET || "",
-};
-
-const NOTION_KEY = process.env.NOTION_KEY || "";
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || ""; 
 const GEMINI_MODEL_NAME = "gemini-2.0-flash";
-
 const MEMBER_DB_ID = "281d37536ad78161903ce60d6afafe59";
 const EVENT_DB_ID = "307d37536ad780f9a72cfb32808fefc9"; 
-// ▲▲▲ 設定エリア終わり ▲▲▲
 
 // プロパティ名
 const PROP_MEMBER_NAME = "名前";
@@ -68,14 +53,41 @@ const PROP_MEMBER_ROLE = "役職";
 const ADMIN_SEPARATOR = "🚧";
 // ▲▲▲ 設定エリア終わり ▲▲▲
 
-const lineClient = new line.Client(LINE_CONFIG);
-const notion = new Client({ auth: NOTION_KEY }) as any;
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+// 🚨 追加：使うシークレット（金庫の鍵）を宣言
+const SECRETS = [
+    "LINE_CHANNEL_ACCESS_TOKEN", 
+    "LINE_CHANNEL_SECRET", 
+    "NOTION_KEY", 
+    "GEMINI_API_KEY"
+];
+
+// クライアントを保持する変数
+let lineClient: line.Client;
+let notion: any;
+let genAI: GoogleGenerativeAI;
+
+// 🚨 追加：処理が走った瞬間に金庫を開けて設定する仕組み
+function initializeClients() {
+    if (!lineClient) {
+        lineClient = new line.Client({
+            channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN || "",
+            channelSecret: process.env.LINE_CHANNEL_SECRET || "",
+        });
+    }
+    if (!notion) {
+        notion = new Client({ auth: process.env.NOTION_KEY });
+    }
+    if (!genAI) {
+        genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+    }
+}
 
 // ───────────────────────────────────────────
 // 1. LINE Webhook
 // ───────────────────────────────────────────
-export const lineWebhook = functions.region("asia-northeast1").https.onRequest(async (req: any, res: any) => {
+// ★ .runWith({ secrets: SECRETS }) を追加して権限を与える
+export const lineWebhook = functions.region("asia-northeast1").runWith({ secrets: SECRETS }).https.onRequest(async (req: any, res: any) => {
+    initializeClients(); // ★ここでAPIキーをセット！
     if (req.method !== "POST") { res.status(405).send("Method Not Allowed"); return; }
     const events = req.body.events;
     if (!events || events.length === 0) { res.status(200).send("OK"); return; }
@@ -86,8 +98,9 @@ export const lineWebhook = functions.region("asia-northeast1").https.onRequest(a
 // ───────────────────────────────────────────
 // 2. 定期実行: 新着イベント通知 (毎日21:00)
 // ───────────────────────────────────────────
-export const scheduledEventNotification = functions.region("asia-northeast1").pubsub
+export const scheduledEventNotification = functions.region("asia-northeast1").runWith({ secrets: SECRETS }).pubsub
     .schedule("0 21 * * *").timeZone("Asia/Tokyo").onRun(async (context) => {
+        initializeClients(); // ★ここでAPIキーをセット！
         console.log("🔔 定期通知バッチ開始");
         const now = new Date();
         const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
@@ -145,8 +158,9 @@ export const scheduledEventNotification = functions.region("asia-northeast1").pu
 // ───────────────────────────────────────────
 // 3. 定期実行: 前日リマインド (毎日21:00)
 // ───────────────────────────────────────────
-export const scheduledEventReminder = functions.region("asia-northeast1").pubsub
+export const scheduledEventReminder = functions.region("asia-northeast1").runWith({ secrets: SECRETS }).pubsub
     .schedule("0 21 * * *").timeZone("Asia/Tokyo").onRun(async (context) => {
+        initializeClients(); // ★ここでAPIキーをセット！
         console.log("⏰ 前日リマインド開始");
         const now = new Date();
         const tomorrow = new Date(now);
@@ -199,11 +213,11 @@ export const scheduledEventReminder = functions.region("asia-northeast1").pubsub
 // ───────────────────────────────────────────
 // 4. Googleカレンダーからの更新通知を受け取るWebhook
 // ───────────────────────────────────────────
-export const googleCalendarWebhook = functions.region("asia-northeast1").https.onRequest(async (req: any, res: any) => {
+export const googleCalendarWebhook = functions.region("asia-northeast1").runWith({ secrets: SECRETS }).https.onRequest(async (req: any, res: any) => {
+    initializeClients(); // ★ここでAPIキーをセット！
     const resourceState = req.headers['x-goog-resource-state'];
     const channelId = req.headers['x-goog-channel-id'];
 
-    // ⚠️ 【超重要】Googleへ「通知を受け取った」とすぐに返す（これがないとエラーになります）
     res.status(200).send('OK');
 
     if (resourceState === 'sync') {
@@ -214,51 +228,44 @@ export const googleCalendarWebhook = functions.region("asia-northeast1").https.o
     if (resourceState === 'exists') {
         console.log(`カレンダーに更新あり！自動同期を開始 Channel ID: ${channelId}`);
         try {
-            // 1. 「ここ5分以内」に変更があった予定だけをGoogleカレンダーから取得する
             const fiveMinsAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
             const response = await calendar.events.list({
                 calendarId: GOOGLE_CALENDAR_ID,
                 updatedMin: fiveMinsAgo,
                 singleEvents: true,
-                showDeleted: true, // 削除された予定も検知するため
+                showDeleted: true,
             });
 
             const events = response.data.items || [];
 
-            // 2. 取得した予定を1つずつNotionに反映させる
             for (const event of events) {
                 const gcalId = event.id;
                 if (!gcalId) continue;
 
-                // すでにNotionに同じIDの予定が存在するかチェック
                 const notionSearch = await notion.databases.query({
                     database_id: EVENT_DB_ID,
                     filter: { property: PROP_EVENT_GCAL_ID, rich_text: { equals: gcalId } }
                 });
                 const existingPage = notionSearch.results[0];
 
-                // ▼ パターン①：予定がGoogleカレンダーで「削除」された場合
                 if (event.status === "cancelled") {
                     if (existingPage) {
-                        await notion.pages.update({ page_id: existingPage.id, archived: true }); // Notion側も削除（アーカイブ）
+                        await notion.pages.update({ page_id: existingPage.id, archived: true }); 
                         console.log(`Notionの予定を削除しました: ${gcalId}`);
                     }
                     continue;
                 }
 
-                // ▼ パターン②：予定が「追加・変更」された場合
                 const title = event.summary || "無題の予定";
 
-                // 日付データの整形（時間指定か、終日イベントかで分ける）
                 let dateProp: any = {};
                 if (event.start?.dateTime) {
-                    dateProp.start = event.start.dateTime; // 時間あり
+                    dateProp.start = event.start.dateTime; 
                     if (event.end?.dateTime) dateProp.end = event.end.dateTime;
                 } else if (event.start?.date) {
-                    dateProp.start = event.start.date;     // 終日イベント
+                    dateProp.start = event.start.date;    
                 }
 
-                // Notionに書き込むデータ
                 const properties = {
                     [PROP_EVENT_NAME]: { title: [{ text: { content: title } }] },
                     [PROP_EVENT_DATE]: { date: dateProp },
@@ -266,11 +273,9 @@ export const googleCalendarWebhook = functions.region("asia-northeast1").https.o
                 };
 
                 if (existingPage) {
-                    // すでにある場合は「上書き更新」
                     await notion.pages.update({ page_id: existingPage.id, properties: properties });
                     console.log(`Notionの予定を更新しました: ${title}`);
                 } else {
-                    // ない場合は「新規作成」
                     await notion.pages.create({
                         parent: { database_id: EVENT_DB_ID },
                         properties: properties
@@ -328,12 +333,8 @@ async function handleEvent(event: any) {
     if (text === "タグ通知" || text === "新着テスト") { await handleTagNotificationManual(replyToken, userId); return null; }
     if (text === "タグ同期") { await handleSyncTags(replyToken); return null; }
 
-    // ★New! カレンダー同期用の隠しコマンド
     if (text === "カレンダー同期") { await handleSyncCalendar(replyToken); return null; }
-
-    // ▼▼ ここに追加 ▼▼
     if (text === "監視スタート") { await handleSetupWatch(replyToken); return null; }
-    // ★New! LIFFからデータを受け取った時の処理を追加
 
     if (text.startsWith("【プロフ更新】")) {
         await handleProfileUpdate(replyToken, userId, text);
@@ -484,14 +485,12 @@ async function replyTagMenuCarousel(replyToken: string, userId: string) {
 
     const currentTags = memberPage.properties[PROP_MEMBER_TAGS]?.multi_select?.map((t: any) => t.name) || [];
 
-    // ★ 変更点1：1つのカードに入れるタグを「6個」に減らす（縦長になりすぎないようにするため）
     const TAGS_PER_BUBBLE = 7;
     const bubbles: any[] = [];
 
     for (let i = 0; i < allTags.length; i += TAGS_PER_BUBBLE) {
         const chunk = allTags.slice(i, i + TAGS_PER_BUBBLE);
 
-        // ★ 変更点2：1列にするので、ボタンをそのまま縦に並べる
         const buttons = chunk.map(tag => {
             const isSelected = currentTags.includes(tag);
             return {
@@ -518,13 +517,13 @@ async function replyTagMenuCarousel(replyToken: string, userId: string) {
 
         bubbles.push({
             type: "bubble",
-            size: "mega", // ★ 変更点3：1列で横幅を広く使えるサイズ（mega）に設定
+            size: "mega", 
             header: { type: "box", layout: "vertical", contents: headerContents },
             body: {
                 type: "box",
                 layout: "vertical",
                 spacing: "sm",
-                contents: buttons // ここでボタンをそのまま縦に並べる
+                contents: buttons 
             },
             footer: { type: "box", layout: "vertical", contents: [{ type: "button", style: "link", action: { type: "message", label: "完了（閉じる）", text: "個人設定" } }] }
         });
@@ -536,15 +535,11 @@ async function replyTagMenuCarousel(replyToken: string, userId: string) {
 // ───────────────────────────────────────────
 // 👤 マイページ ＆ プロフィール更新
 // ───────────────────────────────────────────
-// ───────────────────────────────────────────
-// 👤 マイページ ＆ プロフィール更新
-// ───────────────────────────────────────────
 async function handleProfileUpdate(replyToken: string, userId: string, text: string) {
     const lines = text.split('\n');
     let name = "", uni = "", faculty = "", grade = "", intro = "";
     let isIntro = false;
 
-    // テキストから各項目を抽出（複数行の自己紹介にも対応）
     for (const line of lines) {
         if (line.startsWith("名前:")) { name = line.replace("名前:", "").trim(); continue; }
         if (line.startsWith("大学:")) { uni = line.replace("大学:", "").trim(); continue; }
@@ -560,7 +555,6 @@ async function handleProfileUpdate(replyToken: string, userId: string, text: str
     try {
         let memberPage = await getMemberPage(userId);
 
-        // LINE IDで見つからない場合、「名前」で探して紐付け
         if (!memberPage) {
             const nameSearch = await notion.databases.query({
                 database_id: MEMBER_DB_ID,
@@ -569,7 +563,6 @@ async function handleProfileUpdate(replyToken: string, userId: string, text: str
             if (nameSearch.results.length > 0) memberPage = nameSearch.results[0];
         }
 
-        // ★魔法の仕掛け：LINEのプロフィール画像URLを取得
         const profile = await lineClient.getProfile(userId);
         const iconUrl = profile.pictureUrl;
 
@@ -583,9 +576,7 @@ async function handleProfileUpdate(replyToken: string, userId: string, text: str
 
         const updateParams: any = { properties: propertiesToUpdate };
 
-        // 画像URLがあれば、Notionのアイコンに設定する！
         if (iconUrl) {
-            // ★修正点：Notionが「画像」として認識できるようにダミーの拡張子（#.jpg）をつける
             updateParams.icon = { type: "external", external: { url: iconUrl + "#.jpg" } };
         }
 
@@ -602,7 +593,6 @@ async function handleProfileUpdate(replyToken: string, userId: string, text: str
             targetPageId = newPage.id;
         }
 
-        // ★自己紹介があれば、Notionの「本文」に追記する
         if (intro) {
             await notion.blocks.children.append({
                 block_id: targetPageId,
@@ -633,7 +623,6 @@ async function handlePersonalMenu(replyToken: string, userId: string) {
         const grade = memberPage.properties[PROP_MEMBER_GRADE]?.select?.name || "未設定";
         const role = memberPage.properties[PROP_MEMBER_ROLE]?.select?.name || "一般メンバー";
 
-        // ★ひとこと（旧：自己紹介）
         let hitokoto = memberPage.properties[PROP_MEMBER_INTRO]?.rich_text[0]?.plain_text || "よろしくお願いします！";
         if (hitokoto.length > 50) hitokoto = hitokoto.substring(0, 50) + "...";
 
@@ -661,14 +650,12 @@ async function handlePersonalMenu(replyToken: string, userId: string) {
                         { type: "separator", margin: "md" },
                         { type: "button", style: "primary", height: "sm", action: { type: "uri", label: "📝 基本情報を編集", uri: LIFF_URL } },
                         { type: "button", style: "secondary", height: "sm", action: { type: "postback", label: "🏷️ 興味タグを編集", data: "action=edit_tags" } },
-                        // ★ボタン名を「ひとこと」に変更
                         { type: "button", style: "secondary", height: "sm", action: { type: "postback", label: "💬 ひとことを編集", data: "action=edit_intro" } }
                     ]
                 }
             }
         });
     } else {
-        // 未登録用UI（新バージョン）
         await lineClient.replyMessage(replyToken, {
             type: "flex", altText: "個人設定（未登録）",
             contents: {
@@ -691,7 +678,6 @@ async function handleUpdateIntro(replyToken: string, userId: string, introText: 
     const memberPage = await getMemberPage(userId);
     if (!memberPage) { await reply(replyToken, "先に連携してください！"); return; }
     try {
-        // ★ひとこと（PROP_MEMBER_INTRO）を更新
         await notion.pages.update({ page_id: memberPage.id, properties: { [PROP_MEMBER_INTRO]: { rich_text: [{ text: { content: introText } }] } } });
         await reply(replyToken, `💬 ひとことを更新しました！\n\n「${introText}」`);
     } catch (e: any) {
@@ -753,19 +739,16 @@ async function handleTagNotificationManual(replyToken: string, triggerUserId: st
 
 async function handleNotionSearchAI(replyToken: string, userId: string, queryText: string) {
     try {
-        // １．Firestoreから過去の会話履歴を10件取得
         const historyRef = db.collection("users").doc(userId).collection("history");
         const snapshot = await historyRef.orderBy("createdAt", "desc").limit(10).get();
         const history = snapshot.docs.reverse().map(doc => doc.data());
         let historyContext = history.map(h => `ユーザー: ${h.user}\nAI: ${h.ai}`).join("\n");
 
-        // ２．Notion検索キーワードをAIに抽出させる（既存の仕組み）
         const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_NAME });
         const keywordPrompt = `ユーザーの質問: "${queryText}"\nこの質問に関連する情報をNotionで検索するためのキーワードを1〜2個、スペース区切りで出力してください。余計な説明は不要です。`;
         const keywordResult = await model.generateContent(keywordPrompt);
         const keywords = keywordResult.response.text().trim();
 
-        // ３．Notionデータベースを検索して contextText を作成
         const notionResponse = await notion.databases.query({
             database_id: EVENT_DB_ID,
             filter: {
@@ -783,36 +766,26 @@ async function handleNotionSearchAI(replyToken: string, userId: string, queryTex
             }).join("\n")
             : "関連するゼミの予定は見つかりませんでした。";
 
-        // ３．５ ユーザーの診断データをFirestoreから取得する
         const userDocRef = db.collection("users").doc(userId);
         const userDocSnap = await userDocRef.get();
         const userData = userDocSnap.exists ? userDocSnap.data() : null;
 
-        // ✅ Admin SDKは自動で型を変換するので、.stringValue は不要！
         const motivationData = userData?.motivationResult || "未診断";
         const chronoData = userData?.chronoResult || "未診断";
         const coffeeData = userData?.coffeeResult || "未診断";
 
-        // ★ 満点を自動計算してAIに教える
-// ▼ index.ts の変更部分 ▼
-        // ★ 満点を自動計算してAIに教える
         let bigfiveData = "未診断";
         if (userData?.bigFiveScores) {
             const s = JSON.parse(userData.bigFiveScores);
-            
-            // ★ 新しい構造（domainScores）に対応させる
             if (s.domainScores) {
                 bigfiveData = `外向性:${s.domainScores.extraversion}, 協調性:${s.domainScores.agreeableness}, 誠実性:${s.domainScores.conscientiousness}, 神経症的傾向:${s.domainScores.neuroticism}, 開放性:${s.domainScores.openness} (※各120点満点)\n詳細ファセット:${JSON.stringify(s.facetScores)}`;
             } else {
-                // 古いデータ（簡易版など）への対応
                 bigfiveData = `外向性:${s.extraversion}, 協調性:${s.agreeableness}, 誠実性:${s.conscientiousness}, 神経症的傾向:${s.neuroticism}, 開放性:${s.openness}`;
             }
         } else if (userData?.bigFiveResult) {
             bigfiveData = userData.bigFiveResult;
         }
 
-        // ４．「北大心理ゼミのAI先輩」プロンプトを適用 ✨
-        // ... (以下はそのまま)
         const systemPrompt = `
         あなたは北海道大学「心理ゼミ」の頼れる先輩メンター（AIアドバイザー）です。
         以下の【ユーザーの診断データ】と【過去の会話】を踏まえ、論理的かつ親身なアドバイスを行ってください。
@@ -852,11 +825,9 @@ async function handleNotionSearchAI(replyToken: string, userId: string, queryTex
         上記ルールに従い、1回の返信は20〜300文字程度の短文で、マークダウンを一切使わずに返信してください。
         `;
 
-        // ５．AI回答の生成
         const result = await model.generateContent(systemPrompt);
         const aiResponse = result.response.text();
 
-        // ６．システムコマンド以外ならFirestoreに保存（記憶）💾
         const SYSTEM_COMMANDS = ["イベント", "予定", "履歴", "メニュー", "探す", "設定", "連携", "同期", "監視"];
         const isSystemCommand = SYSTEM_COMMANDS.some(cmd => queryText.includes(cmd));
         if (!isSystemCommand) {
@@ -867,10 +838,9 @@ async function handleNotionSearchAI(replyToken: string, userId: string, queryTex
             });
         }
 
-        // ７．心理テストの結果（キーワード等）が含まれている場合、最新結果として保存
         if (queryText.includes("診断結果")) {
             await db.collection("users").doc(userId).set({
-                latestResult: aiResponse, // AIが要約した解説を保存
+                latestResult: aiResponse,
                 lastTestedAt: admin.firestore.FieldValue.serverTimestamp()
             }, { merge: true });
         }
@@ -948,7 +918,6 @@ function formatDate(isoString: string) {
 // ───────────────────────────────────────────
 async function handleSyncCalendar(replyToken: string) {
     try {
-        // Notionから「今日以降」のイベントを取得
         const today = new Date().toISOString().split('T')[0];
         const events = await notion.databases.query({
             database_id: EVENT_DB_ID,
@@ -960,27 +929,23 @@ async function handleSyncCalendar(replyToken: string) {
         for (const page of events.results as any[]) {
             const title = page.properties[PROP_EVENT_NAME]?.title[0]?.plain_text || "無題";
             const dateProp = page.properties[PROP_EVENT_DATE]?.date;
-            if (!dateProp || !dateProp.start) continue; // 日付未設定はスキップ
+            if (!dateProp || !dateProp.start) continue; 
 
             const gcalId = page.properties[PROP_EVENT_GCAL_ID]?.rich_text?.[0]?.plain_text;
 
             let startData: any = {};
             let endData: any = {};
 
-            // 🕒 時間の計算（Notionの形式をGoogleカレンダーの形式に変換）
             if (dateProp.start.includes("T")) {
-                // 時間指定がある場合
                 startData = { dateTime: dateProp.start, timeZone: "Asia/Tokyo" };
                 const endDate = dateProp.end || new Date(new Date(dateProp.start).getTime() + 60 * 60 * 1000).toISOString();
                 endData = { dateTime: endDate, timeZone: "Asia/Tokyo" };
             } else {
-                // 終日イベントの場合
                 startData = { date: dateProp.start };
                 const nextDay = new Date(new Date(dateProp.start).getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
                 endData = { date: dateProp.end ? new Date(new Date(dateProp.end).getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0] : nextDay };
             }
 
-            // Googleカレンダーに送るデータの中身
             const eventBody = {
                 summary: `[心理ゼミ] ${title}`,
                 description: `🔗 Notion詳細ページ:\n${page.url}`,
@@ -989,14 +954,11 @@ async function handleSyncCalendar(replyToken: string) {
             };
 
             if (gcalId) {
-                // すでに登録済みなら「更新（上書き）」
                 await calendar.events.update({ calendarId: GOOGLE_CALENDAR_ID, eventId: gcalId, requestBody: eventBody });
                 syncCount++;
             } else {
-                // まだカレンダーに無ければ「新規作成」
                 const res = await calendar.events.insert({ calendarId: GOOGLE_CALENDAR_ID, requestBody: eventBody });
 
-                // 発行されたGoogleカレンダーのIDをNotionに保存しておく（次回ダブらないため）
                 await notion.pages.update({
                     page_id: page.id,
                     properties: { [PROP_EVENT_GCAL_ID]: { rich_text: [{ text: { content: res.data?.id || "" } }] } }
@@ -1025,7 +987,6 @@ async function handleSetupWatch(replyToken: string) {
             }
         });
 
-        // ★追加ポイント：受け取った結果をログに出力して「使った」ことにする
         console.log("監視設定レスポンス:", watchResponse.data);
 
         await reply(replyToken, `✅ カレンダーの監視設定（Watch）が完了しました！\n\n以降、Googleカレンダーで予定が追加・変更されると、自動的に裏側で同期が走ります。`);
