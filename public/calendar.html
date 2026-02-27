@@ -287,9 +287,24 @@
                 </div>`;
         }
 
-        async function fetchEventDetailsData(eventId) {
+// ★ 追加：forceRefresh（強制更新）の引数を追加
+        async function fetchEventDetailsData(eventId, forceRefresh = false) {
+            
+            // 強制更新の時はローディング表示を出す
+            if (forceRefresh) {
+                document.getElementById('event-modal-content').innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-10">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mb-3"></div>
+                        <p class="text-xs text-slate-400 font-bold">キャッシュを再構築中...</p>
+                    </div>`;
+            }
+
             try {
-                const res = await fetch(`https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/getEventDetails?eventId=${eventId}`);
+                // ★ 追加：forceRefresh が true なら API に合図を送る
+                const url = `https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/getEventDetails?eventId=${eventId}${forceRefresh ? '&forceRefresh=true' : ''}`;
+                const res = await fetch(url);
+                
+                if (!res.ok) throw new Error("APIレスポンスエラー");
                 const data = await res.json();
 
                 const isJoin = data.joinsLineIds && data.joinsLineIds.includes(myUserId);
@@ -308,6 +323,11 @@
                 else html += `<p class="text-[10px] text-slate-400">迷い中の人はいません</p>`; 
                 html += `</div>`;
 
+                if(data.declinesLineIds && data.declinesLineIds.length > 0) {
+                    html += `<div class="mt-4"><p class="text-[9px] font-bold text-slate-400 mb-1">🙅 不参加</p>`;
+                    html += `<div class="flex flex-wrap gap-1">${data.declinesLineIds.map(id => createUserChip(id, "bg-slate-100", "border-slate-200", "text-slate-500")).join('')}</div></div>`;
+                }
+
                 html += `
                     <div class="flex gap-2 mt-6 pt-4 border-t border-slate-100">
                         <button onclick="submitEventStatus('${eventId}', 'join')" class="flex-1 font-bold py-3 rounded-xl text-xs transition border shadow-sm ${isJoin ? 'bg-indigo-500 text-white border-indigo-600' : 'bg-white text-slate-500 border-slate-200'}">🙋 参加</button>
@@ -316,27 +336,21 @@
                     </div>
                 `;
                 document.getElementById('event-modal-content').innerHTML = html;
-            } catch(e) { document.getElementById('event-modal-content').innerHTML = '<p class="text-center text-red-400 py-4 text-xs font-bold">エラーが発生しました</p>'; }
+                
+            } catch(e) { 
+                // 🌟 修正：エラーになったら「更新ボタン」を表示してリトライさせる！
+                document.getElementById('event-modal-content').innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-10">
+                        <span class="text-3xl mb-2">⚠️</span>
+                        <p class="text-xs text-slate-500 font-bold mb-4 text-center">データの読み込みに失敗しました。<br>情報が古くなっている可能性があります。</p>
+                        <button onclick="fetchEventDetailsData('${eventId}', true)" class="bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-600 px-5 py-2.5 rounded-full text-xs font-bold active:scale-95 transition shadow-sm flex items-center gap-1">
+                            <span>🔄</span> キャッシュを作り直す
+                        </button>
+                    </div>
+                `; 
+            }
         }
-
-        function closeEventDetail() { document.getElementById('event-detail-modal').classList.add('hidden'); document.getElementById('event-detail-modal').classList.remove('flex'); }
-
-        async function submitEventStatus(eventId, status) {
-            if (!myUserId) { alert("ログイン情報が取得できません"); return; }
-            document.getElementById('event-modal-content').innerHTML = `
-                <div class="flex flex-col items-center justify-center py-10">
-                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mb-3"></div><p class="text-xs text-slate-400 font-bold">登録中...</p>
-                </div>`;
-            try {
-                const res = await fetch(`https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/updateEventStatus`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: myUserId, eventId: eventId, status: status })
-                });
-                if (!res.ok) throw new Error("登録エラー");
-                fetchEventDetailsData(eventId); 
-            } catch(e) { alert("登録に失敗しました"); closeEventDetail(); }
-        }
-
+        
         initCalendar();
     </script>
 </body>

@@ -1180,30 +1180,40 @@ export const getCalendarEvents = functions.region("asia-northeast1").https.onReq
     } catch(e: any) { res.status(500).json({ error: e.message }); }
 });
 
+// ───────────────────────────────────────────
+// 6. カレンダー＆詳細用 API（🔄 強制リフレッシュ機能付き！）
+// ───────────────────────────────────────────
 export const getEventDetails = functions.region("asia-northeast1").https.onRequest(async (req: any, res: any) => {
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
     if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
 
     const eventId = req.query.eventId;
+    // ★ 追加：強制リフレッシュの合図を受け取る
+    const forceRefresh = req.query.forceRefresh === 'true'; 
+    
     if (!eventId) { res.status(400).json({ error: "No eventId" }); return; }
 
     try {
         const docRef = db.collection("events").doc(eventId);
-        const docSnap = await docRef.get();
 
-        if (docSnap.exists) {
-            const data = docSnap.data();
-            if (data && data.details !== undefined) {
-                return res.json({
-                    details: data.details,
-                    joinsLineIds: data.joinsLineIds || [],
-                    maybesLineIds: data.maybesLineIds || [],
-                    declinesLineIds: data.declinesLineIds || []
-                });
+        // ★ 修正：強制リフレッシュじゃなければ、キャッシュを返す
+        if (!forceRefresh) {
+            const docSnap = await docRef.get();
+            if (docSnap.exists) {
+                const data = docSnap.data();
+                if (data && data.details !== undefined) {
+                    return res.json({
+                        details: data.details,
+                        joinsLineIds: data.joinsLineIds || [],
+                        maybesLineIds: data.maybesLineIds || [],
+                        declinesLineIds: data.declinesLineIds || []
+                    });
+                }
             }
         }
 
+        // --- ここから下はNotionからの取得処理（変更なし） ---
         const eventPage: any = await notion.pages.retrieve({ page_id: eventId });
         const joinsIds = eventPage.properties[PROP_JOIN]?.relation?.map((r:any) => r.id) || [];
         const maybesIds = eventPage.properties[PROP_MAYBE]?.relation?.map((r:any) => r.id) || [];
@@ -1228,28 +1238,35 @@ export const getEventDetails = functions.region("asia-northeast1").https.onReque
 
         const blocks = await notion.blocks.children.list({ block_id: eventId });
         let textContent = "";
+        
         for (const block of blocks.results) {
             let blockText = "";
-            if (block.type === 'paragraph' && block.paragraph.rich_text.length > 0) blockText = block.paragraph.rich_text.map((t:any)=>t.plain_text).join("");
-            else if (block.type === 'heading_2' || block.type === 'heading_3') blockText = block[block.type].rich_text.map((t:any)=>t.plain_text).join("");
-            else if (block.type === 'bulleted_list_item') blockText = block.bulleted_list_item.rich_text.map((t:any)=>t.plain_text).join("");
-
+            const contentObj = block[block.type];
+            if (contentObj && contentObj.rich_text) {
+                blockText = contentObj.rich_text.map((t:any) => t.plain_text).join("");
+            }
             if (blockText.includes("運営用") || blockText.includes("以下は運営用")) break;
 
-            if (block.type === 'paragraph' && blockText) textContent += blockText + "\n";
-            else if (block.type === 'heading_2' || block.type === 'heading_3') textContent += "\n■ " + blockText + "\n";
-            else if (block.type === 'bulleted_list_item') textContent += "・ " + blockText + "\n";
+            if (blockText.trim()) {
+                if (block.type === 'heading_2' || block.type === 'heading_3') textContent += "\n■ " + blockText + "\n";
+                else if (block.type === 'bulleted_list_item') textContent += "・ " + blockText + "\n";
+                else textContent += blockText + "\n";
+            }
         }
 
         if(!textContent.trim()) textContent = eventPage.properties[PROP_DETAIL_TEXT]?.rich_text?.map((t:any)=>t.plain_text).join("") || "詳細情報（本文）はまだ書かれていません。";
 
+        // ★ 取得した最新データをFirestoreに上書き（キャッシュの修復）
         await docRef.set({
             details: textContent.trim(),
             joinsLineIds, maybesLineIds, declinesLineIds
         }, { merge: true });
 
         res.json({ details: textContent.trim(), joinsLineIds, maybesLineIds, declinesLineIds });
-    } catch(e: any) { res.status(500).json({ error: e.message }); }
+    } catch(e: any) { 
+        console.error("Event Detail Error:", e);
+        res.status(500).json({ error: e.message }); 
+    }
 });
 
 // ───────────────────────────────────────────
@@ -1326,61 +1343,72 @@ export const updateEventStatus = functions.region("asia-northeast1").https.onReq
 // ───────────────────────────────────────────
 // 8. Firestore同期機能 (自動 & 手動)
 // ───────────────────────────────────────────
+
+// ★ 共通の同期ロジック（確実に動かすための関数）
+async function runEventSync() {
+    const today = new Date();
+    today.setDate(1); 
+    const startOfMonth = today.toISOString().split('T')[0];
+
+    const response = await notion.databases.query({
+        database_id: EVENT_DB_ID,
+        filter: { property: PROP_EVENT_DATE, date: { on_or_after: startOfMonth } },
+        sorts: [{ property: PROP_EVENT_DATE, direction: "ascending" }]
+    });
+
+    const batch = db.batch();
+    for (const page of response.results) {
+        let cat = "未分類";
+        const catProp = page.properties[PROP_EVENT_CAT];
+        if (catProp) {
+            if (catProp.type === "select") cat = catProp.select?.name || "未分類";
+            else if (catProp.type === "multi_select") {
+                const tags = catProp.multi_select?.map((t:any) => t.name) || [];
+                cat = tags.length > 0 ? tags.join(", ") : "未分類";
+            }
+            else if (catProp.type === "rich_text") {
+                const text = catProp.rich_text?.map((t:any) => t.plain_text).join("");
+                cat = text ? text : "未分類";
+            }
+        }
+
+        const title = page.properties[PROP_EVENT_NAME]?.title[0]?.plain_text || "無題";
+        const rawDate = page.properties[PROP_EVENT_DATE]?.date?.start;
+        const dateStr = rawDate ? rawDate.split('T')[0] : ""; 
+        const tags = page.properties[PROP_EVENT_TAGS]?.multi_select?.map((t:any)=>t.name) || [];
+        const organizerIds = page.properties["主催者"]?.relation?.map((r:any) => r.id) || [];
+        const joins = page.properties[PROP_JOIN]?.relation?.map((r:any) => r.id) || [];
+        const maybes = page.properties[PROP_MAYBE]?.relation?.map((r:any) => r.id) || [];
+        const declines = page.properties[PROP_DECLINE]?.relation?.map((r:any) => r.id) || [];
+
+        const eventRef = db.collection("events").doc(page.id);
+        batch.set(eventRef, {
+            id: page.id, title, date: dateStr, category: cat, tags, organizerIds,
+            joins, maybes, declines, updatedAt: new Date().toISOString()
+        }, { merge: true });
+    }
+    await batch.commit();
+    console.log("✅ Firestoreへのイベント同期完了！");
+}
+
+// ① 1時間に1回自動で動くタイマー
 export const syncEventsToFirestore = functions.region("asia-northeast1").pubsub.schedule('every 1 hours').onRun(async (context) => {
     try {
-        const today = new Date();
-        today.setDate(1); 
-        const startOfMonth = today.toISOString().split('T')[0];
-
-        const response = await notion.databases.query({
-            database_id: EVENT_DB_ID,
-            filter: { property: PROP_EVENT_DATE, date: { on_or_after: startOfMonth } },
-            sorts: [{ property: PROP_EVENT_DATE, direction: "ascending" }]
-        });
-
-        const batch = db.batch();
-        for (const page of response.results) {
-            let cat = "未分類";
-            const catProp = page.properties[PROP_EVENT_CAT];
-            if (catProp) {
-                if (catProp.type === "select") cat = catProp.select?.name || "未分類";
-                else if (catProp.type === "multi_select") {
-                    const tags = catProp.multi_select?.map((t:any) => t.name) || [];
-                    cat = tags.length > 0 ? tags.join(", ") : "未分類";
-                }
-                else if (catProp.type === "rich_text") {
-                    const text = catProp.rich_text?.map((t:any) => t.plain_text).join("");
-                    cat = text ? text : "未分類";
-                }
-            }
-
-            const title = page.properties[PROP_EVENT_NAME]?.title[0]?.plain_text || "無題";
-            const rawDate = page.properties[PROP_EVENT_DATE]?.date?.start;
-            const dateStr = rawDate ? rawDate.split('T')[0] : ""; 
-            const tags = page.properties[PROP_EVENT_TAGS]?.multi_select?.map((t:any)=>t.name) || [];
-            const organizerIds = page.properties["主催者"]?.relation?.map((r:any) => r.id) || [];
-            const joins = page.properties[PROP_JOIN]?.relation?.map((r:any) => r.id) || [];
-            const maybes = page.properties[PROP_MAYBE]?.relation?.map((r:any) => r.id) || [];
-            const declines = page.properties[PROP_DECLINE]?.relation?.map((r:any) => r.id) || [];
-
-            const eventRef = db.collection("events").doc(page.id);
-            batch.set(eventRef, {
-                id: page.id, title, date: dateStr, category: cat, tags, organizerIds,
-                joins, maybes, declines, updatedAt: new Date().toISOString()
-            }, { merge: true });
-        }
-        await batch.commit();
-        console.log("✅ Firestoreへのイベント同期完了！");
+        await runEventSync();
     } catch(e) { console.error("❌ イベント同期エラー:", e); }
 });
 
+// ② 手動でURLから動かす窓口（★ここを確実に動くように修正しました！）
 export const manualSyncEvents = functions.region("asia-northeast1").https.onRequest(async (req: any, res: any) => {
     res.set('Access-Control-Allow-Origin', '*');
     if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
     try {
-        await fetch(`https://asia-northeast1-${process.env.GCLOUD_PROJECT}.cloudfunctions.net/syncEventsToFirestore`);
-        res.json({ success: true, message: "同期を開始しました" });
-    } catch(e:any) { res.status(500).json({ error: e.message }); }
+        await runEventSync(); // 直接同期プログラムを実行する
+        res.json({ success: true, message: "同期が完了しました！カレンダーを開いてみてください！" });
+    } catch(e:any) { 
+        console.error(e);
+        res.status(500).json({ error: e.message }); 
+    }
 });
 
 // ───────────────────────────────────────────
