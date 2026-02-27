@@ -8,40 +8,39 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@700;900&family=Zen+Kaku+Gothic+New:wght@700;900&family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        /* 🌟 背景を超明るくエネルギッシュな動くグラデーションに！ */
+        /* 🌟 白基調の動くふんわりオーロラ背景 */
         body { 
             font-family: 'Zen Maru Gothic', sans-serif; 
-            background: linear-gradient(-45deg, #4158D0, #C850C0, #FFCC70, #4facfe);
+            background: linear-gradient(-45deg, #ffffff, #f8fafc, #eff6ff, #fdf4ff, #fffbeb);
             background-size: 300% 300%;
-            animation: gradientBG 12s ease infinite;
-            color: white; 
+            animation: auroraBG 15s ease infinite;
+            color: #1e293b; /* 基本の文字色を濃いグレー（黒系）に */
             min-height: 100vh; 
             padding-bottom: 5rem; 
         }
-        @keyframes gradientBG {
+        @keyframes auroraBG {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
         }
 
-        /* 暗いグレーをやめて、明るいすりガラス風に */
-        .glass-card { background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.5); box-shadow: 0 10px 30px -10px rgba(0,0,0,0.3); }
+        /* 視認性の高いホワイトガラスカード */
+        .glass-card { 
+            background: rgba(255, 255, 255, 0.7); 
+            backdrop-filter: blur(20px); 
+            border: 1px solid rgba(255, 255, 255, 0.9); 
+            box-shadow: 0 10px 30px -10px rgba(71, 85, 105, 0.15); 
+        }
+        
         .fade-in { animation: fadeIn 0.5s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* 役職ごとの特別な装飾（背景に合わせて微調整） */
-        .card-gold { background: linear-gradient(135deg, #f59e0b 0%, #b45309 100%); border: 1px solid #fde68a; box-shadow: 0 10px 30px -10px rgba(217, 119, 6, 0.8); }
-        .card-silver { background: linear-gradient(135deg, #64748b 0%, #334155 100%); border: 1px solid #cbd5e1; }
-        .card-special { background: linear-gradient(135deg, #8b5cf6 0%, #4f46e5 100%); border: 1px solid #d8b4fe; box-shadow: 0 10px 30px -10px rgba(79, 70, 229, 0.6); }
-        .card-normal { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border: 1px solid #334155; }
+        /* 役職ごとの特別な装飾（ライトテーマ版） */
+        .card-gold { background: linear-gradient(135deg, #fef08a 0%, #fde68a 100%); border: 1px solid #fcd34d; box-shadow: 0 10px 30px -10px rgba(251, 191, 36, 0.4); color: #78350f; }
+        .card-silver { background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); border: 1px solid #cbd5e1; color: #334155; }
+        .card-special { background: linear-gradient(135deg, #e0e7ff 0%, #fae8ff 100%); border: 1px solid #c7d2fe; color: #312e81; }
+        .card-normal { background: #ffffff; border: 1px solid #e2e8f0; box-shadow: 0 10px 30px -10px rgba(71, 85, 105, 0.1); color: #1e293b; }
         
-        /* ネオンの脈打ちアニメーション */
-        @keyframes neonPulse {
-            0%, 100% { box-shadow: 0 0 20px rgba(217,70,239,0.5); }
-            50% { box-shadow: 0 0 40px rgba(217,70,239,0.9), 0 0 10px rgba(56,189,248,0.8); }
-        }
-        .neon-border { animation: neonPulse 2.5s infinite; }
-
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
@@ -49,18 +48,16 @@
 <body class="safe-area-inset-top p-5">
 
     <div class="text-center mb-6 fade-in pt-2 mx-2">
-        <div class="relative p-[3px] rounded-3xl bg-gradient-to-r from-cyan-400 via-fuchsia-500 to-orange-400 neon-border">
-            
+        <div class="relative p-[3px] rounded-3xl bg-gradient-to-r from-cyan-300 via-indigo-300 to-pink-300 shadow-md">
             <div class="bg-white/95 backdrop-blur-xl rounded-[1.7rem] py-5 px-4 relative overflow-hidden">
-                <div class="absolute top-0 left-0 w-full h-1/3 bg-gradient-to-b from-white/80 to-transparent"></div>
-
-                <h1 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-600 via-indigo-600 to-fuchsia-600 tracking-[0.1em] mb-2 drop-shadow-sm relative z-10" style="font-family: 'Zen Kaku Gothic New', sans-serif;">
+                <div class="absolute top-0 left-0 w-full h-1/3 bg-gradient-to-b from-white to-transparent"></div>
+                <h1 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-700 via-purple-700 to-pink-600 tracking-[0.1em] mb-2 relative z-10" style="font-family: 'Zen Kaku Gothic New', sans-serif;">
                     北大心理ゼミ
                 </h1>
-                <p class="text-[10px] font-black text-indigo-600 tracking-[0.2em] mb-1 relative z-10">
+                <p class="text-[10px] font-black text-indigo-500 tracking-[0.2em] mb-1 relative z-10">
                     学問の実践
                 </p>
-                <p class="text-[8px] text-fuchsia-600 font-bold tracking-[0.1em] relative z-10">
+                <p class="text-[8px] text-pink-500 font-bold tracking-[0.1em] relative z-10">
                     〜知識を行動に変え未来を発掘する〜
                 </p>
             </div>
@@ -68,29 +65,29 @@
     </div>
 
     <header id="id-card" class="card-normal rounded-3xl p-6 mb-6 fade-in relative overflow-hidden transition-all duration-500">
-        <div class="absolute top-[-50%] right-[-20%] w-[200px] h-[200px] bg-white/20 rounded-full filter blur-[20px]"></div>
+        <div class="absolute top-[-50%] right-[-20%] w-[200px] h-[200px] bg-white/50 rounded-full filter blur-[20px]"></div>
         
-        <button onclick="openEditModal()" class="absolute top-4 right-4 bg-white/30 hover:bg-white/50 text-white text-[10px] font-bold px-3 py-1.5 rounded-full backdrop-blur-md transition z-20 flex items-center gap-1 border border-white/40 shadow-sm">
+        <button onclick="openEditModal()" class="absolute top-4 right-4 bg-white/80 hover:bg-white text-slate-700 text-[10px] font-bold px-3 py-1.5 rounded-full backdrop-blur-md transition z-20 flex items-center gap-1 border border-slate-200 shadow-sm">
             <span>✏️</span> 編集
         </button>
         
         <div class="relative z-10 pr-16"> 
             <div class="flex items-center gap-4 mb-4">
-                <img id="user-icon" src="https://via.placeholder.com/150" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-white/80 shadow-lg object-cover flex-shrink-0">
+                <img id="user-icon" src="https://via.placeholder.com/150" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-white shadow-md object-cover flex-shrink-0">
                 <div>
-                    <p id="user-univ" class="text-[9px] font-bold text-white/90 mb-0.5 drop-shadow-sm">大学・学部を設定しよう</p>
-                    <h1 id="user-name" class="text-xl sm:text-2xl font-black text-white tracking-tight drop-shadow-md leading-tight">ゲスト さん</h1>
+                    <p id="user-univ" class="text-[9px] font-bold opacity-80 mb-0.5">大学・学部を設定しよう</p>
+                    <h1 id="user-name" class="text-xl sm:text-2xl font-black tracking-tight leading-tight">ゲスト さん</h1>
                     <div id="user-role-badges" class="flex flex-wrap gap-1 mt-1.5 hidden"></div>
                 </div>
             </div>
             
-            <div class="bg-white/20 rounded-xl p-3 border border-white/30 flex items-start gap-2 relative group cursor-pointer active:scale-95 transition shadow-inner" onclick="editHitokoto()">
+            <div class="bg-black/5 rounded-xl p-3 border border-black/5 flex items-start gap-2 relative group cursor-pointer active:scale-95 transition" onclick="editHitokoto()">
                 <span class="text-sm">💬</span>
                 <div class="flex-1">
-                    <p class="text-[9px] text-white/80 font-bold mb-0.5">今のひとこと (タップで編集)</p>
-                    <p id="user-intro" class="text-xs text-white font-bold leading-relaxed drop-shadow-sm">ここをタップしてひとことを設定！</p>
+                    <p class="text-[9px] opacity-60 font-bold mb-0.5">今のひとこと (タップで編集)</p>
+                    <p id="user-intro" class="text-xs font-bold leading-relaxed">ここをタップしてひとことを設定！</p>
                 </div>
-                <span class="text-white/50 text-xs">✏️</span>
+                <span class="opacity-40 text-xs">✏️</span>
             </div>
         </div>
     </header>
@@ -98,94 +95,112 @@
     <main class="space-y-4">
         <section class="glass-card rounded-[2rem] p-5 fade-in" style="animation-delay: 0.1s;">
             <div class="flex justify-between items-end mb-3">
-                <h2 class="text-sm font-black text-white drop-shadow-sm tracking-widest flex items-center gap-2">
-                    <span>📚</span> わたしのトリセツ
+                <h2 class="text-sm font-black text-slate-800 tracking-widest flex items-center gap-2">
+                    <span>🏷️</span> 自分の興味タグ
                 </h2>
+                <button onclick="openEditModal()" class="text-[10px] text-indigo-500 font-bold bg-indigo-50 px-2 py-1 rounded-md">＋ 追加</button>
             </div>
-            <p id="tags-hint" class="text-[9px] text-indigo-100 font-bold mb-3 hidden">👇タップすると同じタイプのゼミ生を探せます！</p>
-            <div id="tags-container" class="flex flex-wrap gap-2">
-                <p class="text-xs text-white/70 font-bold">まだテストを受けていません。ポータルから診断しよう！</p>
+            <div id="my-interest-tags" class="flex flex-wrap gap-1.5">
+                <p class="text-xs text-slate-500 font-bold">右上の編集ボタンからタグを設定しよう！</p>
             </div>
         </section>
 
         <section class="glass-card rounded-[2rem] p-5 fade-in" style="animation-delay: 0.2s;">
-            <h2 class="text-sm font-black text-white drop-shadow-sm mb-4 tracking-widest flex items-center gap-2">
+            <div class="flex justify-between items-end mb-3">
+                <h2 class="text-sm font-black text-slate-800 tracking-widest flex items-center gap-2">
+                    <span>📚</span> わたしのトリセツ
+                </h2>
+            </div>
+            <p id="tags-hint" class="text-[9px] text-indigo-500 font-bold mb-3 hidden">👇タップすると同じタイプのゼミ生を探せます！</p>
+            <div id="tags-container" class="flex flex-wrap gap-2">
+                <p class="text-xs text-slate-500 font-bold">まだテストを受けていません。ポータルから診断しよう！</p>
+            </div>
+        </section>
+
+        <section class="glass-card rounded-[2rem] p-5 fade-in" style="animation-delay: 0.3s;">
+            <h2 class="text-sm font-black text-slate-800 mb-4 tracking-widest flex items-center gap-2">
                 <span>👥</span> ゼミ内のつながり
             </h2>
             
             <div class="mb-4">
-                <p class="text-[10px] text-white font-bold mb-2 drop-shadow-sm">✨ あなたと似ているメンバー (シンクロ率)</p>
+                <p class="text-[10px] text-emerald-600 font-bold mb-2">✨ あなたと似ているメンバー (シンクロ率)</p>
                 <div id="sync-users-container" class="flex gap-3 overflow-x-auto no-scrollbar pb-2">
-                    <p class="text-xs text-white/70 font-bold w-full text-center py-4">データ収集中... 🔄</p>
+                    <p class="text-xs text-slate-500 font-bold w-full text-center py-4">データ収集中... 🔄</p>
                 </div>
             </div>
 
-            <div class="bg-white/20 rounded-xl p-4 border border-white/30 shadow-inner">
-                <p class="text-[10px] text-white font-black mb-1">👑 タイプのレア度</p>
-                <p id="rare-text" class="text-xs text-white/90 font-bold leading-relaxed">計算中... 🔄</p>
+            <div class="bg-pink-50/50 rounded-xl p-4 border border-pink-100">
+                <p class="text-[10px] text-pink-600 font-black mb-1">👑 タイプのレア度</p>
+                <p id="rare-text" class="text-xs text-slate-700 font-bold leading-relaxed">計算中... 🔄</p>
             </div>
         </section>
     </main>
 
-    <div id="same-type-modal" class="fixed inset-0 z-[55] hidden flex-col justify-end">
-        <div class="bg-indigo-950 rounded-t-[2rem] p-6 shadow-2xl border-t border-indigo-500/50 max-h-[75vh] flex flex-col w-full max-w-md mx-auto relative animate-[translateY_0.2s_ease-out]">
-            <button onclick="closeSameTypeModal()" class="absolute top-5 right-5 w-8 h-8 bg-indigo-900 rounded-full text-indigo-300 text-lg font-bold flex items-center justify-center">&times;</button>
-            <h3 id="same-type-title" class="text-lg font-black text-white mb-1">🐻 クマ型のメンバー</h3>
-            <p id="same-type-count" class="text-xs text-pink-300 font-bold mb-4">あなた以外に 〇 人います</p>
+    <div id="same-type-modal" class="fixed inset-0 z-[55] hidden flex-col justify-end bg-slate-900/40 backdrop-blur-sm">
+        <div class="bg-white rounded-t-[2rem] p-6 shadow-2xl border-t border-slate-200 max-h-[75vh] flex flex-col w-full max-w-md mx-auto relative animate-[translateY_0.2s_ease-out]">
+            <button onclick="closeSameTypeModal()" class="absolute top-5 right-5 w-8 h-8 bg-slate-100 rounded-full text-slate-500 text-lg font-bold flex items-center justify-center">&times;</button>
+            <h3 id="same-type-title" class="text-lg font-black text-slate-800 mb-1">🐻 クマ型のメンバー</h3>
+            <p id="same-type-count" class="text-xs text-indigo-500 font-bold mb-4">あなた以外に 〇 人います</p>
             
             <div id="same-type-list" class="space-y-2 overflow-y-auto pr-2 no-scrollbar pb-10"></div>
         </div>
     </div>
 
-    <div id="other-profile-modal" class="fixed inset-0 z-[60] hidden flex-col justify-end">
-        <div class="bg-indigo-950 rounded-t-[2.5rem] p-6 shadow-2xl border-t border-indigo-500/50 max-h-[85vh] w-full max-w-md mx-auto relative animate-[translateY_0.2s_ease-out]">
-            <button onclick="closeOtherProfile()" class="absolute top-5 right-5 w-8 h-8 bg-indigo-900 rounded-full text-indigo-300 text-lg font-bold flex items-center justify-center">&times;</button>
+    <div id="other-profile-modal" class="fixed inset-0 z-[60] hidden flex-col justify-end bg-slate-900/40 backdrop-blur-sm">
+        <div class="bg-white rounded-t-[2.5rem] p-6 shadow-2xl border-t border-slate-200 max-h-[85vh] w-full max-w-md mx-auto relative animate-[translateY_0.2s_ease-out]">
+            <button onclick="closeOtherProfile()" class="absolute top-5 right-5 w-8 h-8 bg-slate-100 rounded-full text-slate-500 text-lg font-bold flex items-center justify-center">&times;</button>
             
             <div class="flex flex-col items-center mt-2 mb-6">
-                <img id="other-icon" src="" class="w-24 h-24 rounded-full border-4 border-indigo-500/50 mb-3 object-cover shadow-lg">
+                <img id="other-icon" src="" class="w-24 h-24 rounded-full border-4 border-slate-100 mb-3 object-cover shadow-sm">
                 <div id="other-role-badges" class="flex flex-wrap justify-center gap-1 mb-2"></div>
-                <h3 id="other-name" class="text-xl font-black text-white mb-1"></h3>
-                <p id="other-univ" class="text-[10px] text-indigo-200 font-bold"></p>
+                <h3 id="other-name" class="text-xl font-black text-slate-800 mb-1"></h3>
+                <p id="other-univ" class="text-[10px] text-slate-500 font-bold"></p>
             </div>
             
-            <div class="bg-indigo-900/50 rounded-xl p-4 mb-4 border border-indigo-500/30">
-                <p class="text-[10px] text-indigo-300 font-bold mb-1">💬 今のひとこと</p>
-                <p id="other-intro" class="text-sm text-white font-bold"></p>
+            <div class="bg-slate-50 rounded-xl p-4 mb-4 border border-slate-200">
+                <p class="text-[10px] text-slate-500 font-bold mb-1">💬 今のひとこと</p>
+                <p id="other-intro" class="text-sm text-slate-700 font-bold"></p>
             </div>
 
-            <div class="bg-indigo-900/50 rounded-xl p-4 border border-indigo-500/30">
-                <p class="text-[10px] text-indigo-300 font-bold mb-2">🏷️ 興味タグ</p>
+            <div class="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                <p class="text-[10px] text-slate-500 font-bold mb-2">🏷️ 興味タグ</p>
                 <div id="other-tags" class="flex flex-wrap gap-1.5"></div>
             </div>
         </div>
     </div>
 
-    <div id="edit-modal" class="fixed inset-0 z-50 hidden flex-col justify-end">
-        <div class="bg-indigo-950 rounded-t-[2rem] p-6 shadow-2xl border-t border-indigo-500/50 max-h-[90vh] overflow-y-auto w-full max-w-md mx-auto relative animate-[translateY_0.3s_ease-out]">
-            <button onclick="closeEditModal()" class="absolute top-5 right-5 w-8 h-8 bg-indigo-900 rounded-full text-indigo-300 text-lg font-bold flex items-center justify-center">&times;</button>
-            <h3 class="text-lg font-black text-white mb-6">プロフィール詳細設定</h3>
+    <div id="edit-modal" class="fixed inset-0 z-50 hidden flex-col justify-end bg-slate-900/40 backdrop-blur-sm">
+        <div class="bg-white rounded-t-[2rem] p-6 shadow-2xl border-t border-slate-200 max-h-[90vh] overflow-y-auto w-full max-w-md mx-auto relative animate-[translateY_0.3s_ease-out]">
+            <button onclick="closeEditModal()" class="absolute top-5 right-5 w-8 h-8 bg-slate-100 rounded-full text-slate-500 text-lg font-bold flex items-center justify-center">&times;</button>
+            <h3 class="text-lg font-black text-slate-800 mb-6">プロフィール詳細設定</h3>
             
             <div class="space-y-4">
-                <div><label class="text-[10px] font-bold text-indigo-300">名前（フルネーム推奨）</label><input type="text" id="edit-name" class="w-full bg-indigo-900/50 border border-indigo-500/30 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-pink-500"></div>
+                <div><label class="text-[10px] font-bold text-slate-500">名前（フルネーム推奨）</label><input type="text" id="edit-name" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-800 focus:outline-none focus:border-indigo-400"></div>
                 <div class="grid grid-cols-2 gap-3">
-                    <div><label class="text-[10px] font-bold text-indigo-300">大学</label><input type="text" id="edit-uni" value="北海道大学" class="w-full bg-indigo-900/50 border border-indigo-500/30 rounded-xl p-3 text-sm text-white"></div>
-                    <div><label class="text-[10px] font-bold text-indigo-300">学年</label>
-                        <select id="edit-grade" class="w-full bg-indigo-900/50 border border-indigo-500/30 rounded-xl p-3 text-sm text-white">
+                    <div><label class="text-[10px] font-bold text-slate-500">大学</label><input type="text" id="edit-uni" value="北海道大学" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-800"></div>
+                    <div><label class="text-[10px] font-bold text-slate-500">学年</label>
+                        <select id="edit-grade" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-800">
                             <option value="学部1年">学部1年</option><option value="学部2年">学部2年</option><option value="学部3年">学部3年</option><option value="学部4年">学部4年</option><option value="修士1年">修士1年</option><option value="修士2年">修士2年</option><option value="博士1年">博士1年</option><option value="博士2年">博士2年</option><option value="博士3年">博士3年</option><option value="博士4年">博士4年</option><option value="その他">その他</option>
                         </select>
                     </div>
                 </div>
-                <div><label class="text-[10px] font-bold text-indigo-300">学部・学科</label><input type="text" id="edit-faculty" placeholder="例: 工学部 環境社会工学科" class="w-full bg-indigo-900/50 border border-indigo-500/30 rounded-xl p-3 text-sm text-white"></div>
+                <div><label class="text-[10px] font-bold text-slate-500">学部・学科</label><input type="text" id="edit-faculty" placeholder="例: 工学部 環境社会工学科" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-800"></div>
                 
                 <div>
                     <label class="text-[10px] font-bold flex justify-between">
-                        <span class="text-indigo-300">詳しい自己紹介文</span> <span class="text-pink-400">※Notionに記録されます</span>
+                        <span class="text-slate-500">詳しい自己紹介文</span> <span class="text-indigo-400">※Notionに記録されます</span>
                     </label>
-                    <textarea id="edit-selfintro" rows="4" placeholder="ゼミでやりたいこと、趣味、特技など自由に書いてください！" class="w-full bg-indigo-900/50 border border-indigo-500/30 rounded-xl p-3 text-sm text-white mt-1 focus:outline-none focus:border-pink-500"></textarea>
+                    <textarea id="edit-selfintro" rows="3" placeholder="ゼミでやりたいこと、趣味、特技など自由に書いてください！" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-800 mt-1 focus:outline-none focus:border-indigo-400"></textarea>
+                </div>
+
+                <div class="pt-2 border-t border-slate-100">
+                    <label class="text-[10px] font-bold text-slate-500 mb-2 block">🏷️ 興味タグ（複数選択可）</label>
+                    <div id="edit-tags-container" class="flex flex-wrap gap-2">
+                        </div>
                 </div>
             </div>
             
-            <button onclick="saveProfile()" class="w-full mt-6 bg-gradient-to-r from-pink-500 to-indigo-500 text-white font-black py-4 rounded-xl shadow-lg active:scale-95 transition flex items-center justify-center gap-2">
+            <button onclick="saveProfile()" class="w-full mt-6 bg-gradient-to-r from-indigo-500 to-pink-500 text-white font-black py-4 rounded-xl shadow-lg active:scale-95 transition flex items-center justify-center gap-2">
                 保存して同期する 🚀
             </button>
         </div>
@@ -195,6 +210,13 @@
         let myData = null;
         let myUserId = "";
         let allUsersData = [];
+
+        // ★ゼミで用意している興味タグのリスト（ここを自由に追加・変更してください！）
+        const AVAILABLE_TAGS = [
+            "臨床心理", "認知心理", "社会心理", "発達心理", "教育心理",
+            "イベント企画", "デザイン", "マーケティング", "データ分析",
+            "コミュニティ運営", "読書", "運動", "睡眠改善", "プログラミング", "雑談・交流"
+        ];
 
         function getSafe(field) {
             if (!field) return "";
@@ -206,7 +228,7 @@
         async function initMyPage() {
             try {
                 // ⚠️ ここは新しいマイページのLIFF ID！
-                await liff.init({ liffId: "2009176797-tgpGsUUz" }); 
+                await liff.init({ liffId: "2009176797-qGY6VB64" }); 
                 if (!liff.isLoggedIn()) { liff.login(); return; }
                 
                 const profile = await liff.getProfile();
@@ -255,29 +277,58 @@
                 if (role === "代表") {
                     rarity = 1;
                     badgeIcon = "👑";
-                    badgeClass = "bg-yellow-500/20 text-yellow-100 border border-yellow-300/50";
+                    badgeClass = "bg-yellow-500/20 text-yellow-800 border border-yellow-400";
                 } else if (["秘書", "統括", "広報", "補佐"].some(r => role.includes(r))) {
                     rarity = 2;
                     badgeIcon = "🛡️";
-                    badgeClass = "bg-white/20 text-white border border-white/50";
+                    badgeClass = "bg-slate-200/50 text-slate-700 border border-slate-400";
                 } else if (role.includes("部") || role.includes("PJ") || ["ゼミ", "講義"].some(r => role.includes(r))) {
                     rarity = 3;
                     badgeIcon = "✨";
-                    badgeClass = "bg-indigo-500/30 text-indigo-100 border border-indigo-300/50";
+                    badgeClass = "bg-indigo-500/10 text-indigo-700 border border-indigo-300";
                 } else {
                     rarity = 4;
                     badgeIcon = "🔖";
-                    badgeClass = "bg-black/30 text-white/80 border border-white/30";
+                    badgeClass = "bg-slate-100 text-slate-600 border border-slate-200";
                 }
 
                 if (rarity < highestRarity) highestRarity = rarity;
-                badgesContainer.innerHTML += `<span class="inline-block ${badgeClass} text-[10px] font-black tracking-widest px-2 py-0.5 rounded shadow-sm backdrop-blur-sm">${badgeIcon} ${role}</span>`;
+                badgesContainer.innerHTML += `<span class="inline-block ${badgeClass} text-[10px] font-black tracking-widest px-2 py-0.5 rounded shadow-sm">${badgeIcon} ${role}</span>`;
             });
 
             if (highestRarity === 1) card.classList.add('card-gold');
             else if (highestRarity === 2) card.classList.add('card-silver');
             else if (highestRarity === 3) card.classList.add('card-special');
             else card.classList.add('card-special');
+        }
+
+        // ★ 興味タグのチェックボックスを生成する処理
+        function renderEditTags(userTags) {
+            let html = "";
+            AVAILABLE_TAGS.forEach(tag => {
+                const isChecked = userTags.includes(tag);
+                const bgClass = isChecked ? "bg-indigo-500 text-white border-indigo-500" : "bg-slate-50 text-slate-500 border-slate-200";
+                html += `
+                <label class="inline-block px-3 py-1.5 rounded-full text-[10px] font-bold border cursor-pointer transition ${bgClass}">
+                    <input type="checkbox" value="${tag}" class="hidden tag-checkbox" ${isChecked ? "checked" : ""} onchange="toggleTagStyle(this)">
+                    ${tag}
+                </label>`;
+            });
+            document.getElementById('edit-tags-container').innerHTML = html;
+        }
+
+        // タグをクリックした時の色変更アニメーション
+        function toggleTagStyle(checkbox) {
+            const label = checkbox.parentElement;
+            if (checkbox.checked) {
+                label.classList.replace('bg-slate-50', 'bg-indigo-500');
+                label.classList.replace('text-slate-500', 'text-white');
+                label.classList.replace('border-slate-200', 'border-indigo-500');
+            } else {
+                label.classList.replace('bg-indigo-500', 'bg-slate-50');
+                label.classList.replace('text-white', 'text-slate-500');
+                label.classList.replace('border-indigo-500', 'border-slate-200');
+            }
         }
 
         function renderProfile(data) {
@@ -292,8 +343,11 @@
                 let roles = [];
                 if (p.roles && p.roles.arrayValue && p.roles.arrayValue.values) {
                     roles = p.roles.arrayValue.values.map(v => getSafe(v));
-                } else if (p.role) {
-                    roles = [getSafe(p.role)];
+                } else if (p.role) { roles = [getSafe(p.role)]; }
+
+                let tags = [];
+                if (p.tags && p.tags.arrayValue && p.tags.arrayValue.values) {
+                    tags = p.tags.arrayValue.values.map(v => getSafe(v));
                 }
 
                 if (name) document.getElementById('user-name').innerText = name + " さん";
@@ -302,11 +356,23 @@
 
                 applyRoleStyle(roles);
 
+                // 自分の興味タグを表示
+                let tagsHtml = "";
+                tags.forEach(tag => {
+                    tagsHtml += `<span class="bg-indigo-50 text-indigo-600 border border-indigo-200 text-[10px] font-bold px-2.5 py-1 rounded shadow-sm">🏷️ ${tag}</span>`;
+                });
+                if(tagsHtml) document.getElementById('my-interest-tags').innerHTML = tagsHtml;
+
                 document.getElementById('edit-name').value = name;
                 document.getElementById('edit-uni').value = uni;
                 document.getElementById('edit-faculty').value = getSafe(p.faculty);
                 document.getElementById('edit-grade').value = grade || "学部1年";
                 document.getElementById('edit-selfintro').value = selfIntro;
+
+                // 編集用のタグリストを描画
+                renderEditTags(tags);
+            } else {
+                renderEditTags([]); // 未設定の場合
             }
         }
 
@@ -315,23 +381,23 @@
             let html = "";
             if (data.motivationResult) {
                 const val = getSafe(data.motivationResult).replace('やる気：', '');
-                html += `<button onclick="showSameTypeUsers('${val}', 'motivation', '🔥 やる気タイプ')" class="bg-white/20 hover:bg-white/40 text-white border border-white/50 text-xs font-bold px-3 py-1.5 rounded-lg active:scale-95 transition shadow-sm backdrop-blur-sm">🔥 ${val}</button>`;
+                html += `<button onclick="showSameTypeUsers('${val}', 'motivation', '🔥 やる気タイプ')" class="bg-orange-50 hover:bg-orange-100 text-orange-600 border border-orange-200 text-xs font-bold px-3 py-1.5 rounded-lg active:scale-95 transition shadow-sm">🔥 ${val}</button>`;
             }
             if (data.bigFiveResult) {
                 const match = getSafe(data.bigFiveResult).match(/Big Five：(.+?)が特徴的/);
-                if (match) html += `<button onclick="showSameTypeUsers('${match[1]}', 'bigFive', '🧠 性格タイプ')" class="bg-white/20 hover:bg-white/40 text-white border border-white/50 text-xs font-bold px-3 py-1.5 rounded-lg active:scale-95 transition shadow-sm backdrop-blur-sm">🧠 ${match[1]}派</button>`;
+                if (match) html += `<button onclick="showSameTypeUsers('${match[1]}', 'bigFive', '🧠 性格タイプ')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 text-xs font-bold px-3 py-1.5 rounded-lg active:scale-95 transition shadow-sm">🧠 ${match[1]}派</button>`;
             }
             if (data.chronoResult) {
                 const val = getSafe(data.chronoResult).split('（')[0];
-                html += `<button onclick="showSameTypeUsers('${val}', 'chrono', '⏰ クロノタイプ')" class="bg-white/20 hover:bg-white/40 text-white border border-white/50 text-xs font-bold px-3 py-1.5 rounded-lg active:scale-95 transition shadow-sm backdrop-blur-sm">⏰ ${val}</button>`;
+                html += `<button onclick="showSameTypeUsers('${val}', 'chrono', '⏰ クロノタイプ')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-200 text-xs font-bold px-3 py-1.5 rounded-lg active:scale-95 transition shadow-sm">⏰ ${val}</button>`;
             }
             if (data.coffeeResult) {
                 const val = getSafe(data.coffeeResult).split(' ')[0];
-                html += `<button onclick="showSameTypeUsers('${val}', 'coffee', '☕ コーヒー性格')" class="bg-white/20 hover:bg-white/40 text-white border border-white/50 text-xs font-bold px-3 py-1.5 rounded-lg active:scale-95 transition shadow-sm backdrop-blur-sm">☕ ${val}好き</button>`;
+                html += `<button onclick="showSameTypeUsers('${val}', 'coffee', '☕ コーヒー性格')" class="bg-amber-50 hover:bg-amber-100 text-amber-600 border border-amber-200 text-xs font-bold px-3 py-1.5 rounded-lg active:scale-95 transition shadow-sm">☕ ${val}好き</button>`;
             }
             if (data.smResult) {
                 const val = getSafe(data.smResult).split('（')[0];
-                html += `<button onclick="showSameTypeUsers('${val}', 'sm', '🌬️ ストレスマネジメント')" class="bg-white/20 hover:bg-white/40 text-white border border-white/50 text-xs font-bold px-3 py-1.5 rounded-lg active:scale-95 transition shadow-sm backdrop-blur-sm">🌬️ ${val}</button>`;
+                html += `<button onclick="showSameTypeUsers('${val}', 'sm', '🌬️ ストレスマネジメント')" class="bg-pink-50 hover:bg-pink-100 text-pink-600 border border-pink-200 text-xs font-bold px-3 py-1.5 rounded-lg active:scale-95 transition shadow-sm">🌬️ ${val}</button>`;
             }
 
             if (html !== "") {
@@ -386,18 +452,18 @@
                 let html = "";
                 matchedUsers.forEach(user => {
                     html += `
-                    <div onclick="closeSameTypeModal(); showOtherProfile(${user.index})" class="flex items-center gap-4 bg-indigo-900/50 p-3 rounded-xl border border-indigo-500/30 cursor-pointer hover:bg-indigo-800 active:scale-95 transition shadow-sm">
-                        <img src="${user.icon}" class="w-12 h-12 rounded-full object-cover border-2 border-indigo-400/50">
+                    <div onclick="closeSameTypeModal(); showOtherProfile(${user.index})" class="flex items-center gap-4 bg-slate-50 p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-100 active:scale-95 transition shadow-sm">
+                        <img src="${user.icon}" class="w-12 h-12 rounded-full object-cover border border-slate-300">
                         <div>
-                            <p class="text-sm font-bold text-white mb-0.5">${user.name} さん</p>
-                            <p class="text-[10px] text-pink-300 font-bold">${user.role}</p>
+                            <p class="text-sm font-bold text-slate-800 mb-0.5">${user.name} さん</p>
+                            <p class="text-[10px] text-indigo-500 font-bold">${user.role}</p>
                         </div>
                         <span class="ml-auto text-indigo-300 text-xs">👉</span>
                     </div>`;
                 });
                 listContainer.innerHTML = html;
             } else {
-                listContainer.innerHTML = `<p class="text-sm text-indigo-300 text-center py-6">まだこのタイプの仲間はいません。<br>新入生が入ってくるのを待とう！</p>`;
+                listContainer.innerHTML = `<p class="text-sm text-slate-400 text-center py-6">まだこのタイプの仲間はいません。<br>新入生が入ってくるのを待とう！</p>`;
             }
 
             document.getElementById('same-type-modal').classList.remove('hidden');
@@ -469,7 +535,7 @@
                 });
 
                 if (myChrono) {
-                    document.getElementById('rare-text').innerHTML = `あなたと同じ「${myChrono}」のゼミ生は、<br>全体で <strong class="text-pink-400 text-sm drop-shadow-sm">${chronoSameCount + 1}人</strong> います！`;
+                    document.getElementById('rare-text').innerHTML = `あなたと同じ「${myChrono}」のゼミ生は、<br>全体で <strong class="text-pink-500 text-sm drop-shadow-sm">${chronoSameCount + 1}人</strong> います！`;
                 }
 
                 syncRanking.sort((a,b) => b.score - a.score);
@@ -479,20 +545,20 @@
                     let html = "";
                     syncRanking.slice(0, 5).forEach((user, i) => {
                         const crown = i === 0 ? "👑" : "🤝";
-                        const color = i === 0 ? "border-pink-400/80 bg-white/20" : "border-white/30 bg-white/10";
+                        const color = i === 0 ? "border-emerald-400 bg-emerald-50" : "border-slate-200 bg-white";
                         const roleDisplay = user.topRole === "一般メンバー" || user.topRole === "未設定" ? "メンバー" : user.topRole;
                         
                         html += `
-                        <div onclick="showOtherProfile(${user.index})" class="flex-shrink-0 rounded-2xl p-3 border ${color} w-32 flex flex-col items-center cursor-pointer hover:bg-white/30 active:scale-95 transition shadow-lg relative backdrop-blur-sm">
-                            <span class="absolute -top-2 -right-2 bg-gradient-to-r from-pink-500 to-orange-400 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full shadow-md">${user.score}%</span>
-                            <img src="${user.icon}" class="w-12 h-12 rounded-full mb-2 object-cover border-2 border-white/50">
-                            <p class="text-[10px] text-white font-bold text-center w-full truncate drop-shadow-sm">${crown} ${user.name}</p>
-                            <p class="text-[8px] text-white/80 mt-1 w-full text-center truncate">${roleDisplay}</p>
+                        <div onclick="showOtherProfile(${user.index})" class="flex-shrink-0 rounded-2xl p-3 border ${color} w-32 flex flex-col items-center cursor-pointer hover:bg-slate-50 active:scale-95 transition shadow-sm relative">
+                            <span class="absolute -top-2 -right-2 bg-gradient-to-r from-emerald-400 to-teal-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full shadow-md">${user.score}%</span>
+                            <img src="${user.icon}" class="w-12 h-12 rounded-full mb-2 object-cover border border-slate-200">
+                            <p class="text-[10px] text-slate-800 font-bold text-center w-full truncate">${crown} ${user.name}</p>
+                            <p class="text-[8px] text-slate-500 mt-1 w-full text-center truncate">${roleDisplay}</p>
                         </div>`;
                     });
                     container.innerHTML = html;
                 } else {
-                    container.innerHTML = `<p class="text-xs text-white/70 font-bold w-full text-center py-4">まだ似ている人が見つかりません。仲間が増えるのを待とう！</p>`;
+                    container.innerHTML = `<p class="text-xs text-slate-400 font-bold w-full text-center py-4">まだ似ている人が見つかりません。仲間が増えるのを待とう！</p>`;
                 }
 
             } catch (e) { console.error(e); }
@@ -515,7 +581,7 @@
             badgesContainer.innerHTML = "";
             if (roles.length > 0 && !roles.includes("一般メンバー") && !roles.includes("未設定")) {
                  roles.forEach(role => {
-                     badgesContainer.innerHTML += `<span class="bg-indigo-500/40 text-indigo-200 border border-indigo-400/50 text-[9px] font-bold px-2 py-0.5 rounded shadow-sm">${role}</span>`;
+                     badgesContainer.innerHTML += `<span class="bg-indigo-50 text-indigo-600 border border-indigo-200 text-[9px] font-bold px-2 py-0.5 rounded shadow-sm">${role}</span>`;
                  });
             }
 
@@ -529,10 +595,10 @@
             let tagsHtml = "";
             if (p.tags && p.tags.arrayValue && p.tags.arrayValue.values) {
                 p.tags.arrayValue.values.forEach(v => {
-                    tagsHtml += `<span class="bg-indigo-900/50 text-indigo-200 text-[9px] font-bold px-2 py-1 rounded border border-indigo-500/50">🏷️ ${getSafe(v)}</span>`;
+                    tagsHtml += `<span class="bg-slate-100 text-slate-600 text-[9px] font-bold px-2 py-1 rounded border border-slate-200">🏷️ ${getSafe(v)}</span>`;
                 });
             }
-            if(tagsHtml === "") tagsHtml = `<span class="text-[10px] text-indigo-400/50">タグ未設定</span>`;
+            if(tagsHtml === "") tagsHtml = `<span class="text-[10px] text-slate-400">タグ未設定</span>`;
             document.getElementById('other-tags').innerHTML = tagsHtml;
 
             document.getElementById('other-profile-modal').classList.remove('hidden');
@@ -554,9 +620,15 @@
             const grade = document.getElementById('edit-grade').value;
             const selfintro = document.getElementById('edit-selfintro').value;
 
+            // ★ 選択されたタグを収集する処理
+            const checkedBoxes = document.querySelectorAll('.tag-checkbox:checked');
+            let selectedTags = [];
+            checkedBoxes.forEach(box => selectedTags.push(box.value));
+            const tagsString = selectedTags.join(",");
+
             if(!name) { alert("名前を入力してください！"); return; }
 
-            const text = `【プロフ更新】\n名前:${name}\n大学:${uni}\n学部:${faculty}\n学年:${grade}\n自己紹介:${selfintro}`;
+            const text = `【プロフ更新】\n名前:${name}\n大学:${uni}\n学部:${faculty}\n学年:${grade}\n興味タグ:${tagsString}\n自己紹介:${selfintro}`;
             
             liff.sendMessages([{ type: "text", text: text }]).then(() => {
                 alert("プロフィールを更新し、Notionと同期しました！🚀\n(反映には数秒かかります)");
