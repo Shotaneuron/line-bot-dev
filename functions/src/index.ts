@@ -1186,8 +1186,52 @@ export const getUserEvents = functions.region("asia-northeast1").https.onRequest
 });
 
 // ───────────────────────────────────────────
-// 6. マイページ用 API: イベント詳細の取得（本文・参加者リスト）
+// 6. カレンダー＆詳細用 API（アップデート版！）
 // ───────────────────────────────────────────
+
+// 📅 カレンダー用：全体公開イベントの取得（爆速軽量版）
+export const getCalendarEvents = functions.region("asia-northeast1").https.onRequest(async (req: any, res: any) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+
+    try {
+        // 月初から数ヶ月分のデータを一気に取得（軽量化のためプロパティを絞る）
+        const date = new Date();
+        date.setDate(1); // 今月の1日
+        const startOfMonth = date.toISOString().split('T')[0];
+
+        const response = await notion.databases.query({
+            database_id: EVENT_DB_ID,
+            filter: { property: PROP_EVENT_DATE, date: { on_or_after: startOfMonth } },
+            sorts: [{ property: PROP_EVENT_DATE, direction: "ascending" }]
+        });
+
+        const events = [];
+        for (const page of response.results) {
+            const cat = page.properties[PROP_EVENT_CAT]?.select?.name || "未分類";
+            
+            // ★ フィルター：「運営部」「企画部」を除外！
+            if (cat.includes("運営部") || cat.includes("企画部")) continue;
+
+            const title = page.properties[PROP_EVENT_NAME]?.title[0]?.plain_text || "無題";
+            const dateStr = page.properties[PROP_EVENT_DATE]?.date?.start;
+            const tags = page.properties[PROP_EVENT_TAGS]?.multi_select?.map((t:any)=>t.name) || [];
+            
+            // ※主催者のNotionリレーションIDを取得（プロパティ「主催者」がある前提。なければ空）
+            const organizerIds = page.properties["主催者"]?.relation?.map((r:any) => r.id) || [];
+
+            events.push({ id: page.id, title, date: dateStr, category: cat, tags, organizerIds });
+        }
+
+        res.json({ events });
+    } catch(e: any) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// 📄 イベント詳細取得（不参加メンバー追加 ＆ アイコン取得用ID追加）
 export const getEventDetails = functions.region("asia-northeast1").https.onRequest(async (req: any, res: any) => {
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -1200,26 +1244,29 @@ export const getEventDetails = functions.region("asia-northeast1").https.onReque
         const eventPage: any = await notion.pages.retrieve({ page_id: eventId });
         const joinsIds = eventPage.properties[PROP_JOIN]?.relation?.map((r:any) => r.id) || [];
         const maybesIds = eventPage.properties[PROP_MAYBE]?.relation?.map((r:any) => r.id) || [];
+        const declinesIds = eventPage.properties[PROP_DECLINE]?.relation?.map((r:any) => r.id) || []; // ★不参加を追加
 
-        // 参加者の名前を取得するヘルパー関数（処理を軽くするためPromise.allを使用）
-        const getNames = async (ids: string[]) => {
+        const getParticipants = async (ids: string[]) => {
             if(ids.length === 0) return [];
-            const names = [];
+            const participants = [];
             for(const id of ids) {
                 try {
                     const p: any = await notion.pages.retrieve({ page_id: id });
-                    names.push(p.properties[PROP_MEMBER_NAME]?.title[0]?.plain_text || "匿名メンバー");
+                    participants.push({
+                        name: p.properties[PROP_MEMBER_NAME]?.title[0]?.plain_text || "匿名メンバー",
+                        lineId: p.properties[PROP_LINE_USER_ID]?.rich_text[0]?.plain_text || "" // LINE IDを取得
+                    });
                 } catch(e) {}
             }
-            return names;
+            return participants;
         };
 
-        const [joinsNames, maybesNames] = await Promise.all([
-            getNames(joinsIds),
-            getNames(maybesIds)
+        const [joinsUsers, maybesUsers, declinesUsers] = await Promise.all([
+            getParticipants(joinsIds),
+            getParticipants(maybesIds),
+            getParticipants(declinesIds)
         ]);
 
-        // Notionのページ本文（ブロック）を取得してテキスト化
         const blocks = await notion.blocks.children.list({ block_id: eventId });
         let textContent = "";
         blocks.results.forEach((block: any) => {
@@ -1237,7 +1284,7 @@ export const getEventDetails = functions.region("asia-northeast1").https.onReque
             textContent = eventPage.properties[PROP_DETAIL_TEXT]?.rich_text?.map((t:any)=>t.plain_text).join("") || "詳細情報（本文）はまだ書かれていません。";
         }
 
-        res.json({ details: textContent.trim(), joins: joinsNames, maybes: maybesNames });
+        res.json({ details: textContent.trim(), joins: joinsUsers, maybes: maybesUsers, declines: declinesUsers });
     } catch(e: any) {
         console.error(e);
         res.status(500).json({ error: e.message });
