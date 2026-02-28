@@ -221,8 +221,9 @@
             const doc = usersDict[lineId]; 
             if (doc) {
                 closeEventDetail();
-                const p = doc.fields.profile.mapValue.fields;
-                document.getElementById('other-name').innerText = getSafe(p.name) + " さん";
+                const p = doc.fields?.profile?.mapValue?.fields || {}; // ★ 安全に書き換え！
+                const nameStr = getSafe(p.name) || "匿名";
+                document.getElementById('other-name').innerText = nameStr + " さん";
                 document.getElementById('other-icon').src = getSafe(p.iconUrl) || "https://via.placeholder.com/150";
                 
                 let roles = []; if (p.roles && p.roles.arrayValue && p.roles.arrayValue.values) roles = p.roles.arrayValue.values.map(v => getSafe(v)); else if (p.role) roles = [getSafe(p.role)];
@@ -267,7 +268,7 @@
         function createUserChip(lineId, colorClass, borderClass, textClass) {
             const doc = usersDict[lineId];
             if (!doc) return `<span class="text-[9px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-full">匿名</span>`;
-            const p = doc.fields?.profile?.mapValue?.fields;
+            const p = doc.fields?.profile?.mapValue?.fields || {}; // ★ || {} を追加！
             const name = getSafe(p.name) || "匿名";
             const icon = getSafe(p.iconUrl) || "https://via.placeholder.com/150";
             return `
