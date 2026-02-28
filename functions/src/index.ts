@@ -39,8 +39,8 @@ const LINE_CONFIG = {
     channelSecret: "cb26704abe34a65b"+"d1d4008d51ea43b7",
 };
 
-const NOTION_KEY = "ntn_5676278"+"85677qQuaCWy5v"+"qnrqclDgmnUZL"+"nk3QLvVkFd4w";
-const GEMINI_API_KEY = "AIzaSyDPB"+"mRjbtNmYJk"+"HOBATraYnF"+"no-LGmwDvU"; // ★GeminiのAPIキー
+const NOTION_KEY = process.env.NOTION_KEY || "";
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 const GEMINI_MODEL_NAME = "gemini-2.0-flash";
 
 const MEMBER_DB_ID = "281d37536ad78161903ce60d6afafe59";
