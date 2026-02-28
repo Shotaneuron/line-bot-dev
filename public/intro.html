@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>心理ゼミとは | 北大心理ゼミ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@700;900&family=Zen+Kaku+Gothic+New:wght@700;900&family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body { font-family: 'Zen Maru Gothic', sans-serif; background: linear-gradient(-45deg, #ffffff, #f8fafc, #eff6ff, #fdf4ff, #fffbeb); background-size: 300% 300%; animation: auroraBG 15s ease infinite; color: #1e293b; min-height: 100vh; padding-bottom: 5rem; overflow-x: hidden; }
+        @keyframes auroraBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        .glass-card { background: rgba(255, 255, 255, 0.75); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.9); box-shadow: 0 10px 30px -10px rgba(71, 85, 105, 0.15); }
+        .fade-in { animation: fadeIn 0.6s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* 動画背景用のオーバーレイ */
+        .video-overlay { background: linear-gradient(to top, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 50%, rgba(0,0,0,0.2) 100%); }
+    </style>
+</head>
+<body class="safe-area-inset-top">
+
+    <main id="portal-view" class="relative pb-10">
+        <div class="relative w-full h-[45vh] sm:h-[50vh] overflow-hidden rounded-b-[3rem] shadow-sm mb-6">
+            <img src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&q=80&w=1000" class="absolute inset-0 w-full h-full object-cover object-center" alt="ゼミの様子">
+            
+            <div class="absolute inset-0 video-overlay"></div>
+            
+            <div class="absolute bottom-8 left-6 right-6 fade-in">
+                <span class="bg-white/90 backdrop-blur text-indigo-600 text-[10px] font-black tracking-widest px-3 py-1 rounded-full shadow-sm">ABOUT US</span>
+                <h1 class="text-3xl font-black text-slate-800 mt-3 leading-tight tracking-tight" style="font-family: 'Zen Kaku Gothic New', sans-serif;">
+                    学問の実践。<br>
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-pink-500">知識を行動に変える場所</span>
+                </h1>
+            </div>
+        </div>
+
+        <div class="px-5 space-y-5">
+            <section class="fade-in" style="animation-delay: 0.1s;">
+                <div onclick="startExploration()" class="relative overflow-hidden bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-3xl p-1 shadow-lg cursor-pointer active:scale-95 transition-transform">
+                    <div class="bg-white/10 backdrop-blur-md rounded-[1.4rem] p-5 flex items-center justify-between">
+                        <div>
+                            <h2 class="text-white font-black text-lg mb-1 tracking-wider">🗺️ 心理ゼミについて知る</h2>
+                            <p class="text-white/80 text-[10px] font-bold">疑問をタップして、ゼミの全貌を解き明かそう！</p>
+                        </div>
+                        <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white text-xl shadow-inner">👉</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="fade-in" style="animation-delay: 0.2s;">
+                <h3 class="text-sm font-black text-slate-800 tracking-widest flex items-center gap-2 mb-3 px-2"><span>📸</span> 活動ギャラリー</h3>
+                <div class="flex gap-3 overflow-x-auto no-scrollbar pb-2 px-1">
+                    <img src="https://images.unsplash.com/photo-1529390079861-591de354faf5?w=300&h=200&fit=crop" class="w-40 h-28 rounded-2xl object-cover shadow-sm flex-shrink-0 border border-white">
+                    <img src="https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=300&h=200&fit=crop" class="w-40 h-28 rounded-2xl object-cover shadow-sm flex-shrink-0 border border-white">
+                    <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=300&h=200&fit=crop" class="w-40 h-28 rounded-2xl object-cover shadow-sm flex-shrink-0 border border-white">
+                </div>
+            </section>
+        </div>
+    </main>
+    <div id="explore-modal" class="fixed inset-0 z-50 hidden flex-col bg-slate-50/95 backdrop-blur-xl animate-[fadeIn_0.3s_ease-out]">
+        
+        <div class="flex items-center justify-between p-5 border-b border-slate-200/50 bg-white/50">
+            <button onclick="closeExploration()" class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-slate-600 shadow-sm border border-slate-100 font-bold active:scale-95 transition">✕</button>
+            <div class="text-xs font-black text-slate-400 tracking-widest">Q&A EXPLORER</div>
+            <div class="w-10"></div> </div>
+
+        <div class="flex-1 overflow-y-auto pb-10 px-5 pt-6">
+            <div id="breadcrumb" class="flex flex-wrap items-center gap-1.5 mb-6 text-[10px] font-bold text-indigo-400">
+                </div>
+
+            <div class="mb-8 fade-in">
+                <span id="current-icon" class="text-4xl block mb-3 drop-shadow-sm">🤔</span>
+                <h2 id="current-question" class="text-2xl font-black text-slate-800 leading-tight tracking-tight">何について知りたいですか？</h2>
+            </div>
+
+            <div id="options-container" class="space-y-3">
+                </div>
+
+            <div id="page-content" class="hidden glass-card rounded-3xl p-6 fade-in">
+                <h3 id="page-title" class="text-lg font-black text-slate-800 mb-3 border-b border-slate-200 pb-2"></h3>
+                <div id="page-desc" class="text-sm text-slate-600 leading-relaxed font-medium mb-6 whitespace-pre-wrap"></div>
+                
+                <button id="btn-mark-read" onclick="markAsRead()" class="w-full bg-indigo-50 border border-indigo-200 text-indigo-600 font-black py-4 rounded-xl shadow-sm active:scale-95 transition flex items-center justify-center gap-2">
+                    <span class="text-lg">☑️</span> 読んだ！（チェックをつける）
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 📚 探索用データ（ここを自由に書き換えて階層を作れます！）
+        // ==========================================
+        const exploreData = {
+            id: "root",
+            icon: "🤔",
+            question: "心理ゼミの何について知りたいですか？",
+            children: [
+                {
+                    id: "activities",
+                    label: "どんな活動があるの？",
+                    icon: "🏃‍♂️",
+                    question: "どのジャンルの活動が気になりますか？",
+                    children: [
+                        {
+                            id: "clubs",
+                            label: "部活",
+                            icon: "🏕️",
+                            question: "気になる部活をタップしてください！",
+                            children: [
+                                { id: "sukoyaka", label: "すこやか部", icon: "🧘", type: "page", title: "すこやか部 とは？", description: "健康第一！筋トレやサウナに一緒に行くなど、心身の健康を保つための活動をしています。\n\nゼミの活動で疲れた頭をリフレッシュさせるのに最適な部活です！" },
+                                { id: "reading", label: "読書部", icon: "📚", type: "page", title: "読書部 とは？", description: "おすすめの本を紹介し合ったり、みんなで同じ本を読んでディスカッションをする部活です。\n\n心理学に関する専門書から、ビジネス書、小説まで幅広いジャンルを扱います。" },
+                                { id: "radio", label: "ラジオ部", icon: "📻", type: "page", title: "ラジオ部 とは？", description: "ゼミ生同士でラジオ（ポッドキャスト）配信を行っています。\n\n雑談から真面目なテーマまで、メンバーの素顔や考えていることを発信しています！" }
+                            ]
+                        },
+                        {
+                            id: "projects",
+                            label: "プロジェクト (PJ)",
+                            icon: "🚀",
+                            question: "進行中のプロジェクト一覧",
+                            children: [
+                                { id: "pj_shinkan", label: "新歓PV制作PJ", icon: "🎬", type: "page", title: "新歓PV制作プロジェクト", description: "来年度の新入生に向けて、心理ゼミの魅力を伝えるプロモーションビデオを制作するプロジェクトです。\nNotebookLMなどのAIツールも活用して効率的にクリエイティブを作っています！" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    id: "about_vision",
+                    label: "そもそも心理ゼミとは？",
+                    icon: "💡",
+                    type: "page",
+                    title: "心理ゼミのビジョン",
+                    description: "心理ゼミは「学問の実践」をテーマに、大学で学んだ知識をただの知識で終わらせず、実際の行動や社会に還元するためのコミュニティです。\n\n代表の加藤翔大を中心に、学生主体で様々な企画や組織運営を行っています。"
+                }
+            ]
+        };
+
+        // ==========================================
+        // ⚙️ 探索ロジック
+        // ==========================================
+        let historyStack = []; // ユーザーが辿ったパスを記録（戻るボタン用）
+        let currentNode = exploreData;
+
+        function startExploration() {
+            document.getElementById('explore-modal').classList.remove('hidden');
+            document.getElementById('explore-modal').classList.add('flex');
+            historyStack = [exploreData];
+            renderNode(exploreData);
+        }
+
+        function closeExploration() {
+            document.getElementById('explore-modal').classList.add('hidden');
+            document.getElementById('explore-modal').classList.remove('flex');
+        }
+
+        // 特定のノード（階層）の画面を描画する
+        function renderNode(node) {
+            currentNode = node;
+            
+            // パンくずリストの生成（例： トップ > どんな活動があるの？ > 部活）
+            let breadcrumbHtml = `<span onclick="goBackTo(0)" class="cursor-pointer hover:underline">トップ</span>`;
+            for (let i = 1; i < historyStack.length; i++) {
+                breadcrumbHtml += ` <span class="text-slate-300">/</span> <span onclick="goBackTo(${i})" class="cursor-pointer hover:underline">${historyStack[i].label}</span>`;
+            }
+            document.getElementById('breadcrumb').innerHTML = breadcrumbHtml;
+
+            // 質問・アイコンの更新
+            document.getElementById('current-icon').innerText = node.icon || "✨";
+            document.getElementById('current-question').innerText = node.question || "詳細を見る";
+
+            // 「ページ（最終階層）」か「選択肢」かで表示を切り替え
+            if (node.type === "page") {
+                document.getElementById('options-container').classList.add('hidden');
+                document.getElementById('page-content').classList.remove('hidden');
+                
+                document.getElementById('page-title').innerText = node.title || node.label;
+                document.getElementById('page-desc').innerText = node.description;
+                
+                // 既読状態かチェックしてボタンの見た目を変える
+                const isRead = localStorage.getItem('zemi_read_' + node.id) === 'true';
+                const btn = document.getElementById('btn-mark-read');
+                if (isRead) {
+                    btn.innerHTML = `<span class="text-lg">✅</span> 既読済み（戻る）`;
+                    btn.className = "w-full bg-emerald-50 border border-emerald-200 text-emerald-600 font-black py-4 rounded-xl shadow-sm active:scale-95 transition flex items-center justify-center gap-2";
+                } else {
+                    btn.innerHTML = `<span class="text-lg">☑️</span> 読んだ！（チェックをつける）`;
+                    btn.className = "w-full bg-indigo-50 border border-indigo-200 text-indigo-600 font-black py-4 rounded-xl shadow-sm active:scale-95 transition flex items-center justify-center gap-2";
+                }
+            } else {
+                document.getElementById('page-content').classList.add('hidden');
+                document.getElementById('options-container').classList.remove('hidden');
+                
+                // 選択肢のボタンを生成
+                let optionsHtml = "";
+                if (node.children) {
+                    node.children.forEach(child => {
+                        // 子ノードがページの場合、既読（✅）かどうかを確認
+                        let statusIcon = "👉";
+                        let opacityClass = "";
+                        let bgClass = "bg-white";
+                        
+                        // その選択肢自体が既読、もしくは「その中の項目がすべて既読」ならチェックをつけるなどの工夫ができますが、今回はシンプルにページ自体が既読かチェック
+                        const isRead = localStorage.getItem('zemi_read_' + child.id) === 'true';
+                        if (isRead) {
+                            statusIcon = "✅";
+                            opacityClass = "opacity-70";
+                            bgClass = "bg-slate-50";
+                        }
+
+                        optionsHtml += `
+                            <button onclick="selectOption('${child.id}')" class="w-full ${bgClass} ${opacityClass} border border-slate-200 rounded-2xl p-4 flex items-center justify-between shadow-sm hover:shadow-md active:scale-95 transition-all text-left">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-2xl">${child.icon || "✨"}</span>
+                                    <span class="font-black text-slate-700">${child.label}</span>
+                                </div>
+                                <span class="text-sm">${statusIcon}</span>
+                            </button>
+                        `;
+                    });
+                }
+                document.getElementById('options-container').innerHTML = optionsHtml;
+            }
+        }
+
+        // 選択肢をタップした時の処理
+        function selectOption(childId) {
+            const childNode = currentNode.children.find(c => c.id === childId);
+            if (childNode) {
+                historyStack.push(childNode);
+                renderNode(childNode);
+            }
+        }
+
+        // パンくずリストをタップして前の階層に戻る処理
+        function goBackTo(index) {
+            historyStack = historyStack.slice(0, index + 1);
+            renderNode(historyStack[historyStack.length - 1]);
+        }
+
+        // 「読んだ！」ボタンの処理
+        function markAsRead() {
+            // 端末のローカルストレージに「既読」として保存
+            localStorage.setItem('zemi_read_' + currentNode.id, 'true');
+            
+            // 1つ前の階層（選択肢リスト）に戻る
+            historyStack.pop();
+            renderNode(historyStack[historyStack.length - 1]);
+        }
+
+        // ページ読み込み時の処理（LIFF初期化など）
+        async function initIntro() {
+            try {
+                // 必要であればLIFF IDを入れて初期化（マイページなどと同じもの）
+                await liff.init({ liffId: "2009176797-wHDy2QrV" }); 
+            } catch (err) {
+                console.error(err);
+            }
+        }
+        initIntro();
+    </script>
+</body>
+</html>
