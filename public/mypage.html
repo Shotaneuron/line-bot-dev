@@ -362,7 +362,7 @@
             }
         }
 
-        async function openEventDetail(eventId, title) {
+async function openEventDetail(eventId, title) {
             document.getElementById('event-modal-title').innerText = title;
             document.getElementById('event-modal-content').innerHTML = `
                 <div class="flex flex-col items-center justify-center py-10">
@@ -374,25 +374,43 @@
                 const res = await fetch(`https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/getEventDetails?eventId=${eventId}`);
                 const data = await res.json();
 
+                // バックエンドからの安全なエラーメッセージがあれば表示
+                if (data.details && data.details.includes("⚠️")) {
+                    throw new Error(data.details);
+                }
+
                 let html = `<div class="bg-slate-50 p-4 rounded-xl border border-slate-200 whitespace-pre-wrap text-xs text-slate-700 leading-relaxed font-medium">${data.details}</div>`;
 
-                // 🙋 参加予定リスト（タップでプロフィールへ飛ぶボタンに！）
-                html += `<div class="mt-4"><p class="text-[10px] font-bold text-indigo-500 mb-2">🙋 参加予定 (${data.joins.length}人)</p>`;
-                if(data.joins.length > 0) {
-                    html += `<div class="flex flex-wrap gap-1.5">${data.joins.map(u => `<button onclick="openProfileByLineId('${u.lineId}')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-[10px] font-bold px-2.5 py-1 rounded-md border border-indigo-200 active:scale-95 transition shadow-sm">${u.name}</button>`).join('')}</div>`;
+                // 🙋 参加予定リスト（APIの仕様に合わせて joinsLineIds を使用）
+                const joins = data.joinsLineIds || [];
+                html += `<div class="mt-4"><p class="text-[10px] font-bold text-indigo-500 mb-2">🙋 参加予定 (${joins.length}人)</p>`;
+                if(joins.length > 0) {
+                    html += `<div class="flex flex-wrap gap-1.5">${joins.map(id => {
+                        const userDoc = allUsersData.find(doc => doc.name.includes(id));
+                        const name = userDoc ? (getSafe(userDoc.fields?.profile?.mapValue?.fields?.name) || "匿名") : "匿名";
+                        return `<button onclick="openProfileByLineId('${id}')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-[10px] font-bold px-2.5 py-1 rounded-md border border-indigo-200 active:scale-95 transition shadow-sm">${name}</button>`;
+                    }).join('')}</div>`;
                 } else { html += `<p class="text-[10px] text-slate-400">まだ参加者はいません</p>`; }
                 html += `</div>`;
 
-                // 🤔 迷い中リスト（タップでプロフィールへ飛ぶボタンに！）
-                html += `<div class="mt-4"><p class="text-[10px] font-bold text-orange-500 mb-2">🤔 迷い中 (${data.maybes.length}人)</p>`;
-                if(data.maybes.length > 0) {
-                    html += `<div class="flex flex-wrap gap-1.5">${data.maybes.map(u => `<button onclick="openProfileByLineId('${u.lineId}')" class="bg-orange-50 hover:bg-orange-100 text-orange-600 text-[10px] font-bold px-2.5 py-1 rounded-md border border-orange-200 active:scale-95 transition shadow-sm">${u.name}</button>`).join('')}</div>`;
+                // 🤔 迷い中リスト（APIの仕様に合わせて maybesLineIds を使用）
+                const maybes = data.maybesLineIds || [];
+                html += `<div class="mt-4"><p class="text-[10px] font-bold text-orange-500 mb-2">🤔 迷い中 (${maybes.length}人)</p>`;
+                if(maybes.length > 0) {
+                    html += `<div class="flex flex-wrap gap-1.5">${maybes.map(id => {
+                        const userDoc = allUsersData.find(doc => doc.name.includes(id));
+                        const name = userDoc ? (getSafe(userDoc.fields?.profile?.mapValue?.fields?.name) || "匿名") : "匿名";
+                        return `<button onclick="openProfileByLineId('${id}')" class="bg-orange-50 hover:bg-orange-100 text-orange-600 text-[10px] font-bold px-2.5 py-1 rounded-md border border-orange-200 active:scale-95 transition shadow-sm">${name}</button>`;
+                    }).join('')}</div>`;
                 } else { html += `<p class="text-[10px] text-slate-400">迷い中の人はいません</p>`; }
                 html += `</div>`;
 
                 document.getElementById('event-modal-content').innerHTML = html;
-            } catch(e) { document.getElementById('event-modal-content').innerHTML = '<p class="text-center text-red-400 py-4 text-xs font-bold">エラーが発生しました</p>'; }
+            } catch(e) { 
+                document.getElementById('event-modal-content').innerHTML = `<p class="text-center text-red-400 py-4 text-xs font-bold whitespace-pre-wrap">${e.message || 'エラーが発生しました'}</p>`; 
+            }
         }
+
         function closeEventDetail() { document.getElementById('event-detail-modal').classList.add('hidden'); document.getElementById('event-detail-modal').classList.remove('flex'); }
 
         function openPastEventsModal() {
