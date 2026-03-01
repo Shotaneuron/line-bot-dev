@@ -1497,52 +1497,73 @@ export async function handleRecentEvents(replyToken: string) {
     } catch (e) { console.error(e); await reply(replyToken, "イベントの取得に失敗しました。"); }
 }
 
-// ============================================================================
-// 🎮 探索ポータル（intro.html）の経験値（EXP）をFirestoreに保存するAPI
-// ============================================================================
-const cors = require('cors')({ origin: true });
 
+// 🎮 探索ポータル（intro.html）専用API：経験値更新 ＆ ランキング取得
+// ============================================================================
+// TypeScriptのエラーを回避するため、内部で安全にcorsを読み込みます
+const corsPortal = require('cors')({ origin: true });
+
+// 1. 経験値を保存するAPI
 export const updateIntroExp = functions.region('asia-northeast1').https.onRequest((req, res) => {
-    cors(req, res, async () => {
-        // セキュリティのためPOSTリクエストのみ許可
+    corsPortal(req, res, async () => {
         if (req.method !== 'POST') {
             res.status(405).send('Method Not Allowed');
             return;
         }
-
         try {
-            // フロントエンドから送られてきた lineId と exp を受け取る
             const { lineId, exp } = req.body;
-
-            // パラメータのチェック（空っぽじゃないか、数値かどうか）
             if (!lineId || typeof exp !== 'number') {
-                res.status(400).json({ error: 'パラメータが不正です。lineId と exp(数値) が必要です。' });
+                res.status(400).json({ error: 'Invalid parameters' });
                 return;
             }
-
-            // Firestoreの users コレクションから該当のユーザーを参照
-            const db = admin.firestore();
-            const userRef = db.collection('users').doc(lineId);
             
-            // ユーザーが存在するか確認
-            const docSnap = await userRef.get();
-            if (!docSnap.exists) {
-                res.status(404).json({ error: 'ユーザーが見つかりません。先にマイページ等で登録が必要です。' });
-                return;
-            }
-
-            // 経験値(introExp)を更新
-            await userRef.update({
+            const db = admin.firestore();
+            // set({ merge: true }) にすることで、まだプロフィール未登録のユーザーでもエラーにならずに保存できます
+            await db.collection('users').doc(lineId).set({
                 introExp: exp,
-                updatedAt: admin.firestore.FieldValue.serverTimestamp() // いつ更新したかのタイムスタンプも残す
-            });
+                updatedAt: admin.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
 
-            console.log(`[EXP UPDATE] User: ${lineId}, New EXP: ${exp}`);
-            res.status(200).json({ success: true, message: '経験値を更新しました', exp: exp });
-
+            res.status(200).json({ success: true, exp });
         } catch (error) {
-            console.error('経験値の更新中にエラーが発生しました:', error);
-            res.status(500).json({ error: 'サーバーエラーが発生しました。' });
+            console.error('Error in updateIntroExp:', error);
+            res.status(500).json({ error: 'Server error' });
+        }
+    });
+});
+
+// 2. ランキング用にユーザーデータを取得する専用API
+export const getIntroRanking = functions.region('asia-northeast1').https.onRequest((req, res) => {
+    corsPortal(req, res, async () => {
+        if (req.method !== 'GET') {
+            res.status(405).send('Method Not Allowed');
+            return;
+        }
+        try {
+            const db = admin.firestore();
+            const snapshot = await db.collection('users').get();
+            const users: any[] = [];
+            
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                // プロフィールが存在するユーザーのみ抽出して、フロントが読みやすい形に整形して返す
+                if (data && data.profile && data.profile.name) {
+                    users.push({
+                        id: doc.id, // ここで確実にLINE IDを取得
+                        name: data.profile.name,
+                        icon: data.profile.pictureUrl || "https://cdn-icons-png.flaticon.com/512/847/847969.png",
+                        univ: data.profile.university || "未設定",
+                        grade: data.profile.grade || "",
+                        message: data.profile.statusMessage || data.profile.message || "よろしくお願いします！",
+                        exp: typeof data.introExp === 'number' ? data.introExp : 0 // 未探索の人は0
+                    });
+                }
+            });
+            
+            res.status(200).json(users);
+        } catch (error) {
+            console.error('Error in getIntroRanking:', error);
+            res.status(500).json({ error: 'Server error' });
         }
     });
 });
