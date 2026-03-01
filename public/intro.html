@@ -406,10 +406,33 @@
                 const allUsersData = await res.json();
                 
                 communityUsers = allUsersData.map(doc => {
-                    const p = doc.fields?.profile?.mapValue?.fields || {};
-                    const lineId = doc.name ? doc.name.split('/').pop() : 'unknown';
+                    // APIの返り値がFirebase REST API形式(fieldsがある)か、通常のJSON形式かを判定して吸収する
+                    let lineId = 'unknown';
+                    let p = {};
+                    let savedExpStr = "";
                     
-                    const savedExpStr = getSafe(doc.fields?.introExp);
+                    if (doc.name && doc.fields) {
+                        // REST API形式の場合
+                        lineId = doc.name.split('/').pop() || 'unknown';
+                        p = doc.fields?.profile?.mapValue?.fields || {};
+                        savedExpStr = getSafe(doc.fields?.introExp);
+                        
+                        // REST形式でのデータ抽出ヘルパー関数を利用
+                        p = {
+                            name: getSafe(p.name),
+                            pictureUrl: getSafe(p.pictureUrl),
+                            university: getSafe(p.university),
+                            grade: getSafe(p.grade),
+                            statusMessage: getSafe(p.statusMessage),
+                            message: getSafe(p.message)
+                        };
+                    } else {
+                        // 通常のJSON形式の場合（Firebase Admin SDKでそのまま返している場合など）
+                        lineId = doc.lineId || doc.id || 'unknown';
+                        p = doc.profile || {};
+                        savedExpStr = doc.introExp !== undefined ? String(doc.introExp) : "";
+                    }
+
                     let exp = 0;
                     if (savedExpStr !== "") {
                         exp = parseInt(savedExpStr);
@@ -420,11 +443,11 @@
                     
                     return {
                         id: lineId,
-                        name: getSafe(p.name) || "匿名ゼミ生",
-                        icon: getSafe(p.pictureUrl) || "https://cdn-icons-png.flaticon.com/512/847/847969.png",
-                        univ: getSafe(p.university) || "未設定",
-                        grade: getSafe(p.grade) || "",
-                        message: getSafe(p.statusMessage) || getSafe(p.message) || "よろしくお願いします！",
+                        name: p.name || "匿名ゼミ生",
+                        icon: p.pictureUrl || "https://cdn-icons-png.flaticon.com/512/847/847969.png",
+                        univ: p.university || "未設定",
+                        grade: p.grade || "",
+                        message: p.statusMessage || p.message || "よろしくお願いします！",
                         exp: isNaN(exp) ? 0 : exp
                     };
                 }).filter(u => u.id !== myProfile.id && u.id !== 'unknown');
