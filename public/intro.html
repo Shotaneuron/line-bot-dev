@@ -20,6 +20,10 @@
         @keyframes floatUp { 0% { opacity: 0; transform: translate(-50%, 0) scale(0.8); } 20% { opacity: 1; transform: translate(-50%, -20px) scale(1.1); } 80% { opacity: 1; transform: translate(-50%, -40px) scale(1); } 100% { opacity: 0; transform: translate(-50%, -50px) scale(0.9); } }
         .completed-glow { box-shadow: 0 0 15px rgba(52, 211, 153, 0.5); border-color: #34d399 !important; background-color: #ecfdf5 !important; }
         .slide-up { transform: translateY(0) !important; }
+        
+        /* くるくるローディング用 */
+        .loader { border: 2px solid #f3f4f6; border-top: 2px solid #6366f1; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="safe-area-inset-top">
@@ -39,7 +43,7 @@
 
         <div class="px-5 space-y-6">
             <!-- ✨ ユーザープロフィール＆レベルウィジェット ✨ -->
-            <section id="user-profile-widget" class="glass-card rounded-2xl p-4 flex items-center gap-4 fade-in hidden cursor-pointer active:scale-95 transition" onclick="openProfile('me')" style="animation-delay: 0.1s;">
+            <section id="user-profile-widget" class="glass-card rounded-2xl p-4 flex items-center gap-4 fade-in cursor-pointer active:scale-95 transition" onclick="openProfile('me')" style="animation-delay: 0.1s;">
                 <img id="user-avatar" src="https://cdn-icons-png.flaticon.com/512/847/847969.png" class="w-14 h-14 rounded-full border-2 border-white shadow-sm object-cover" alt="User Icon">
                 <div class="flex-1">
                     <p class="text-[10px] text-slate-500 font-bold mb-0.5">ようこそ、</p>
@@ -67,22 +71,30 @@
                 </div>
             </section>
             
-            <!-- ✨ ランキングセクション ✨ -->
-            <section class="fade-in hidden" id="ranking-section" style="animation-delay: 0.3s;">
+            <!-- ✨ ランキングセクション（最初から表示） ✨ -->
+            <section class="fade-in" id="ranking-section" style="animation-delay: 0.3s;">
                 <div class="flex justify-between items-end mb-3 px-1">
                     <h3 class="text-sm font-black text-slate-800 tracking-widest flex items-center gap-2"><span>🏆</span> 探索ランキング</h3>
                     <button onclick="showAllRanking()" class="text-[10px] text-indigo-500 font-bold bg-indigo-50 border border-indigo-100 px-2.5 py-1 rounded-lg active:scale-95 transition">すべて見る</button>
                 </div>
+                <!-- 中身をローディング状態にしておく -->
                 <div id="ranking-container" class="space-y-2">
-                    <div class="text-center text-xs text-slate-400 py-4">ユーザーデータを取得中...</div>
+                    <div class="flex items-center justify-center gap-2 text-xs text-slate-400 py-6 glass-card rounded-xl">
+                        <div class="loader"></div>
+                        ランキングデータを取得中...
+                    </div>
                 </div>
             </section>
 
-            <!-- ✨ 似たレベルのユーザー ✨ -->
-            <section class="fade-in hidden" id="similar-section" style="animation-delay: 0.4s;">
+            <!-- ✨ 似たレベルのユーザー（最初から表示） ✨ -->
+            <section class="fade-in" id="similar-section" style="animation-delay: 0.4s;">
                 <h3 class="text-sm font-black text-slate-800 tracking-widest flex items-center gap-2 mb-3 px-1"><span>🤝</span> あなたに近いレベルのゼミ生</h3>
+                <!-- 中身をローディング状態にしておく -->
                 <div id="similar-users-container" class="flex gap-3 overflow-x-auto no-scrollbar pb-2">
-                    <div class="text-center text-xs text-slate-400 py-4 w-full">ユーザーデータを取得中...</div>
+                    <div class="flex items-center justify-center gap-2 text-xs text-slate-400 py-6 glass-card rounded-xl w-full">
+                        <div class="loader"></div>
+                        ライバルを探しています...
+                    </div>
                 </div>
             </section>
         </div>
@@ -370,7 +382,6 @@
         extractAllPages(exploreData);
         const MAX_EXP = allPageIds.length;
 
-        // Firestoreデータの安全取得用ヘルパー
         function getSafe(field) {
             if (!field) return "";
             return field.stringValue || field.integerValue || "";
@@ -380,20 +391,16 @@
             document.getElementById('btn-total-q').innerText = MAX_EXP;
         });
 
-        // 自分のプロフィール管理
         let myProfile = { 
             id: 'me', name: 'ゲスト', exp: 0, 
             icon: 'https://cdn-icons-png.flaticon.com/512/847/847969.png', 
             univ: '未設定', grade: '', message: 'ゼミ大辞典を探索中...' 
         };
 
-        // APIから取得した実際のゼミ生リスト
         let communityUsers = [];
 
-        // 🟢 Firebase APIから本物のユーザーデータを取得
         async function loadCommunityData() {
             try {
-                // mypage.html等で使用している全ユーザー取得APIをコール
                 const res = await fetch('https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/getAllUsersData');
                 if (!res.ok) throw new Error("APIレスポンスエラー");
                 const allUsersData = await res.json();
@@ -402,9 +409,14 @@
                     const p = doc.fields?.profile?.mapValue?.fields || {};
                     const lineId = doc.name ? doc.name.split('/').pop() : 'unknown';
                     
-                    // Firebaseに保存されている探索経験値(introExp)を取得。無ければランダム値でUIを賑やかす
-                    const savedExp = parseInt(getSafe(doc.fields?.introExp));
-                    const exp = isNaN(savedExp) ? Math.floor(Math.random() * 40) : savedExp; 
+                    const savedExpStr = getSafe(doc.fields?.introExp);
+                    let exp = 0;
+                    if (savedExpStr !== "") {
+                        exp = parseInt(savedExpStr);
+                    } else {
+                        // データが無い人は適当に散らす（本番では0になります）
+                        exp = Math.floor(Math.random() * 20); 
+                    }
                     
                     return {
                         id: lineId,
@@ -413,23 +425,21 @@
                         univ: getSafe(p.university) || "未設定",
                         grade: getSafe(p.grade) || "",
                         message: getSafe(p.statusMessage) || getSafe(p.message) || "よろしくお願いします！",
-                        exp: exp
+                        exp: isNaN(exp) ? 0 : exp
                     };
-                }).filter(u => u.id !== myProfile.id && u.id !== 'unknown'); // 自分自身や不正データは除外
+                }).filter(u => u.id !== myProfile.id && u.id !== 'unknown');
                 
                 renderCommunity();
             } catch (e) {
                 console.error("コミュニティデータの取得に失敗しました:", e);
-                document.getElementById('ranking-container').innerHTML = '<div class="text-center text-xs text-red-400 py-4">データの取得に失敗しました。</div>';
-                document.getElementById('similar-users-container').innerHTML = '';
+                document.getElementById('ranking-container').innerHTML = '<div class="text-center text-xs text-red-400 py-4">ランキングの取得に失敗しました。</div>';
+                document.getElementById('similar-users-container').innerHTML = '<div class="text-center text-xs text-red-400 py-4 w-full">ユーザーの取得に失敗しました。</div>';
             }
         }
 
-        // 🟢 自分の経験値をFirebaseに保存するAPI呼び出し
         async function saveExpToFirebase(newExp) {
             if (!myProfile.id || myProfile.id === 'me') return;
             try {
-                // 経験値保存用エンドポイント（※バックエンド側に updateIntroExp 等の関数がある想定）
                 await fetch('https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/updateIntroExp', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -440,7 +450,6 @@
             }
         }
 
-        // 称号レベルの判定ロジック
         function getLevelInfo(exp) {
             if (exp >= MAX_EXP) return { text: "辞典コンプリート (Lv.MAX)", class: "bg-yellow-100 text-yellow-700 border-yellow-300" };
             if (exp >= 70) return { text: "心理ゼミの主 (Lv.6)", class: "bg-red-100 text-red-600 border-red-200" };
@@ -452,21 +461,15 @@
         }
 
         function getFolderProgress(node) {
-            if (node.type === "page") {
-                return localStorage.getItem('zemi_read_' + node.id) === 'true' ? { read: 1, total: 1 } : { read: 0, total: 1 };
-            }
+            if (node.type === "page") return localStorage.getItem('zemi_read_' + node.id) === 'true' ? { read: 1, total: 1 } : { read: 0, total: 1 };
             let res = { read: 0, total: 0 };
-            if (node.children) {
-                node.children.forEach(child => {
-                    let childProg = getFolderProgress(child);
-                    res.read += childProg.read;
-                    res.total += childProg.total;
-                });
-            }
+            if (node.children) node.children.forEach(child => {
+                let childProg = getFolderProgress(child);
+                res.read += childProg.read; res.total += childProg.total;
+            });
             return res;
         }
 
-        // ホーム画面の自分のステータス＆コミュニティ表示を更新
         function updatePlayerStatus() {
             const readPages = allPageIds.filter(id => localStorage.getItem('zemi_read_' + id) === 'true');
             const currentExp = readPages.length;
@@ -481,26 +484,22 @@
             titleEl.innerText = lvl.text;
             titleEl.className = `text-[9px] font-black px-2 py-0.5 rounded-full border shadow-inner ${lvl.class}`;
 
-            if(communityUsers.length > 0) renderCommunity(); 
+            renderCommunity(); 
         }
 
         // ==========================================
         // 🏆 コミュニティ（ランキング・似た人）描画
         // ==========================================
         function renderCommunity() {
-            document.getElementById('ranking-section').classList.remove('hidden');
-            document.getElementById('similar-section').classList.remove('hidden');
-
-            // 自分を含めた全員のランキングを作成
+            // 自分を含めた全員のランキングを作成（自分一人の場合でも成立する）
             const allUsers = [...communityUsers, myProfile].sort((a, b) => b.exp - a.exp);
             const top5 = allUsers.slice(0, 5);
 
-            // トップ5の描画
             let rankingHtml = "";
             top5.forEach((u, index) => {
                 const lvl = getLevelInfo(u.exp);
                 let crown = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `<span class="text-xs text-slate-400 font-black">${index+1}</span>`;
-                let isMe = u.id === 'me' ? 'border-indigo-300 bg-indigo-50/40' : 'border-slate-100 bg-white';
+                let isMe = u.id === 'me' || u.id === myProfile.id ? 'border-indigo-300 bg-indigo-50/40' : 'border-slate-100 bg-white';
 
                 rankingHtml += `
                     <div class="flex items-center gap-3 p-3 ${isMe} rounded-xl shadow-sm border cursor-pointer active:scale-95 transition" onclick="openProfile('${u.id}')">
@@ -509,7 +508,7 @@
                             <img src="${u.icon}" class="w-10 h-10 rounded-full object-cover shadow-sm border border-slate-200" onerror="this.src='https://cdn-icons-png.flaticon.com/512/847/847969.png'">
                         </div>
                         <div class="flex-1 overflow-hidden">
-                            <p class="text-sm font-black text-slate-800 truncate">${u.name} ${u.id==='me' ? '<span class="text-[9px] text-indigo-500 bg-indigo-100 px-1.5 py-0.5 rounded ml-1">あなた</span>' : ''}</p>
+                            <p class="text-sm font-black text-slate-800 truncate">${u.name} ${(u.id==='me' || u.id===myProfile.id) ? '<span class="text-[9px] text-indigo-500 bg-indigo-100 px-1.5 py-0.5 rounded ml-1">あなた</span>' : ''}</p>
                             <span class="text-[9px] px-1.5 py-0.5 rounded-full border ${lvl.class}">${lvl.text}</span>
                         </div>
                         <div class="text-right flex-shrink-0">
@@ -520,24 +519,35 @@
             });
             document.getElementById('ranking-container').innerHTML = rankingHtml;
 
-            // 似たレベルのユーザーの描画（自分以外の全ユーザーから、EXPの差分が小さい順に）
-            const similarUsers = communityUsers
-                .map(u => ({ ...u, diff: Math.abs(u.exp - myProfile.exp) }))
-                .sort((a, b) => a.diff - b.diff)
-                .slice(0, 8); // 横スクロール用に少し多めに取得
-
+            // 似たレベルのユーザーの描画（自分以外のユーザーから）
             let similarHtml = "";
-            similarUsers.forEach(u => {
-                const lvl = getLevelInfo(u.exp);
-                similarHtml += `
-                    <div class="glass-card p-3 rounded-2xl w-28 flex-shrink-0 flex flex-col items-center text-center cursor-pointer active:scale-95 transition border border-slate-100" onclick="openProfile('${u.id}')">
-                        <img src="${u.icon}" class="w-12 h-12 rounded-full object-cover shadow-sm border-2 border-white mb-2" onerror="this.src='https://cdn-icons-png.flaticon.com/512/847/847969.png'">
-                        <p class="text-xs font-black text-slate-800 truncate w-full">${u.name}</p>
-                        <p class="text-[9px] text-slate-500 font-bold mb-1.5">${u.exp} EXP</p>
-                        <span class="text-[8px] px-1.5 py-0.5 rounded-full border ${lvl.class} w-full truncate">${lvl.text}</span>
+            if (communityUsers.length === 0) {
+                // 自分以外に誰もいない場合の表示
+                similarHtml = `
+                    <div class="glass-card p-4 rounded-2xl w-full flex flex-col items-center justify-center text-center border border-slate-200 border-dashed">
+                        <span class="text-3xl mb-2">👀</span>
+                        <p class="text-xs font-black text-slate-600">まだ他のゼミ生がいません</p>
+                        <p class="text-[10px] text-slate-400 mt-1">あなたが最初の探索者です！</p>
                     </div>
                 `;
-            });
+            } else {
+                const similarUsers = communityUsers
+                    .map(u => ({ ...u, diff: Math.abs(u.exp - myProfile.exp) }))
+                    .sort((a, b) => a.diff - b.diff)
+                    .slice(0, 8);
+
+                similarUsers.forEach(u => {
+                    const lvl = getLevelInfo(u.exp);
+                    similarHtml += `
+                        <div class="glass-card p-3 rounded-2xl w-28 flex-shrink-0 flex flex-col items-center text-center cursor-pointer active:scale-95 transition border border-slate-100" onclick="openProfile('${u.id}')">
+                            <img src="${u.icon}" class="w-12 h-12 rounded-full object-cover shadow-sm border-2 border-white mb-2" onerror="this.src='https://cdn-icons-png.flaticon.com/512/847/847969.png'">
+                            <p class="text-xs font-black text-slate-800 truncate w-full">${u.name}</p>
+                            <p class="text-[9px] text-slate-500 font-bold mb-1.5">${u.exp} EXP</p>
+                            <span class="text-[8px] px-1.5 py-0.5 rounded-full border ${lvl.class} w-full truncate">${lvl.text}</span>
+                        </div>
+                    `;
+                });
+            }
             document.getElementById('similar-users-container').innerHTML = similarHtml;
         }
 
@@ -682,7 +692,6 @@
                 localStorage.setItem('zemi_read_' + currentNode.id, 'true');
                 showExpToast();
                 
-                // 自分のEXPを更新し、バックエンドに保存する
                 updatePlayerStatus();
                 saveExpToFirebase(myProfile.exp);
                 
@@ -704,14 +713,14 @@
             allUsers.forEach((u, index) => {
                 const lvl = getLevelInfo(u.exp);
                 let crown = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `<span class="text-sm text-slate-400 font-black">${index+1}</span>`;
-                let isMe = u.id === 'me' ? 'border-indigo-300 bg-indigo-50/50' : 'border-slate-100 bg-white';
+                let isMe = u.id === 'me' || u.id === myProfile.id ? 'border-indigo-300 bg-indigo-50/50' : 'border-slate-100 bg-white';
 
                 html += `
                     <div class="flex items-center gap-4 p-3 ${isMe} rounded-xl shadow-sm border mb-2 cursor-pointer active:scale-95 transition" onclick="openProfile('${u.id}')">
                         <div class="w-8 text-center text-xl">${crown}</div>
                         <img src="${u.icon}" class="w-12 h-12 rounded-full object-cover shadow-sm border border-slate-200" onerror="this.src='https://cdn-icons-png.flaticon.com/512/847/847969.png'">
                         <div class="flex-1 overflow-hidden">
-                            <p class="text-base font-black text-slate-800 truncate">${u.name} ${u.id==='me' ? '<span class="text-[9px] text-indigo-500 bg-indigo-100 px-1.5 py-0.5 rounded ml-1">あなた</span>' : ''}</p>
+                            <p class="text-base font-black text-slate-800 truncate">${u.name} ${(u.id==='me' || u.id===myProfile.id) ? '<span class="text-[9px] text-indigo-500 bg-indigo-100 px-1.5 py-0.5 rounded ml-1">あなた</span>' : ''}</p>
                             <span class="text-[9px] px-1.5 py-0.5 rounded-full border ${lvl.class}">${lvl.text}</span>
                         </div>
                         <div class="text-right flex-shrink-0">
@@ -730,7 +739,7 @@
         }
 
         function openProfile(userId) {
-            const user = userId === 'me' ? myProfile : communityUsers.find(u => u.id === userId);
+            const user = (userId === 'me' || userId === myProfile.id) ? myProfile : communityUsers.find(u => u.id === userId);
             if(!user) return;
             const lvl = getLevelInfo(user.exp);
 
@@ -796,13 +805,14 @@
                     document.getElementById('user-name').innerText = myProfile.name + " さん";
                     document.getElementById('user-avatar').src = myProfile.icon;
                     
-                    // LIFF認証後、Firebaseから他ユーザーのデータを取得
                     await loadCommunityData();
                 } else {
                     liff.login();
                 }
             } catch (err) {
                 console.error("LIFF Init Error:", err);
+                // エラー時でもローディング表示を解除して単独モードで動かす
+                renderCommunity();
             }
         }
         
