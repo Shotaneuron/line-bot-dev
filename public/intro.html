@@ -11,235 +11,255 @@
         body { font-family: 'Zen Maru Gothic', sans-serif; background: linear-gradient(-45deg, #ffffff, #f8fafc, #eff6ff, #fdf4ff, #fffbeb); background-size: 300% 300%; animation: auroraBG 15s ease infinite; color: #1e293b; min-height: 100vh; padding-bottom: 5rem; overflow-x: hidden; }
         @keyframes auroraBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
         .glass-card { background: rgba(255, 255, 255, 0.75); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.9); box-shadow: 0 10px 30px -10px rgba(71, 85, 105, 0.15); }
-        .fade-in { animation: fadeIn 0.6s ease-out forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .video-overlay { background: linear-gradient(to top, rgba(255,255,255,1) 0%, rgba(255,255,255,0.2) 60%, rgba(0,0,0,0.1) 100%); }
         
-        /* 動画背景用のオーバーレイ */
-        .video-overlay { background: linear-gradient(to top, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 50%, rgba(0,0,0,0.2) 100%); }
+        /* 経験値獲得ポップアップのアニメーション */
+        .exp-toast { animation: floatUp 1.5s ease-out forwards; pointer-events: none; }
+        @keyframes floatUp { 0% { opacity: 0; transform: translate(-50%, 0) scale(0.8); } 20% { opacity: 1; transform: translate(-50%, -20px) scale(1.1); } 80% { opacity: 1; transform: translate(-50%, -40px) scale(1); } 100% { opacity: 0; transform: translate(-50%, -50px) scale(0.9); } }
     </style>
 </head>
 <body class="safe-area-inset-top">
 
+    <!-- ▼▼ ホーム画面（ポータル） ▼▼ -->
     <main id="portal-view" class="relative pb-10">
-        <div class="relative w-full h-[45vh] sm:h-[50vh] overflow-hidden rounded-b-[3rem] shadow-sm mb-6">
-            <img src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&q=80&w=1000" class="absolute inset-0 w-full h-full object-cover object-center" alt="ゼミの様子">
-            
+        <!-- ヒーローセクション -->
+        <div class="relative w-full h-[40vh] overflow-hidden rounded-b-[2.5rem] shadow-sm mb-6">
+            <img src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&q=80&w=1000" class="absolute inset-0 w-full h-full object-cover object-center" alt="">
             <div class="absolute inset-0 video-overlay"></div>
             
-            <div class="absolute bottom-8 left-6 right-6 fade-in">
-                <span class="bg-white/90 backdrop-blur text-indigo-600 text-[10px] font-black tracking-widest px-3 py-1 rounded-full shadow-sm">ABOUT US</span>
-                <h1 class="text-3xl font-black text-slate-800 mt-3 leading-tight tracking-tight" style="font-family: 'Zen Kaku Gothic New', sans-serif;">
+            <div class="absolute bottom-6 left-5 right-5 fade-in">
+                <span class="bg-white/90 backdrop-blur text-indigo-600 text-[9px] font-black tracking-widest px-3 py-1 rounded-full shadow-sm">北大心理ゼミ PORTAL</span>
+                <h1 class="text-2xl font-black text-slate-800 mt-2 leading-tight tracking-tight" style="font-family: 'Zen Kaku Gothic New', sans-serif;">
                     学問の実践。<br>
                     <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-pink-500">知識を行動に変える場所</span>
                 </h1>
             </div>
         </div>
 
-        <div class="px-5 space-y-5">
-            <section class="fade-in" style="animation-delay: 0.1s;">
-                <div onclick="startExploration()" class="relative overflow-hidden bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-3xl p-1 shadow-lg cursor-pointer active:scale-95 transition-transform">
-                    <div class="bg-white/10 backdrop-blur-md rounded-[1.4rem] p-5 flex items-center justify-between">
+        <div class="px-5 space-y-6">
+            
+            <!-- ✨ ユーザープロフィール＆レベルウィジェット ✨ -->
+            <section id="user-profile-widget" class="glass-card rounded-2xl p-4 flex items-center gap-4 fade-in hidden" style="animation-delay: 0.1s;">
+                <img id="user-avatar" src="https://cdn-icons-png.flaticon.com/512/847/847969.png" class="w-14 h-14 rounded-full border-2 border-white shadow-sm object-cover" alt="User Icon">
+                <div class="flex-1">
+                    <p class="text-[10px] text-slate-500 font-bold mb-0.5">ようこそ、</p>
+                    <p id="user-name" class="text-base font-black text-slate-800 leading-none mb-2">ゲスト さん</p>
+                    <div class="flex items-center gap-2">
+                        <span id="user-title" class="text-[9px] font-black bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full border border-slate-200 shadow-inner">読込中...</span>
+                        <div class="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
+                            <div id="xp-bar" class="h-full bg-gradient-to-r from-indigo-500 to-pink-500 w-0 transition-all duration-700 ease-out"></div>
+                        </div>
+                        <span id="progress-text" class="text-[10px] text-slate-500 font-bold">0/0</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ✨ 探索モード起動ボタン ✨ -->
+            <section class="fade-in" style="animation-delay: 0.2s;">
+                <div onclick="startExploration()" class="relative overflow-hidden bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-2xl p-1 shadow-md cursor-pointer active:scale-95 transition-transform">
+                    <div class="bg-white/10 backdrop-blur-md rounded-[1rem] p-4 flex items-center justify-between">
                         <div>
-                            <h2 class="text-white font-black text-lg mb-1 tracking-wider">🗺️ 心理ゼミについて知る</h2>
-                            <p class="text-white/80 text-[10px] font-bold">疑問をタップして、ゼミの全貌を解き明かそう！</p>
+                            <h2 class="text-white font-black text-lg mb-1 tracking-wider">🗺️ ゼミを探索する</h2>
+                            <p class="text-white/90 text-[10px] font-bold">記事を読んでレベルを上げよう！</p>
                         </div>
                         <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white text-xl shadow-inner">👉</div>
                     </div>
                 </div>
             </section>
 
-            <section class="fade-in" style="animation-delay: 0.2s;">
-                <h3 class="text-sm font-black text-slate-800 tracking-widest flex items-center gap-2 mb-3 px-2"><span>📸</span> 活動ギャラリー</h3>
-                <div class="flex gap-3 overflow-x-auto no-scrollbar pb-2 px-1">
-                    <img src="https://images.unsplash.com/photo-1529390079861-591de354faf5?w=300&h=200&fit=crop" class="w-40 h-28 rounded-2xl object-cover shadow-sm flex-shrink-0 border border-white">
-                    <img src="https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=300&h=200&fit=crop" class="w-40 h-28 rounded-2xl object-cover shadow-sm flex-shrink-0 border border-white">
-                    <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=300&h=200&fit=crop" class="w-40 h-28 rounded-2xl object-cover shadow-sm flex-shrink-0 border border-white">
+            <!-- ギャラリー -->
+            <section class="fade-in" style="animation-delay: 0.3s;">
+                <h3 class="text-sm font-black text-slate-800 tracking-widest flex items-center gap-2 mb-3 px-1"><span>📸</span> 活動ギャラリー</h3>
+                <div class="flex gap-3 overflow-x-auto no-scrollbar pb-2">
+                    <img src="https://images.unsplash.com/photo-1529390079861-591de354faf5?w=300&h=200&fit=crop" class="w-36 h-24 rounded-2xl object-cover shadow-sm flex-shrink-0 border border-white" alt="">
+                    <img src="https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=300&h=200&fit=crop" class="w-36 h-24 rounded-2xl object-cover shadow-sm flex-shrink-0 border border-white" alt="">
+                    <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=300&h=200&fit=crop" class="w-36 h-24 rounded-2xl object-cover shadow-sm flex-shrink-0 border border-white" alt="">
                 </div>
             </section>
         </div>
     </main>
-    <div id="explore-modal" class="fixed inset-0 z-50 hidden flex-col bg-slate-50/95 backdrop-blur-xl animate-[fadeIn_0.3s_ease-out]">
+
+    <!-- ▼▼ 探索モード（オーバーレイ） ▼▼ -->
+    <div id="explore-modal" class="fixed inset-0 z-50 hidden flex-col bg-slate-50/95 backdrop-blur-xl animate-[fadeIn_0.2s_ease-out]">
         
-        <div class="flex items-center justify-between p-5 border-b border-slate-200/50 bg-white/50">
-            <button onclick="closeExploration()" class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-slate-600 shadow-sm border border-slate-100 font-bold active:scale-95 transition">✕</button>
-            <div class="text-xs font-black text-slate-400 tracking-widest">Q&A EXPLORER</div>
-            <div class="w-10"></div> </div>
+        <!-- ヘッダー（戻るボタン追加！） -->
+        <div class="flex items-center justify-between p-4 border-b border-slate-200/50 bg-white/70 backdrop-blur-md sticky top-0 z-10">
+            <button id="back-btn" onclick="goBack()" class="flex items-center gap-1 text-indigo-600 font-bold text-sm px-2 py-1 active:scale-95 transition opacity-0 pointer-events-none">
+                <span class="text-lg leading-none">◁</span> 戻る
+            </button>
+            <div class="text-[10px] font-black text-slate-400 tracking-widest absolute left-1/2 transform -translate-x-1/2">Q&A EXPLORER</div>
+            <button onclick="closeExploration()" class="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 font-black active:scale-95 transition text-xs">✕</button>
+        </div>
 
-        <div class="flex-1 overflow-y-auto pb-10 px-5 pt-6">
-            <div id="breadcrumb" class="flex flex-wrap items-center gap-1.5 mb-6 text-[10px] font-bold text-indigo-400">
-                </div>
+        <div class="flex-1 overflow-y-auto pb-10 px-5 pt-5 relative" id="explore-scroll-area">
+            <!-- 階層の現在地 -->
+            <div id="breadcrumb" class="flex flex-wrap items-center gap-1.5 mb-5 text-[9px] font-bold text-slate-400"></div>
 
-            <div class="mb-8 fade-in">
-                <span id="current-icon" class="text-4xl block mb-3 drop-shadow-sm">🤔</span>
-                <h2 id="current-question" class="text-2xl font-black text-slate-800 leading-tight tracking-tight">何について知りたいですか？</h2>
+            <div class="mb-6 fade-in" id="question-header">
+                <span id="current-icon" class="text-4xl block mb-2 drop-shadow-sm">🤔</span>
+                <h2 id="current-question" class="text-xl font-black text-slate-800 leading-tight tracking-tight">何について知りたいですか？</h2>
             </div>
 
-            <div id="options-container" class="space-y-3">
-                </div>
+            <!-- 選択肢コンテナ -->
+            <div id="options-container" class="space-y-3"></div>
 
-            <div id="page-content" class="hidden glass-card rounded-3xl p-6 fade-in">
+            <!-- ページ詳細コンテナ -->
+            <div id="page-content" class="hidden glass-card rounded-3xl p-5 fade-in">
                 <h3 id="page-title" class="text-lg font-black text-slate-800 mb-3 border-b border-slate-200 pb-2"></h3>
                 <div id="page-desc" class="text-sm text-slate-600 leading-relaxed font-medium mb-6 whitespace-pre-wrap"></div>
-                
                 <button id="btn-mark-read" onclick="markAsRead()" class="w-full bg-indigo-50 border border-indigo-200 text-indigo-600 font-black py-4 rounded-xl shadow-sm active:scale-95 transition flex items-center justify-center gap-2">
-                    <span class="text-lg">☑️</span> 読んだ！（チェックをつける）
+                    <span class="text-lg">☑️</span> 読んだ！（EXPを獲得）
                 </button>
             </div>
         </div>
     </div>
 
+    <!-- 経験値獲得のエフェクト用 -->
+    <div id="toast-container" class="fixed top-1/2 left-1/2 z-[100]"></div>
+
     <script>
         // ==========================================
-        // 📚 探索用データ（Web調査＆詳細アップデート版）
+        // 📚 探索用データ
         // ==========================================
         const exploreData = {
-            id: "root",
-            icon: "🧭",
-            question: "心理ゼミの何について知りたいですか？",
+            id: "root", icon: "🧭", question: "心理ゼミの何について知りたいですか？",
             children: [
                 {
-                    id: "activities",
-                    label: "どんな活動があるの？",
-                    icon: "🏃‍♂️",
-                    question: "「知識」「青春」「経験」を総取りできる3つの柱！",
+                    id: "lectures", label: "🧑‍🏫 メイン講義について知る", icon: "🧠", question: "代表による「超実践的」な心理学講義！",
                     children: [
+                        { id: "lec_about", label: "どんな講義なの？", icon: "🏫", type: "page", title: "おもしろ心理学研究の解説", description: "北大初の「授業系インカレサークル」として、3週に1回、心理学の”役に立つ”おもしろ研究を紹介する授業を受けられます！\n\nこれまで700本以上論文を読破してきた代表の加藤先生から、明日からすぐに役立つ心理学のテクニックや知識を学びます。\n\n📍 主な開催場所：\nHello Visits北海道大学（※Zoomでのオンライン参加も可能です！）" },
                         {
-                            id: "lectures",
-                            label: "メイン活動：『講義』",
-                            icon: "🧑‍🏫",
-                            question: "最高に役立つおもしろ心理学を学ぶ",
+                            id: "lec_past", label: "過去の講義テーマを覗き見！", icon: "📖", question: "過去にはこんなテーマで講義しました",
                             children: [
-                                { id: "lecture_about", label: "どんな授業なの？", icon: "🧠", type: "page", title: "おもしろ心理学研究の解説", description: "北大初の「授業系サークル」として、3週に1回、心理学の”役に立つ”おもしろ研究を紹介する授業を受けられます！\n\nこれまで700本以上論文を読破してきた代表の加藤先生から、明日からすぐに役立つ心理学のテクニックや知識を学びます。" },
-                                { id: "lecture_past", label: "過去の授業テーマ例", icon: "📚", type: "page", title: "これまでの講義（過去50以上！）", description: "過去にはこんなテーマで講義を行いました。\n\n・「忙しい人のための最強の記憶術7選」\n・「断れない性格の治し方」\n・「メンヘラの心理学〜悲劇のヒロインを演じる人たち〜」\n\nどれも日常ですぐに使える実践的な内容ばかりです！" }
-                            ]
-                        },
-                        {
-                            id: "clubs",
-                            label: "青春を満喫：『部活』",
-                            icon: "🏕️",
-                            question: "勉強だけじゃない！遊びも全力で！",
-                            children: [
-                                { id: "club_drive", label: "ドライ部🚗", icon: "🚗", type: "page", title: "ドライ部", description: "みんなで車に乗って、北海道ならではのドライブを満喫する部活です！綺麗な景色を見に行ったり、美味しいものを食べに行ったり、青春の思い出を作ります。" },
-                                { id: "club_cooking", label: "料理部🍳", icon: "🍳", type: "page", title: "料理部", description: "みんなで集まって楽しく料理を作る部活です。一人暮らしではなかなか作らない料理に挑戦したり、完成したご飯を囲んで語り合ったりします。" },
-                                { id: "sukoyaka", label: "すこやか部🧘", icon: "🧘", type: "page", title: "すこやか部", description: "健康第一！筋トレやサウナに一緒に行くなど、心身の健康を保つための活動をしています。" },
-                                { id: "reading", label: "読書部📚", icon: "📚", type: "page", title: "読書部", description: "おすすめの本を紹介し合ったり、みんなで同じ本を読んでディスカッションをする部活です。" },
-                                { id: "radio", label: "ラジオ部📻", icon: "📻", type: "page", title: "ラジオ部", description: "ゼミ生同士でラジオ（ポッドキャスト）配信を行っています。" }
-                            ]
-                        },
-                        {
-                            id: "events",
-                            label: "非日常体験：『イベント』",
-                            icon: "🎉",
-                            question: "学祭やキャンプなどの大型イベント！",
-                            children: [
-                                { id: "event_hokudaisai", label: "北大祭出店（心理戦カジノ等）", icon: "🃏", type: "page", title: "北大祭での熱い企画！", description: "毎年6月の北大祭（楡陵祭）では、心理学の知識を活かした体験型企画を出店しています。\n\n過去には「心理戦カジノ（あなたの心と運、試してみませんか？心理戦に勝利して激レア景品を手に入れろ！）」など、大盛況の企画を行いました！" },
-                                { id: "event_camp", label: "キャンプ・合宿🏕️", icon: "🏕️", type: "page", title: "キャンプ・合宿", description: "日常を離れて、大自然の中でキャンプや合宿を行います。メンバー同士の仲が一気に深まる、非日常の体験が待っています！" }
-                            ]
-                        },
-                        {
-                            id: "projects",
-                            label: "挑戦する：『プロジェクト』",
-                            icon: "🚀",
-                            question: "学生主体で立ち上がる様々なPJ",
-                            children: [
-                                { id: "pj_mirai", label: "未来開拓倶楽部としての活動", icon: "🌍", type: "page", title: "未来開拓倶楽部", description: "北大心理ゼミは「未来開拓倶楽部」の一部としても活動しており、様々なプロジェクトが動いています。\n\n長橋PJ、シェアハウスPJ、フードPJ、国際PJなど、興味のある分野で実践的な経験を積むことができます！" },
-                                { id: "pj_app", label: "アプリ開発・コンテスト挑戦", icon: "💻", type: "page", title: "アプリ開発コンテストへの挑戦", description: "ゼミの活動は心理学にとどまりません。東大主催のアプリ開発コンテスト「100program」の予選ピッチに挑戦するなど、ITやシステム開発の分野でも活動の幅を広げています！" },
-                                { id: "pj_shinkan", label: "新歓PV制作PJ", icon: "🎬", type: "page", title: "新歓PV制作プロジェクト", description: "来年度の新入生に向けて、心理ゼミの魅力を伝えるプロモーションビデオを制作するプロジェクトです。" }
+                                { id: "lec_memory", label: "記憶の科学（勉強前の7つのテク）", icon: "📝", type: "page", title: "記憶の科学①", description: "【過去の講義例】\n引くほど覚えれる『勉強前』にやるべき7つの記憶テク\n\n・勉強前に○○に触れるだけで記憶力が2倍に！？\n・90秒間○○するだけで記憶に定着しやすくなる法則\n・記憶力を高めてくれる魔法のドリンクとは？\n・リラックスと記憶のメカニズム\n\n...など、怖くなるくらい記憶力が上がっちゃう実践的なテクニックを学びました！" },
+                                { id: "lec_mental", label: "メンヘラの心理学", icon: "💔", type: "page", title: "メンヘラの心理学", description: "【過去の講義例】\n悲劇のヒロインを演じる人たち〜\n\nなぜ人は病んでしまうのか？周囲にいる「構ってちゃん」の心理構造と、正しい接し方について科学的なアプローチで解説しました。" },
+                                { id: "lec_no", label: "断れない性格の治し方", icon: "🙅‍♂️", type: "page", title: "断れない性格の治し方", description: "【過去の講義例】\nついつい頼み事を引き受けてしまって自分の首を絞めてしまう人必見！\n\n人間関係を壊さずに上手く「NO」を言うための心理的テクニックとマインドセットを学びました。" }
                             ]
                         }
                     ]
                 },
                 {
-                    id: "about_seminar",
-                    label: "ゼミの基本情報",
-                    icon: "🏫",
-                    question: "北大心理ゼミの根本について",
+                    id: "projects", label: "🚀 進行中のプロジェクト", icon: "🔥", question: "ゼミ生が主体となって動かすPJの数々！",
                     children: [
-                        {
-                            id: "about_vision",
-                            label: "ビジョン・理念",
-                            icon: "💡",
-                            type: "page",
-                            title: "「学問の実践」",
-                            description: "心理ゼミは「学問の実践」をテーマに、大学で学んだ知識をただの知識で終わらせず、実際の行動や社会に還元するためのコミュニティ（インカレサークル）です。\n\n学生主体で様々な企画や組織運営を行い、失敗を恐れずに挑戦できる環境を作っています。"
-                        },
-                        {
-                            id: "about_rep",
-                            label: "代表メッセージ",
-                            icon: "👑",
-                            type: "page",
-                            title: "代表からのメッセージ",
-                            description: "北大心理ゼミ代表（理学院M1）の加藤翔大です。\n\n8年ほど心理学などを勉強してきました。「心理学を机上の空論で終わらせたくない」「何か面白いことを仕掛けたい」そんな熱い思いを持ったメンバーが集まる場所を作りたいと思い、この組織を運営しています。\n皆さんの「やりたい！」という挑戦を、このゼミの仕組みを使って全力でサポートします！"
-                        },
-                        {
-                            id: "faq",
-                            label: "よくある質問 (FAQ)",
-                            icon: "❓",
-                            question: "気になる疑問を選んでください",
-                            children: [
-                                { id: "faq_busy", label: "Q. 忙しくても大丈夫？", icon: "⏱️", type: "page", title: "Q. 忙しくても活動できますか？", description: "A. もちろんです！\nゼミの活動は強制ではありません。3週に1回の講義や、自分のペースで参加できる部活、単発のイベントだけでも大歓迎です。" },
-                                { id: "faq_knowledge", label: "Q. 心理学の知識は必要？", icon: "🧠", type: "page", title: "Q. 専門知識がなくても平気ですか？", description: "A. 全く問題ありません！\n「心理学に興味がある」「人間について知りたい」という気持ちがあれば十分です。代表の講義を聞くだけでもめちゃくちゃ面白いですよ！" }
-                            ]
-                        }
+                        { id: "pj_sports", label: "運動プロジェクト", icon: "👟", type: "page", title: "運動プロジェクト（運営：みかみ等）", description: "「最近外出してないな…」という方に朗報！心と体をリフレッシュさせるための運動企画を定期的に開催しています。\n\n🏃 過去の企画例：\n『運動不足解消！円山公園ウォーキング会』\n春休みなどに大通駅に集合して、みんなで円山公園を散歩しました。途中参加も大歓迎のゆるいプロジェクトです！" },
+                        { id: "pj_mirai", label: "未来開拓倶楽部 (複合PJ)", icon: "🌍", type: "page", title: "未来開拓倶楽部", description: "北大心理ゼミは「未来開拓倶楽部」の一部としても活動しており、多岐にわたるプロジェクトが動いています。\n\n・長橋PJ\n・シェアハウスPJ\n・フードPJ\n・国際PJ\n\n心理学の枠を超えて、自分の興味のある分野で実践的な経験を積むことができます！" },
+                        { id: "pj_app", label: "アプリ・システム開発PJ", icon: "💻", type: "page", title: "公式システム開発＆コンテスト挑戦", description: "東大主催のアプリ開発コンテスト「100program」の予選ピッチに挑戦するなど、IT分野にも進出！\n\n現在皆さんが使っているこの「公式LINE（AIボット搭載）」や、ゼミの情報を一元管理する「Notion」のシステム開発も、ゼミ生主体のチームで行っています。" },
+                        { id: "pj_shinkan", label: "新歓PV制作PJ", icon: "🎬", type: "page", title: "新歓PV制作プロジェクト", description: "来年度の新入生に向けて、心理ゼミの魅力を伝えるプロモーションビデオを制作するプロジェクトです。NotebookLMなどの最新AIツールも駆使してクリエイティブを作っています！" }
                     ]
                 },
                 {
-                    id: "system",
-                    label: "ゼミのツール・システム",
-                    icon: "⚙️",
-                    question: "ゼミの運営を支えるITツール群",
+                    id: "clubs", label: "🏕️ 部活・サークル活動", icon: "☕", question: "勉強だけじゃない！遊びも全力で！",
                     children: [
-                        {
-                            id: "sys_notion",
-                            label: "Notionについて",
-                            icon: "📓",
-                            type: "page",
-                            title: "情報共有の拠点：Notion",
-                            description: "ゼミの活動記録、議事録、マニュアルなどはすべてNotionというツールに集約されています。\nこれを読めばゼミの過去から現在までがすべてわかる、私たちの「外部脳」のような存在です。"
-                        },
-                        {
-                            id: "sys_line",
-                            label: "公式LINE・マイページ",
-                            icon: "📱",
-                            type: "page",
-                            title: "ゼミ専用公式LINE",
-                            description: "まさに今あなたが使っているこのLINEアプリです！イベントの出欠確認、プロフィール検索、性格診断などが完結し、AIチャットボットがあなたの疑問に答えてくれます。"
-                        }
+                        { id: "club_drive", label: "ドライ部🚗", icon: "🚗", type: "page", title: "ドライ部", description: "みんなで車に乗って、北海道ならではのドライブを満喫する部活です！" },
+                        { id: "club_cooking", label: "料理部🍳", icon: "🍳", type: "page", title: "料理部", description: "みんなで集まって楽しく料理を作る部活です。" },
+                        { id: "sukoyaka", label: "すこやか部🧘", icon: "🧘", type: "page", title: "すこやか部", description: "健康第一！筋トレやサウナに一緒に行くなど、心身の健康を保つための活動をしています。" },
+                        { id: "reading", label: "読書部📚", icon: "📚", type: "page", title: "読書部", description: "おすすめの本を紹介し合ったり、みんなで同じ本を読んでディスカッションをする部活です。" },
+                        { id: "radio", label: "ラジオ部📻", icon: "📻", type: "page", title: "ラジオ部", description: "ゼミ生同士でラジオ（ポッドキャスト）配信を行っています。" },
+                        { id: "movie", label: "映画鑑賞部🍿", icon: "🍿", type: "page", title: "映画鑑賞部", description: "月に1回、みんなで集まって映画を見る部活です。" },
+                        { id: "cafe", label: "カフェ巡り部☕", icon: "☕", type: "page", title: "カフェ巡り部", description: "札幌市内のオシャレなカフェを開拓する部活です。" }
                     ]
                 },
                 {
-                    id: "join",
-                    label: "ゼミに参加するには？",
-                    icon: "🚪",
-                    question: "新メンバー大募集中！",
+                    id: "events", label: "🎉 全体イベント・勉強会", icon: "🏮", question: "ゼミ全体で盛り上がる大型企画！",
                     children: [
-                        {
-                            id: "join_flow",
-                            label: "加入までの流れ",
-                            icon: "🐾",
-                            type: "page",
-                            title: "ゼミに入るには？",
-                            description: "1. まずは「見学・説明会（または新歓イベント）」に参加！\n\n2. メンバーとカジュアル面談\n（お互いのミスマッチを防ぐためのラフな会話です）\n\n3. 正式ジョイン！🎉\n（NotionやLINEグループへご招待します）"
-                        },
-                        {
-                            id: "join_contact",
-                            label: "お問い合わせ・見学申込",
-                            icon: "✉️",
-                            type: "page",
-                            title: "お問い合わせ",
-                            description: "見学を希望される方、もっと詳しく話を聞いてみたい方は、この公式LINEのメッセージで直接話しかけるか、公式SNSからお気軽にご連絡ください！"
-                        }
+                        { id: "event_hokudaisai", label: "北大祭出店（心理戦カジノ）", icon: "🃏", type: "page", title: "北大祭での熱い企画！", description: "毎年6月の北大祭（楡陵祭）では、心理学の知識を活かした体験型企画を出店しています。\n\n過去には『心理戦カジノ』を開催しました！" },
+                        { id: "event_camp", label: "夏合宿・クリスマス会", icon: "🎄", type: "page", title: "季節の大型イベント", description: "日常を離れて大自然で行う「夏合宿」や、一年の締めくくりに行う「クリスマスパーティ」など！" },
+                        { id: "study_stats", label: "統計学もくもく会", icon: "📊", type: "page", title: "統計学もくもく会", description: "心理学研究に欠かせない統計・データ分析をみんなで自習・教え合う会です。" },
+                        { id: "study_paper", label: "論文輪読会", icon: "📄", type: "page", title: "論文輪読会", description: "興味のある心理学の論文を持ち寄り、要約を発表し合う会です。" }
+                    ]
+                },
+                {
+                    id: "about_seminar", label: "🏫 心理ゼミの根本について", icon: "💡", question: "ビジョンや代表の想いを知る",
+                    children: [
+                        { id: "about_vision", label: "ビジョン『学問の実践』", icon: "🎯", type: "page", title: "「学問の実践」", description: "心理ゼミは「学問の実践」をテーマに、大学で学んだ知識をただの知識で終わらせず、実際の行動や社会に還元するためのコミュニティ（インカレサークル）です。" },
+                        { id: "about_rep", label: "代表メッセージ", icon: "👑", type: "page", title: "代表からのメッセージ", description: "北大心理ゼミ代表の加藤翔大です。\n「心理学を机上の空論で終わらせたくない」「何か面白いことを仕掛けたい」そんな熱い思いを持ったメンバーが集まる場所を作りたいと思い、この組織を運営しています。" },
+                        { id: "about_members", label: "どんな人が参加できるの？", icon: "👥", type: "page", title: "対象者は「高校生以上」全員！", description: "「北大」と名前がついていますが、実は他大学の学生、高校生、大学院生、社会人まで幅広い層が参加しているオープンなコミュニティです。" }
+                    ]
+                },
+                {
+                    id: "faq_and_join", label: "❓ よくある質問 / 参加方法", icon: "🚪", question: "不安を解消して、ゼミに飛び込もう！",
+                    children: [
+                        { id: "faq_busy", label: "Q. 忙しくても大丈夫？", icon: "⏱️", type: "page", title: "Q. 忙しくても活動できますか？", description: "A. もちろんです！\n活動は強制ではありません。自分のペースで参加できる部活や単発イベントだけでも大歓迎です。" },
+                        { id: "faq_knowledge", label: "Q. 心理学の知識は必要？", icon: "🧠", type: "page", title: "Q. 専門知識がなくても平気ですか？", description: "A. 全く問題ありません！\n「興味がある」という気持ちがあれば十分です。" },
+                        { id: "join_flow", label: "ゼミに入るまでの流れ", icon: "🐾", type: "page", title: "ゼミに入るには？", description: "1. まずは「見学・説明会（新歓）」に参加！\n2. メンバーとカジュアル面談\n3. 正式ジョイン！🎉" }
                     ]
                 }
             ]
         };
 
         // ==========================================
-        // ⚙️ 探索ロジック
+        // 🎮 システムロジック（レベル・既読判定など）
         // ==========================================
-        let historyStack = []; // ユーザーが辿ったパスを記録（戻るボタン用）
+        let allPageIds = []; // すべての読み物ページIDリスト
+
+        // ツリーを巡回してすべてのページIDを取得する関数
+        function extractAllPages(node) {
+            if (node.type === "page") {
+                allPageIds.push(node.id);
+            } else if (node.children) {
+                node.children.forEach(child => extractAllPages(child));
+            }
+        }
+        extractAllPages(exploreData);
+        const MAX_EXP = allPageIds.length; // 総ページ数 = 最大レベル
+
+        // フォルダ内の進捗を計算する関数
+        function getFolderProgress(node) {
+            if (node.type === "page") {
+                return localStorage.getItem('zemi_read_' + node.id) === 'true' ? { read: 1, total: 1 } : { read: 0, total: 1 };
+            }
+            let res = { read: 0, total: 0 };
+            if (node.children) {
+                node.children.forEach(child => {
+                    let childProg = getFolderProgress(child);
+                    res.read += childProg.read;
+                    res.total += childProg.total;
+                });
+            }
+            return res;
+        }
+
+        // ホーム画面のユーザーレベル・プログレスバーを更新
+        function updatePlayerStatus() {
+            const readPages = allPageIds.filter(id => localStorage.getItem('zemi_read_' + id) === 'true');
+            const currentExp = readPages.length;
+            
+            // UIの更新
+            document.getElementById('progress-text').innerText = `${currentExp}/${MAX_EXP} 完了`;
+            const percent = (currentExp / MAX_EXP) * 100;
+            document.getElementById('xp-bar').style.width = `${percent}%`;
+
+            // 称号（レベル）の判定
+            let titleText = "ゼミ見学者 (Lv.1)";
+            let titleClass = "bg-slate-100 text-slate-600 border-slate-200";
+            
+            if (currentExp >= MAX_EXP) {
+                titleText = "心理ゼミの主 (Lv.MAX)";
+                titleClass = "bg-yellow-100 text-yellow-700 border-yellow-300 shadow-md";
+            } else if (currentExp >= 15) {
+                titleText = "心理ゼミマスター (Lv.4)";
+                titleClass = "bg-pink-100 text-pink-600 border-pink-200";
+            } else if (currentExp >= 8) {
+                titleText = "一人前ゼミ生 (Lv.3)";
+                titleClass = "bg-purple-100 text-purple-600 border-purple-200";
+            } else if (currentExp >= 3) {
+                titleText = "見習いゼミ生 (Lv.2)";
+                titleClass = "bg-indigo-100 text-indigo-600 border-indigo-200";
+            }
+
+            const titleEl = document.getElementById('user-title');
+            titleEl.innerText = titleText;
+            titleEl.className = `text-[9px] font-black px-2 py-0.5 rounded-full border shadow-inner ${titleClass}`;
+        }
+
+        // ==========================================
+        // 🗺️ 探索UI制御
+        // ==========================================
+        let historyStack = [];
         let currentNode = exploreData;
 
         function startExploration() {
@@ -252,71 +272,91 @@
         function closeExploration() {
             document.getElementById('explore-modal').classList.add('hidden');
             document.getElementById('explore-modal').classList.remove('flex');
+            updatePlayerStatus(); // 閉じた時にホーム画面のゲージを更新
         }
 
-        // 特定のノード（階層）の画面を描画する
         function renderNode(node) {
             currentNode = node;
             
-            // パンくずリストの生成
-            let breadcrumbHtml = `<span onclick="goBackTo(0)" class="cursor-pointer hover:underline text-indigo-500">トップ</span>`;
+            // 戻るボタンの表示制御
+            const backBtn = document.getElementById('back-btn');
+            if (historyStack.length > 1) {
+                backBtn.classList.remove('opacity-0', 'pointer-events-none');
+            } else {
+                backBtn.classList.add('opacity-0', 'pointer-events-none');
+            }
+
+            // パンくずリスト
+            let breadcrumbHtml = `<span onclick="goBackTo(0)" class="cursor-pointer text-indigo-500">🏠 トップ</span>`;
             for (let i = 1; i < historyStack.length; i++) {
-                breadcrumbHtml += ` <span class="text-slate-300 mx-1">/</span> <span onclick="goBackTo(${i})" class="cursor-pointer hover:underline text-indigo-500">${historyStack[i].label}</span>`;
+                let shortLabel = historyStack[i].label.split(' ')[1] || historyStack[i].label;
+                breadcrumbHtml += `<span class="text-slate-300 mx-1">/</span><span onclick="goBackTo(${i})" class="cursor-pointer text-indigo-500 truncate max-w-[80px]">${shortLabel}</span>`;
             }
             document.getElementById('breadcrumb').innerHTML = breadcrumbHtml;
 
-            // 質問・アイコンの更新
+            // 質問の更新
             document.getElementById('current-icon').innerText = node.icon || "✨";
             document.getElementById('current-question').innerText = node.question || "詳細を見る";
 
-            // 「ページ（最終階層）」か「選択肢」かで表示を切り替え
+            // 一番上までスクロール
+            document.getElementById('explore-scroll-area').scrollTop = 0;
+
             if (node.type === "page") {
+                // ページ表示モード
                 document.getElementById('options-container').classList.add('hidden');
                 document.getElementById('page-content').classList.remove('hidden');
                 
                 document.getElementById('page-title').innerText = node.title || node.label;
                 document.getElementById('page-desc').innerText = node.description;
                 
-                // 既読状態かチェックしてボタンの見た目を変える
                 const isRead = localStorage.getItem('zemi_read_' + node.id) === 'true';
                 const btn = document.getElementById('btn-mark-read');
                 if (isRead) {
-                    btn.innerHTML = `<span class="text-lg">✅</span> 既読済み（一覧に戻る）`;
+                    btn.innerHTML = `<span class="text-lg">✅</span> 既読済み（戻る）`;
                     btn.className = "w-full bg-emerald-50 border border-emerald-200 text-emerald-600 font-black py-4 rounded-xl shadow-sm active:scale-95 transition flex items-center justify-center gap-2 mt-4";
                 } else {
-                    btn.innerHTML = `<span class="text-lg">☑️</span> 読んだ！（チェックをつける）`;
-                    btn.className = "w-full bg-indigo-50 border border-indigo-200 text-indigo-600 font-black py-4 rounded-xl shadow-sm active:scale-95 transition flex items-center justify-center gap-2 mt-4";
+                    btn.innerHTML = `<span class="text-lg">☑️</span> 読んだ！（EXPを獲得）`;
+                    btn.className = "w-full bg-gradient-to-r from-indigo-500 to-pink-500 text-white font-black py-4 rounded-xl shadow-md active:scale-95 transition flex items-center justify-center gap-2 mt-4";
                 }
             } else {
+                // 選択肢表示モード
                 document.getElementById('page-content').classList.add('hidden');
                 document.getElementById('options-container').classList.remove('hidden');
                 
-                // 選択肢のボタンを生成
                 let optionsHtml = "";
                 if (node.children) {
                     node.children.forEach(child => {
                         let statusIcon = "👉";
-                        let opacityClass = "";
+                        let borderClass = "border-slate-200";
                         let bgClass = "bg-white";
                         let textClass = "text-slate-700";
                         
-                        // 既読状態のチェック
-                        const isRead = localStorage.getItem('zemi_read_' + child.id) === 'true';
+                        // 進捗率の計算
+                        const prog = getFolderProgress(child);
+                        const isCompleted = prog.total > 0 && prog.read === prog.total;
                         
-                        if (isRead) {
+                        let progressTextHtml = "";
+                        if (child.type !== "page") {
+                            progressTextHtml = `<span class="text-[9px] font-bold text-slate-400 ml-2">(${prog.read}/${prog.total})</span>`;
+                        }
+
+                        if (isCompleted) {
                             statusIcon = "✅";
-                            opacityClass = "opacity-80";
-                            bgClass = "bg-slate-50";
+                            borderClass = "border-emerald-200";
+                            bgClass = "bg-emerald-50/50";
                             textClass = "text-slate-500";
                         }
 
                         optionsHtml += `
-                            <button onclick="selectOption('${child.id}')" class="w-full ${bgClass} ${opacityClass} border border-slate-200 rounded-2xl p-4 flex items-center justify-between shadow-sm hover:shadow-md active:scale-95 transition-all text-left">
-                                <div class="flex items-center gap-3">
-                                    <span class="text-2xl">${child.icon || "✨"}</span>
-                                    <span class="font-black ${textClass}">${child.label}</span>
+                            <button onclick="selectOption('${child.id}')" class="w-full ${bgClass} ${borderClass} border rounded-2xl p-4 flex items-center justify-between shadow-sm hover:shadow-md active:scale-95 transition-all text-left">
+                                <div class="flex items-center gap-3 flex-1 overflow-hidden">
+                                    <span class="text-2xl flex-shrink-0">${child.icon || "✨"}</span>
+                                    <div class="truncate">
+                                        <span class="font-black ${textClass} text-sm">${child.label}</span>
+                                        ${progressTextHtml}
+                                    </div>
                                 </div>
-                                <span class="text-sm">${statusIcon}</span>
+                                <span class="text-sm ml-2 flex-shrink-0">${statusIcon}</span>
                             </button>
                         `;
                     });
@@ -325,7 +365,6 @@
             }
         }
 
-        // 選択肢をタップした時の処理
         function selectOption(childId) {
             const childNode = currentNode.children.find(c => c.id === childId);
             if (childNode) {
@@ -334,33 +373,63 @@
             }
         }
 
-        // パンくずリストをタップして前の階層に戻る処理
+        function goBack() {
+            if (historyStack.length > 1) {
+                historyStack.pop();
+                renderNode(historyStack[historyStack.length - 1]);
+            }
+        }
+
         function goBackTo(index) {
             historyStack = historyStack.slice(0, index + 1);
             renderNode(historyStack[historyStack.length - 1]);
         }
 
-        // 「読んだ！」ボタンの処理
-        function markAsRead() {
-            localStorage.setItem('zemi_read_' + currentNode.id, 'true');
-            if(historyStack.length >= 2) {
-                localStorage.setItem('zemi_read_' + historyStack[historyStack.length - 2].id, 'true');
-            }
-            historyStack.pop();
-            renderNode(historyStack[historyStack.length - 1]);
+        // 経験値獲得のエフェクト
+        function showExpToast() {
+            const toast = document.createElement('div');
+            toast.className = 'exp-toast text-pink-500 font-black text-xl drop-shadow-md';
+            toast.innerText = '✨ +1 EXP';
+            document.getElementById('toast-container').appendChild(toast);
+            setTimeout(() => toast.remove(), 1500);
         }
 
-        // ページ読み込み時の処理（LIFF初期化）
+        function markAsRead() {
+            const wasRead = localStorage.getItem('zemi_read_' + currentNode.id) === 'true';
+            
+            if (!wasRead) {
+                localStorage.setItem('zemi_read_' + currentNode.id, 'true');
+                showExpToast();
+                // 少し遅延させてから戻る（エフェクトを見せるため）
+                setTimeout(() => {
+                    goBack();
+                }, 600);
+            } else {
+                goBack();
+            }
+        }
+
+        // ==========================================
+        // 🚀 LIFF初期化＆開始
+        // ==========================================
         async function initIntro() {
+            updatePlayerStatus(); // 初期描画
+            document.getElementById('user-profile-widget').classList.remove('hidden');
+
             try {
                 await liff.init({ liffId: "2009176797-wHDy2QrV" }); 
-                if (!liff.isLoggedIn()) {
+                if (liff.isLoggedIn()) {
+                    const profile = await liff.getProfile();
+                    document.getElementById('user-name').innerText = profile.displayName + " さん";
+                    document.getElementById('user-avatar').src = profile.pictureUrl || "https://cdn-icons-png.flaticon.com/512/847/847969.png";
+                } else {
                     liff.login();
                 }
             } catch (err) {
                 console.error("LIFF Init Error:", err);
             }
         }
+        
         initIntro();
     </script>
 </body>
