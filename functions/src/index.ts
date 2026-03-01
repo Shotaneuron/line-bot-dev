@@ -1567,3 +1567,104 @@ export const getIntroRanking = functions.region('asia-northeast1').https.onReque
         }
     });
 });
+
+// ... ファイル上部のインポート等はそのまま維持してください ...
+
+// ============================================================================
+// 📅 Notionイベント全件取得（ページネーション ＆ Firestoreキャッシュ）
+// ============================================================================
+// ※ corsが未定義の場合は追加してください： const cors = require('cors')({ origin: true });
+// ============================================================================
+// 📅 Notionイベント全件取得（ページネーション ＆ Firestoreキャッシュ）
+// ============================================================================
+export const getNotionEvents = functions.region('asia-northeast1').https.onRequest((req, res) => {
+    const corsHandler = require('cors')({ origin: true });
+
+    corsHandler(req, res, async () => {
+        try {
+            const db = admin.firestore();
+            const cacheRef = db.collection('system').doc('notion_events_cache');
+            
+            // ----------------------------------------------------
+            // 🚀 STEP 1: Firestore キャッシュの確認
+            // ----------------------------------------------------
+            const cacheDoc = await cacheRef.get();
+            const cacheData = cacheDoc.data(); // データを取得
+
+            // 修正：cacheData が存在するかどうかのチェックを追加（TypeScriptエラー回避）
+            if (cacheDoc.exists && cacheData) {
+                const lastUpdated = cacheData.updatedAt?.toDate();
+                const now = new Date();
+                
+                // キャッシュの有効期限を「1時間（3600000ミリ秒）」に設定
+                if (lastUpdated && (now.getTime() - lastUpdated.getTime() < 3600000)) {
+                    console.log("⚡ Firestoreのキャッシュからイベントデータを返却しました");
+                    // cacheDataが確実に存在するのでエラーにならない
+                    res.status(200).json(cacheData.events || []);
+                    return;
+                }
+            }
+
+            // ----------------------------------------------------
+            // 🌐 STEP 2: Notion APIからページネーションで全件取得
+            // ----------------------------------------------------
+            const notion = new Client({ auth: process.env.NOTION_TOKEN });
+            const databaseId = process.env.NOTION_DATABASE_ID;
+
+            if (!databaseId) {
+                throw new Error('Notion Database ID is missing.');
+            }
+
+            let allEvents: any[] = [];
+            let hasMore = true;
+            let nextCursor: string | undefined = undefined;
+
+            while (hasMore) {
+                const response = await notion.databases.query({
+                    database_id: databaseId,
+                    start_cursor: nextCursor,
+                    sorts: [
+                        { property: '開催日', direction: 'descending' }
+                    ]
+                });
+
+                const parsedEvents = response.results.map((page: any) => {
+                    const props = page.properties;
+                    return {
+                        id: page.id,
+                        title: props['イベント名']?.title?.[0]?.plain_text || '無題のイベント',
+                        date: props['開催日']?.date?.start || null,
+                        endDate: props['開催日']?.date?.end || null,
+                        category: props['カテゴリ']?.select?.name || 'その他',
+                        details: props['詳細']?.rich_text?.map((t:any) => t.plain_text).join('') || '',
+                        status: props['ステータス']?.select?.name || '',
+                        sender: props['発信者']?.select?.name || '',
+                        participants: props['参加者']?.rich_text?.[0]?.plain_text || '',
+                        pending: props['迷い中']?.rich_text?.[0]?.plain_text || '',
+                        absent: props['不参加']?.rich_text?.[0]?.plain_text || ''
+                    };
+                });
+
+                allEvents = allEvents.concat(parsedEvents);
+                
+                hasMore = response.has_more;
+                nextCursor = response.next_cursor ?? undefined;
+            }
+
+            // ----------------------------------------------------
+            // 💾 STEP 3: 取得した全件データをFirestoreにキャッシュ保存
+            // ----------------------------------------------------
+            await cacheRef.set({
+                events: allEvents,
+                updatedAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+
+            console.log(`🌐 Notion APIから ${allEvents.length} 件のイベントを取得し、キャッシュを更新しました`);
+            res.status(200).json(allEvents);
+
+        } catch (error) {
+            console.error('Error fetching Notion events:', error);
+            res.status(500).json({ error: 'Server error' });
+        }
+    });
+});
