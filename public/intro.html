@@ -20,8 +20,6 @@
         @keyframes floatUp { 0% { opacity: 0; transform: translate(-50%, 0) scale(0.8); } 20% { opacity: 1; transform: translate(-50%, -20px) scale(1.1); } 80% { opacity: 1; transform: translate(-50%, -40px) scale(1); } 100% { opacity: 0; transform: translate(-50%, -50px) scale(0.9); } }
         .completed-glow { box-shadow: 0 0 15px rgba(52, 211, 153, 0.5); border-color: #34d399 !important; background-color: #ecfdf5 !important; }
         .slide-up { transform: translateY(0) !important; }
-        
-        /* くるくるローディング用 */
         .loader { border: 2px solid #f3f4f6; border-top: 2px solid #6366f1; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
@@ -42,7 +40,6 @@
         </div>
 
         <div class="px-5 space-y-6">
-            <!-- ✨ ユーザープロフィール＆レベルウィジェット ✨ -->
             <section id="user-profile-widget" class="glass-card rounded-2xl p-4 flex items-center gap-4 fade-in cursor-pointer active:scale-95 transition" onclick="openProfile('me')" style="animation-delay: 0.1s;">
                 <img id="user-avatar" src="https://cdn-icons-png.flaticon.com/512/847/847969.png" class="w-14 h-14 rounded-full border-2 border-white shadow-sm object-cover" alt="User Icon">
                 <div class="flex-1">
@@ -58,7 +55,6 @@
                 </div>
             </section>
 
-            <!-- ✨ 探索モード起動ボタン ✨ -->
             <section class="fade-in" style="animation-delay: 0.2s;">
                 <div onclick="startExploration()" class="relative overflow-hidden bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-2xl p-1 shadow-md cursor-pointer active:scale-95 transition-transform">
                     <div class="bg-white/10 backdrop-blur-md rounded-[1rem] p-4 flex items-center justify-between">
@@ -71,13 +67,11 @@
                 </div>
             </section>
             
-            <!-- ✨ ランキングセクション（最初から表示） ✨ -->
             <section class="fade-in" id="ranking-section" style="animation-delay: 0.3s;">
                 <div class="flex justify-between items-end mb-3 px-1">
                     <h3 class="text-sm font-black text-slate-800 tracking-widest flex items-center gap-2"><span>🏆</span> 探索ランキング</h3>
                     <button onclick="showAllRanking()" class="text-[10px] text-indigo-500 font-bold bg-indigo-50 border border-indigo-100 px-2.5 py-1 rounded-lg active:scale-95 transition">すべて見る</button>
                 </div>
-                <!-- 中身をローディング状態にしておく -->
                 <div id="ranking-container" class="space-y-2">
                     <div class="flex items-center justify-center gap-2 text-xs text-slate-400 py-6 glass-card rounded-xl">
                         <div class="loader"></div>
@@ -86,10 +80,8 @@
                 </div>
             </section>
 
-            <!-- ✨ 似たレベルのユーザー（最初から表示） ✨ -->
             <section class="fade-in" id="similar-section" style="animation-delay: 0.4s;">
                 <h3 class="text-sm font-black text-slate-800 tracking-widest flex items-center gap-2 mb-3 px-1"><span>🤝</span> あなたに近いレベルのゼミ生</h3>
-                <!-- 中身をローディング状態にしておく -->
                 <div id="similar-users-container" class="flex gap-3 overflow-x-auto no-scrollbar pb-2">
                     <div class="flex items-center justify-center gap-2 text-xs text-slate-400 py-6 glass-card rounded-xl w-full">
                         <div class="loader"></div>
@@ -139,9 +131,9 @@
 
     <!-- ▼▼ ユーザープロフィール（ Bottom Sheet ） ▼▼ -->
     <div id="profile-modal" class="fixed inset-0 z-[70] hidden flex-col justify-end bg-slate-900/40 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]" onclick="closeProfile()">
-        <div class="bg-white rounded-t-[2rem] p-6 pb-12 w-full shadow-2xl relative translate-y-full transition-transform duration-300 ease-out" id="profile-sheet" onclick="event.stopPropagation()">
+        <div class="bg-white rounded-t-[2rem] p-6 pb-12 w-full shadow-2xl relative translate-y-full transition-transform duration-300 ease-out max-h-[85vh] overflow-y-auto" id="profile-sheet" onclick="event.stopPropagation()">
             <div class="absolute top-3 left-1/2 transform -translate-x-1/2 w-12 h-1.5 bg-slate-200 rounded-full"></div>
-            <div id="profile-content" class="mt-4 text-center"></div>
+            <div id="profile-content" class="mt-4 text-center pb-8"></div>
         </div>
     </div>
 
@@ -149,7 +141,7 @@
 
     <script>
         // ==========================================
-        // 📚 探索用データ（約100項目）
+        // 📚 探索用データ（省略）
         // ==========================================
         const exploreData = {
             id: "root", icon: "🧭", question: "心理ゼミ大辞典：どのカテゴリを探索しますか？",
@@ -160,57 +152,18 @@
                         {
                             id: "lec_study", label: "勉強法・学習・記憶", icon: "📝", question: "圧倒的に効率よく学ぶための心理学",
                             children: [
-                                { id: "lec_note", label: "科学的に最強のノート術", icon: "✍️", type: "page", title: "科学的に最強のノート術", description: "【分野】勉強法, 学習, 記憶\n\n単に黒板を写すだけのノートから卒業し、記憶への定着率を劇的に高める「科学的に正しい」ノートの取り方を学びます。" },
-                                { id: "lec_reading", label: "読書の心理学", icon: "📚", type: "page", title: "読書の心理学", description: "【分野】勉強法, 学習, 記憶\n\n本の内容を長期記憶に定着させるテクニックや読書効率を上げる集中力の高め方を解説します。" },
-                                { id: "lec_memory1", label: "引くほど覚えれる勉強前のテク", icon: "💡", type: "page", title: "記憶の科学①", description: "【分野】記憶, 集中力\n\n勉強前に○○に触れるだけで記憶力が2倍に！？魔法のドリンクなど、怖くなるくらい記憶力が上がる実践的テクニック！" },
-                                { id: "lec_memory2", label: "分散学習と検索練習の魔法", icon: "🔁", type: "page", title: "記憶の科学②", description: "【分野】記憶, 復習\n\nエビングハウスの忘却曲線をハックする最強の復習タイミング「分散学習」と「検索練習」について。" },
-                                { id: "lec_flow", label: "集中力を極限まで高めるフロー状態", icon: "🌊", type: "page", title: "集中力の科学", description: "【分野】集中力, モチベーション\n\nやる気が出ない時に5分で集中モードに入るテクニックや、ゾーン（フロー状態）に意図的に入るための条件を解説。" },
-                                { id: "lec_music", label: "音楽と学習効率の関係", icon: "🎵", type: "page", title: "音楽と学習効率", description: "【分野】学習環境, 集中力\n\n勉強中に音楽を聴くのは「アリかナシか」。科学的に決着がついているこの問題について詳しく解説します。" },
-                                { id: "lec_sleep", label: "睡眠と記憶の定着", icon: "🛏️", type: "page", title: "睡眠と記憶", description: "【分野】記憶, 健康\n\n寝ている間に脳内で行われている記憶の整理。徹夜がどれほど非効率かを科学的なデータで証明します。" },
-                                { id: "lec_pomodoro", label: "ポモドーロ・テクニックの真の力", icon: "🍅", type: "page", title: "ポモドーロ・テクニック", description: "【分野】時間管理, 集中力\n\n25分集中して5分休む。シンプルながらも世界中で愛用されるこのテクニックの心理学的効果とは。" }
+                                { id: "lec_note", label: "科学的に最強のノート術", icon: "✍️", type: "page", title: "科学的に最強のノート術", description: "単に黒板を写すだけのノートから卒業し、記憶への定着率を劇的に高める「科学的に正しい」ノートの取り方を学びます。" },
+                                { id: "lec_memory1", label: "引くほど覚えれる勉強前のテク", icon: "💡", type: "page", title: "記憶の科学①", description: "勉強前に○○に触れるだけで記憶力が2倍に！？魔法のドリンクなど、怖くなるくらい記憶力が上がる実践的テクニック！" },
+                                { id: "lec_memory2", label: "分散学習と検索練習の魔法", icon: "🔁", type: "page", title: "記憶の科学②", description: "エビングハウスの忘却曲線をハックする最強の復習タイミング「分散学習」と「検索練習」について。" },
+                                { id: "lec_flow", label: "集中力を極限まで高めるフロー状態", icon: "🌊", type: "page", title: "集中力の科学", description: "やる気が出ない時に5分で集中モードに入るテクニックや、ゾーン（フロー状態）に意図的に入るための条件を解説。" },
                             ]
                         },
                         {
                             id: "lec_mental", label: "メンタルヘルス・自己理解", icon: "🧘", question: "自分の心を守り、整える科学",
                             children: [
-                                { id: "lec_compare", label: "他者比較の進化心理学", icon: "📉", type: "page", title: "他者比較の進化心理学", description: "【分野】メンタルヘルス, 他者比較, 自責\n\n進化心理学の視点から「なぜ人間は他人と比較してしまうのか」を解き明かし、メンタルを整えるアプローチを学びます。" },
-                                { id: "lec_compare_fix", label: "比較グセの治し方", icon: "🩹", type: "page", title: "比較グセの治し方", description: "【分野】セルフコンパッション, メンタルヘルス\n\n自分を責めてしまう「自責」のループから抜け出し、自分への思いやりを用いて比較グセを治す方法を伝授します。" },
-                                { id: "lec_menhera", label: "メンヘラの心理学", icon: "💔", type: "page", title: "メンヘラの心理学", description: "悲劇のヒロインを演じる人たち〜\n「構ってちゃん」の心理構造と承認欲求の暴走メカニズムを紐解き、科学的に正しい接し方を学びます。" },
-                                { id: "lec_resilience", label: "レジリエンス（折れない心）の鍛え方", icon: "🛡️", type: "page", title: "レジリエンスの心理学", description: "【分野】メンタルタフネス\n\n困難やストレスから立ち直る力「レジリエンス」は後天的に鍛えられる！具体的な3つのトレーニング法を紹介。" },
-                                { id: "lec_perfectionism", label: "完璧主義の罠からの脱出", icon: "🕸️", type: "page", title: "完璧主義と自己肯定感", description: "【分野】自己受容\n\n「100点じゃなきゃ意味がない」という思考がもたらす弊害と、適応的な完璧主義へのシフトチェンジについて。" },
-                                { id: "lec_fake_esteem", label: "偽の自己肯定感に騙されない", icon: "🎭", type: "page", title: "真の自己肯定感とは", description: "【分野】自己肯定感\n\n「とにかく自分を褒める」だけでは逆効果！？心理学的に正しい自己受容の方法論。" },
-                                { id: "lec_gratitude", label: "感謝の心理学", icon: "🙏", type: "page", title: "感謝と幸福度", description: "【分野】ポジティブ心理学\n\n感謝の日記をつけるだけで幸福度が爆上がりする？科学的に実証されたポジティブ心理学の知見。" },
-                                { id: "lec_mindfulness", label: "マインドフルネスの科学的根拠", icon: "🌿", type: "page", title: "マインドフルネス入門", description: "【分野】メンタルケア, 集中力\n\nGoogleなども導入する瞑想。脳の構造を物理的に変えるマインドフルネスの驚くべき効果。" }
-                            ]
-                        },
-                        {
-                            id: "lec_interpersonal", label: "人間関係・性格分析", icon: "🤝", question: "対人関係の悩みを科学で解決！",
-                            children: [
-                                { id: "lec_understanding", label: "他者理解の心理学", icon: "🔍", type: "page", title: "他者理解の心理学", description: "【分野】性格分析, 恋愛\n\n相手の性格パターンを心理学的に分析し、より良いコミュニケーションを築くための実践的な知識です。" },
-                                { id: "lec_sayno", label: "断れない性格の治し方", icon: "🙅‍♂️", type: "page", title: "断れない性格の治し方", description: "人間関係を壊さずに上手く「NO」を言うためのアサーティブな断り方3STEPを伝授。" },
-                                { id: "lec_bigfive", label: "ビッグファイブ性格診断", icon: "🖐️", type: "page", title: "ビッグファイブ入門", description: "【分野】性格分析\n\n心理学において最も信頼性が高いとされる5つの性格特性指標。自分の強みと弱みを正確に把握します。" },
-                                { id: "lec_first_impression", label: "ハロー効果と第一印象", icon: "✨", type: "page", title: "第一印象の心理学", description: "【分野】対人心理\n\n出会って数秒で決まる第一印象。ハロー効果を利用して相手に好印象を与えるテクニック。" },
-                                { id: "lec_mirroring", label: "ミラーリングとペーシング", icon: "🪞", type: "page", title: "ラポール形成の技術", description: "【分野】コミュニケーション\n\n無意識のうちに相手に親近感を抱かせる、プロのカウンセラーも使う会話の同調テクニック。" },
-                                { id: "lec_adler", label: "嫌われる勇気の心理学解釈", icon: "🦅", type: "page", title: "アドラー心理学", description: "【分野】自己啓発, 対人関係\n\n「課題の分離」とは何か？他人の目を気にせず生きるためのアドラー心理学の真髄。" },
-                                { id: "lec_machiavellianism", label: "マキャベリアニズムとは何か", icon: "♟️", type: "page", title: "ダークトライアド", description: "【分野】性格心理学\n\n目的のためには手段を選ばない性格特性。周囲にいる要注意人物の見分け方と対処法。" }
-                            ]
-                        },
-                        {
-                            id: "lec_behavioral", label: "行動経済学・お金の心理", icon: "💰", question: "無駄遣いを減らし、賢く生きる",
-                            children: [
-                                { id: "lec_sunkcost", label: "サンクコスト（埋没費用）の呪縛", icon: "⚓", type: "page", title: "サンクコスト効果", description: "【分野】意思決定\n\n「ここまでお金をかけたから…」で失敗する心理。合理的な損切りのための考え方。" },
-                                { id: "lec_prospect", label: "プロスペクト理論と損失回避", icon: "📉", type: "page", title: "プロスペクト理論", description: "【分野】行動経済学\n\n人間は利益を得る喜びよりも、損失を避けることに執着する。マーケティングに利用される心理の裏側。" },
-                                { id: "lec_framing", label: "フレーミング効果の罠", icon: "🖼️", type: "page", title: "フレーミング効果", description: "【分野】認知バイアス\n\n「生存率90%」と「死亡率10%」。同じ事実でも伝え方で人間の選択は180度変わるという恐ろしい事実。" },
-                                { id: "lec_nudge", label: "ナッジ理論で行動を変える", icon: "👉", type: "page", title: "ナッジ（Nudge）", description: "【分野】行動経済学\n\n強制するのではなく、ちょっとした工夫で人を望ましい行動に誘導する魔法の設計論。" }
-                            ]
-                        },
-                        {
-                            id: "lec_romance", label: "恋愛・進化心理学", icon: "❤️", question: "恋愛の謎を科学の力で解き明かす",
-                            children: [
-                                { id: "lec_suspension", label: "吊り橋効果の嘘と本当", icon: "🌉", type: "page", title: "吊り橋効果の真実", description: "【分野】恋愛心理\n\nドキドキを恋と勘違いする有名な効果。しかし、使い方を間違えると逆効果になる罠も存在します。" },
-                                { id: "lec_similarity", label: "類似性の法則", icon: "👥", type: "page", title: "類似性と好意", description: "【分野】対人魅力\n\n「自分と似ている人」を好きになるのはなぜか。共通点を見つけることが最強のモテテクニックである理由。" },
-                                { id: "lec_reciprocity", label: "返報性の原理と好意", icon: "🎁", type: "page", title: "好意の返報性", description: "【分野】恋愛心理\n\n何かをしてもらったらお返しをしたくなる心理。これを恋愛や交渉に応用する方法。" },
-                                { id: "lec_mere_exposure", label: "単純接触効果（ザイオンス効果）", icon: "👀", type: "page", title: "単純接触効果", description: "【分野】対人心理\n\n会えば会うほど好きになる。SNSでの接触頻度がリアルな好感度に与える影響とは。" }
+                                { id: "lec_compare", label: "他者比較の進化心理学", icon: "📉", type: "page", title: "他者比較の進化心理学", description: "進化心理学の視点から「なぜ人間は他人と比較してしまうのか」を解き明かし、メンタルを整えるアプローチを学びます。" },
+                                { id: "lec_compare_fix", label: "比較グセの治し方", icon: "🩹", type: "page", title: "比較グセの治し方", description: "自分を責めてしまう「自責」のループから抜け出し、自分への思いやりを用いて比較グセを治す方法を伝授します。" },
+                                { id: "lec_menhera", label: "メンヘラの心理学", icon: "💔", type: "page", title: "メンヘラの心理学", description: "悲劇のヒロインを演じる人たち〜「構ってちゃん」の心理構造と承認欲求の暴走メカニズムを紐解き、科学的に正しい接し方を学びます。" },
                             ]
                         }
                     ]
@@ -218,162 +171,29 @@
                 {
                     id: "projects", label: "🚀 進行中のプロジェクト", icon: "🔥", question: "ゼミ生が主体となって動かすPJの数々！",
                     children: [
-                        {
-                            id: "pj_health", label: "運動・健康系PJ", icon: "👟", question: "心と体の健康を促進するプロジェクト",
-                            children: [
-                                { id: "pj_sports", label: "運動プロジェクト (PJ長: 三上)", icon: "🏃", type: "page", title: "運動プロジェクト", description: "【PJ長：秘書 三上晃生】\n心と体をリフレッシュさせる運動企画！大通駅集合での『円山公園ウォーキング会』など、ゆるく楽しく活動中。" },
-                                { id: "pj_meditation", label: "瞑想習慣化PJ", icon: "🧘", type: "page", title: "瞑想習慣化PJ", description: "マインドフルネスの講義から派生したプロジェクト。毎日寝る前の5分間、LINEグループで通話を繋いでみんなで瞑想を習慣化します。" },
-                                { id: "pj_sleep", label: "快眠お届けPJ", icon: "🛏️", type: "page", title: "快眠お届けPJ", description: "睡眠の質を向上させるための情報共有や、アロマ、ヒーリングミュージックのおすすめをシェアする安らぎのプロジェクト。" },
-                                { id: "pj_sunlight", label: "朝の光浴びるPJ", icon: "☀️", type: "page", title: "朝の光浴びるPJ", description: "セロトニン分泌を促すため、朝起きたら「太陽の光を浴びた写真」をグループに投稿し合う、健康的すぎる企画。" }
-                            ]
-                        },
-                        {
-                            id: "pj_academic", label: "学術・研究系PJ", icon: "🔬", question: "心理学や他分野の探求を深める",
-                            children: [
-                                { id: "pj_experiment", label: "実験再現PJ", icon: "🧪", type: "page", title: "実験再現PJ", description: "有名な心理学の実験（マシュマロ・テストなど）を、倫理的な範囲内でゼミ生同士で実際にやってみて検証する面白プロジェクト。" },
-                                { id: "pj_suisan", label: "水産学ゼミ", icon: "🐟", type: "page", title: "水産学ゼミ", description: "心理学の枠を超えた他分野交流！水産学についての知見を広め、多様な学問の面白さに触れるスピンオフゼミ活動です。" },
-                                { id: "pj_test_dev", label: "心理テスト開発PJ", icon: "📋", type: "page", title: "心理テスト開発PJ", description: "公式LINEに搭載されている「クロノタイプ診断」などの心理テストを、論文をベースにして自作・実装するチームです。" },
-                                { id: "pj_data", label: "行動データ分析PJ", icon: "📈", type: "page", title: "行動データ分析PJ", description: "ゼミ生のイベント参加率やLINEボットの利用データを匿名で分析し、組織改善のヒントをデータサイエンスの視点から導き出します。" }
-                            ]
-                        },
-                        {
-                            id: "pj_system", label: "組織・システム開発系PJ", icon: "💻", question: "ゼミのインフラを構築するITチーム",
-                            children: [
-                                { id: "pj_notion", label: "Notion推進チーム", icon: "📓", type: "page", title: "Notion推進・システム開発", description: "ゼミの情報を一元管理する「Notion」の構築を行っているチーム。議事録やマニュアルを整理し、組織の外部脳を作ります。" },
-                                { id: "pj_linebot", label: "公式LINEボット開発チーム", icon: "🤖", type: "page", title: "公式LINE開発チーム", description: "AIチャットやカレンダー連携を備えたこの公式LINEアプリ（LIFF）を開発・保守するエンジニアリングチーム。コンテストにも挑戦！" },
-                                { id: "pj_onboarding", label: "新規メンバーオンボーディングPJ", icon: "👋", type: "page", title: "オンボーディングPJ", description: "新しく入ったメンバーが早くゼミに馴染めるよう、ウェルカムガイドの作成やメンター制度の構築を行う人事系のチームです。" }
-                            ]
-                        },
-                        {
-                            id: "pj_event", label: "イベント・その他PJ", icon: "🎉", question: "クリエイティブや社会との接点を作る",
-                            children: [
-                                { id: "pj_shinkan", label: "新歓PV制作PJ", icon: "🎬", type: "page", title: "新歓PV制作プロジェクト", description: "来年度の新入生に向けて、心理ゼミの魅力を伝えるプロモーションビデオを制作するプロジェクト。AIツールも活用中！" },
-                                { id: "pj_mirai", label: "未来開拓倶楽部 (複合PJ)", icon: "🌍", type: "page", title: "未来開拓倶楽部", description: "北大心理ゼミは「未来開拓倶楽部」の一部として、長橋PJ、シェアハウスPJ、フードPJ、国際PJなど多岐にわたるPJを展開中。" },
-                                { id: "pj_sharehouse", label: "シェアハウスPJ", icon: "🏠", type: "page", title: "シェアハウスPJ", description: "学生同士の新しい住まい方・コミュニティの形を模索し、実際に物件の運用やルール作りに関わる実践的プロジェクト。" },
-                                { id: "pj_food", label: "フードPJ", icon: "🍱", type: "page", title: "フードPJ", description: "食と心理学を絡めたイベント企画や、規格外野菜の活用など、食に関する課題解決に取り組むプロジェクト。" }
-                            ]
-                        }
+                        { id: "pj_sports", label: "運動プロジェクト (PJ長: 三上)", icon: "🏃", type: "page", title: "運動プロジェクト", description: "【PJ長：秘書 三上晃生】\n心と体をリフレッシュさせる運動企画！大通駅集合での『円山公園ウォーキング会』など、ゆるく楽しく活動中。" },
+                        { id: "pj_meditation", label: "瞑想習慣化PJ", icon: "🧘", type: "page", title: "瞑想習慣化PJ", description: "マインドフルネスの講義から派生したプロジェクト。毎日寝る前の5分間、LINEグループで通話を繋いでみんなで瞑想を習慣化します。" },
+                        { id: "pj_system", label: "組織・システム開発系PJ", icon: "💻", type: "page", title: "システム開発", description: "ゼミのインフラを構築するITチーム。Notionの構築や、AI搭載の公式LINEボット開発などを行っています。" }
                     ]
                 },
                 {
                     id: "clubs", label: "🏕️ 部活・サークル活動", icon: "☕", question: "現在アクティブに活動中の部活一覧！",
                     children: [
-                        {
-                            id: "club_culture", label: "文化・インドア系部活", icon: "🎨", question: "趣味や対話を通して深める",
-                            children: [
-                                { id: "reading", label: "読書部📚 (エンレイソウ朝活)", icon: "📚", type: "page", title: "読書部", description: "おすすめの本を紹介し合う部活。春休みには北大のエンレイソウに集合し、コーヒーを飲みながら本を読む優雅な朝活を実施！" },
-                                { id: "radio", label: "ラジオ部📻 (部長: 統括)", icon: "📻", type: "page", title: "ラジオ部", description: "【部長：ゼミ統括】\n部活間の交流を深めるため、ゼミ生同士でポッドキャスト配信！メンバーの多様な素顔を発信中です。" },
-                                { id: "club_share", label: "心理シェア部", icon: "💭", type: "page", title: "心理シェア部", description: "日常で感じたモヤモヤや、個人的な悩みを心理学の視点からみんなでシェアしてスッキリする、心理的安全性の高い対話部活です。" },
-                                { id: "movie", label: "映画鑑賞部🍿", icon: "🍿", type: "page", title: "映画鑑賞部", description: "月に1回集まって映画を鑑賞。終わった後は、心理学的な視点から登場人物の行動や感情を分析するディープな感想戦が始まります。" },
-                                { id: "club_boardgame", label: "ボードゲーム部🎲", icon: "🎲", type: "page", title: "ボドゲ部", description: "カタンや人狼など、相手の心理を読むボードゲームを中心に遊ぶ部活。楽しみながら交渉術や読心術(?)が鍛えられます。" }
-                            ]
-                        },
-                        {
-                            id: "club_active", label: "アクティブ・アウトドア系", icon: "🏕️", question: "外に出てアクティブに楽しむ",
-                            children: [
-                                { id: "sukoyaka", label: "すこやか部🧘 (部長: 市場)", icon: "🧘", type: "page", title: "すこやか部", description: "【部長：市場百合子】\n健康第一！筋トレやサウナに行ったり、生活習慣の改善を目指して心身の健康を保つための大人気部活です。" },
-                                { id: "club_drive", label: "ドライ部🚗", icon: "🚗", type: "page", title: "ドライ部", description: "レンタカーやメンバーの車に乗り合い、北海道ならではの広大な景色や絶景スポットへドライブを満喫する部活です。" },
-                                { id: "club_flat", label: "ふらっと部🚶", icon: "🚶", type: "page", title: "ふらっと部", description: "「今からふらっと〇〇行かない？」という突発的なノリで集まり、散歩やご飯に行くフットワークの軽さNo.1の部活です。" },
-                                { id: "club_camp", label: "キャンプ部⛺", icon: "⛺", type: "page", title: "キャンプ部", description: "夏はBBQ、秋は焚き火。大自然の中でテントを張り、非日常の体験を通してメンバーの絆を深めるアウトドア部活です。" }
-                            ]
-                        },
-                        {
-                            id: "club_gourmet", label: "グルメ・飲食系部活", icon: "🍽️", question: "美味しいものを囲んで語り合う",
-                            children: [
-                                { id: "club_mocktail", label: "ノンアルカクテル部～巡（めぐる）～", icon: "🍹", type: "page", title: "ノンアルカクテル部", description: "お酒が飲めなくても大丈夫！美味しくて映えるノンアルコールカクテル（モクテル）を自分たちで作ったり、オシャレなバーを開拓する部活です。" },
-                                { id: "club_cooking", label: "料理部🍳", icon: "🍳", type: "page", title: "料理部", description: "みんなで集まって楽しく料理を作ります。一人暮らしではなかなか作らないメニューに挑戦し、食卓を囲んで語り合います。" },
-                                { id: "cafe", label: "カフェ巡り部☕", icon: "☕", type: "page", title: "カフェ巡り部", description: "札幌市内のオシャレな隠れ家カフェや美味しいコーヒーの店を開拓。ケーキを食べながら企画会議が始まることも。" },
-                                { id: "club_ramen", label: "ラーメン部🍜", icon: "🍜", type: "page", title: "ラーメン部", description: "北大周辺を中心に、美味しいラーメン屋をひたすら巡り、味のレビューをNotionに蓄積していくカロリー高めの部活です。" }
-                            ]
-                        }
+                        { id: "reading", label: "読書部📚 (エンレイソウ朝活)", icon: "📚", type: "page", title: "読書部", description: "おすすめの本を紹介し合う部活。春休みには北大のエンレイソウに集合し、コーヒーを飲みながら本を読む優雅な朝活を実施！" },
+                        { id: "sukoyaka", label: "すこやか部🧘 (部長: 市場)", icon: "🧘", type: "page", title: "すこやか部", description: "【部長：市場百合子】\n健康第一！筋トレやサウナに行ったり、生活習慣の改善を目指して心身の健康を保つための大人気部活です。" },
+                        { id: "radio", label: "ラジオ部📻 (部長: 統括)", icon: "📻", type: "page", title: "ラジオ部", description: "【部長：ゼミ統括】\n部活間の交流を深めるため、ゼミ生同士でポッドキャスト配信！メンバーの多様な素顔を発信中です。" }
                     ]
                 },
                 {
                     id: "events", label: "🎉 イベント・組織運営", icon: "🏮", question: "ゼミを盛り上げ、より良くする活動",
                     children: [
-                        {
-                            id: "ev_large", label: "大型イベント", icon: "🎪", question: "年間のハイライトとなる大企画",
-                            children: [
-                                { id: "event_hokudaisai", label: "北大祭出店（心理戦カジノ）", icon: "🃏", type: "page", title: "北大祭での熱い企画！", description: "毎年6月の北大祭（楡陵祭）では、心理学の知識を活かした体験型企画を出店。過去の『心理戦カジノ』は大盛況でした！" },
-                                { id: "event_camp", label: "夏合宿・秋合宿", icon: "🎒", type: "page", title: "合宿イベント", description: "日常を離れて大自然で行う宿泊イベント。昼は真面目なワークショップ、夜はBBQやレクで最高の思い出を作ります。" },
-                                { id: "event_xmas", label: "クリスマスパーティ", icon: "🎄", type: "page", title: "クリスマス会", description: "一年の締めくくりに行う大型パーティ。プレゼント交換や、一年の活動を振り返るアワード表彰などが行われます。" },
-                                { id: "event_summer", label: "未来開拓倶楽部サマーパーティ", icon: "🍉", type: "page", title: "サマーパーティ", description: "北大心理ゼミが所属する大きな枠組み「未来開拓倶楽部」全体で行われる夏の大型交流イベント。多様なPJメンバーが集結します。" }
-                            ]
-                        },
-                        {
-                            id: "ev_study", label: "勉強会・ワークショップ", icon: "📖", question: "知識をインプット・アウトプット",
-                            children: [
-                                { id: "study_stats", label: "統計学もくもく会", icon: "📊", type: "page", title: "統計学もくもく会", description: "心理学研究に欠かせない統計・データ分析をみんなで自習・教え合う会です。挫折しやすい分野を先輩がサポートします。" },
-                                { id: "study_paper", label: "論文輪読会", icon: "📄", type: "page", title: "論文輪読会", description: "興味のある心理学の論文を持ち寄り、要約を発表し合う会。最新の研究トレンドを知り、論理的思考力を鍛えます。" },
-                                { id: "study_idea", label: "アイデアイノベーションWS", icon: "💡", type: "page", title: "アイデアWS", description: "心理学の知識を使って、社会の課題を解決するサービスや企画のアイデアをブレインストーミングする実践型ワークショップ。" }
-                            ]
-                        },
-                        {
-                            id: "ev_management", label: "運営会議・幹部会", icon: "🏢", question: "ゼミの未来を創る裏側",
-                            children: [
-                                { id: "event_teirei", label: "運営部定例会議", icon: "📅", type: "page", title: "運営部 定例会議", description: "【毎週火曜 10:30〜】\n運営部が集まり、『心理学の知識を基にして新プロジェクトを始める支援の仕組み』など、組織をアップデートする議論を実施。" },
-                                { id: "pj_kanbu", label: "幹部会・全体運営", icon: "👑", type: "page", title: "幹部会", description: "代表や統括、秘書などが所属し、ゼミ全体の方向性や新しい組織づくりを進める中枢チーム。「学問の実践」の理念を実現します。" },
-                                { id: "ev_retrospective", label: "月次振り返り会（KPT）", icon: "🔄", type: "page", title: "振り返り会", description: "月末に活動を振り返り、Keep(良かったこと)、Problem(課題)、Try(次やること)を共有して、組織の自己成長を促します。" }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    id: "about_seminar", label: "🏫 北大心理ゼミの根本", icon: "💡", question: "ビジョンや代表の想いを知る",
-                    children: [
-                        {
-                            id: "about_core", label: "ビジョン・理念", icon: "🎯", question: "私たちが目指す場所",
-                            children: [
-                                { id: "about_vision", label: "ビジョン『学問の実践』", icon: "🚀", type: "page", title: "「学問の実践」", description: "心理ゼミは「学問の実践」をテーマに、大学で学んだ知識をただの知識で終わらせず、実際の行動や社会に還元するためのコミュニティです。" },
-                                { id: "about_support", label: "挑戦を支援する仕組み", icon: "🤝", type: "page", title: "挑戦の支援", description: "運営陣は、メンバーが心理学の知識を基にして「自ら新しいプロジェクトを立ち上げる」ことを全力で支援する仕組みづくりを重要視しています。" },
-                                { id: "about_failure", label: "失敗を恐れない環境づくり", icon: "🌱", type: "page", title: "心理的安全性", description: "挑戦には失敗がつきもの。心理ゼミは、誰もが安心して失敗でき、そこから学びを得られる「心理的安全性の高い」組織を目指しています。" }
-                            ]
-                        },
-                        {
-                            id: "about_members", label: "運営メンバーの想い", icon: "💬", question: "ゼミを支える人たち",
-                            children: [
-                                { id: "about_rep", label: "代表メッセージ", icon: "👑", type: "page", title: "代表からのメッセージ", description: "北大心理ゼミ代表の加藤翔大です。\n「心理学を机上の空論で終わらせたくない」「何か面白いことを仕掛けたい」そんな熱い思いを持ったメンバーが集まる場所を作りたいと思い、この組織を運営しています。" },
-                                { id: "about_diversity", label: "多様性を活かす組織へ", icon: "🌈", type: "page", title: "統括からのメッセージ", description: "部活間やPJ間の交流を促し、様々なバックグラウンドを持つメンバーの「多様性」が化学反応を起こすようなエコシステムを作ります！" },
-                                { id: "about_nextgen", label: "次世代へのバトンタッチ", icon: "🏃‍♂️", type: "page", title: "持続可能な組織", description: "代表や幹部が変わっても、組織が崩れないよう、ノウハウをNotionに蓄積し、強固で持続可能なコミュニティの基盤を築いています。" }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    id: "faq_and_join", label: "❓ よくある質問 / 参加方法", icon: "🚪", question: "不安を解消して、ゼミに飛び込もう！",
-                    children: [
-                        {
-                            id: "faq_basic", label: "活動の基本に関するFAQ", icon: "⏱️", question: "時間・場所・お金について",
-                            children: [
-                                { id: "faq_busy", label: "Q. 忙しくても大丈夫？", icon: "📅", type: "page", title: "Q. 忙しくても活動できますか？", description: "A. もちろんです！\n活動は強制ではありません。自分のペースで参加できる部活や、単発のイベント（ウォーキング会など）だけでも大歓迎。途中参加もOK！" },
-                                { id: "faq_place", label: "Q. 活動場所はどこですか？", icon: "📍", type: "page", title: "Q. 活動場所はどこですか？", description: "A. メイン講義などは「Hello Visits 北海道大学」や、エンレイソウなどで開催しています。\n遠方の方のためにZoomでのオンライン参加も併用しています！" },
-                                { id: "faq_money", label: "Q. 費用はかかりますか？", icon: "💰", type: "page", title: "Q. 費用について", description: "A. 基本的な部費や月会費は徴収していません！合宿やイベント参加時の飲食代など、実費が発生する場合のみ割り勘となります。" }
-                            ]
-                        },
-                        {
-                            id: "faq_qualify", label: "参加資格に関するFAQ", icon: "🎓", question: "知識や所属について",
-                            children: [
-                                { id: "faq_knowledge", label: "Q. 心理学の知識は必要？", icon: "🧠", type: "page", title: "Q. 専門知識がなくても平気ですか？", description: "A. 全く問題ありません！\n「興味がある」という気持ちがあれば十分。工学部や文学部など、心理学専攻以外のメンバーもたくさん活躍しています。" },
-                                { id: "faq_who", label: "Q. 高校生や他大生でもいいの？", icon: "🏫", type: "page", title: "Q. 北大生以外も参加できますか？", description: "A. はい、大歓迎です！\n対象は「高校生以上」。他大学の学生はもちろん、高校生から大学院生まで幅広いメンバーが参加しています。" },
-                                { id: "faq_adult", label: "Q. 社会人でも参加できますか？", icon: "💼", type: "page", title: "Q. 社会人の参加について", description: "A. 社会人の方の参加も大歓迎です！学生と社会人がフラットに交流し、新たな視点を共有し合える貴重な場となっています。" }
-                            ]
-                        },
-                        {
-                            id: "join_process", label: "🐾 加入ステップ", icon: "🎉", question: "どうやってゼミに入るの？",
-                            children: [
-                                { id: "join_flow", label: "ゼミに入るまでの流れ", icon: "1️⃣", type: "page", title: "ゼミに入るには？", description: "1. 「見学・説明会（新歓）」に参加\n2. メンバーとカジュアル面談\n3. 正式ジョイン！🎉\nNotionの閲覧権限や、公式LINEの全機能が解放されます。" },
-                                { id: "join_interview", label: "カジュアル面談って何するの？", icon: "🗣️", type: "page", title: "カジュアル面談とは", description: "面接のような堅いものではありません！お互いのミスマッチを防ぐため、「ゼミでどんなことをしてみたいか？」をカフェ等でラフにお話しする時間です。" },
-                                { id: "join_contact", label: "お問い合わせ先", icon: "✉️", type: "page", title: "お問い合わせ", description: "少しでも気になった方は、この公式LINEのトーク画面から直接メッセージを送るか、公式Instagram/X（旧Twitter）のDMからお気軽にご連絡ください！" }
-                            ]
-                        }
+                        { id: "event_hokudaisai", label: "北大祭出店（心理戦カジノ）", icon: "🃏", type: "page", title: "北大祭での熱い企画！", description: "毎年6月の北大祭（楡陵祭）では、心理学の知識を活かした体験型企画を出店。過去の『心理戦カジノ』は大盛況でした！" },
+                        { id: "event_teirei", label: "運営部定例会議", icon: "📅", type: "page", title: "運営部 定例会議", description: "【毎週火曜 10:30〜】\n運営部が集まり、『心理学の知識を基にして新プロジェクトを始める支援の仕組み』など、組織をアップデートする議論を実施。" }
                     ]
                 }
             ]
         };
 
-        // ==========================================
-        // 🎮 システムロジック＆Firebase API連携
-        // ==========================================
         let allPageIds = [];
         function extractAllPages(node) {
             if (node.type === "page") allPageIds.push(node.id);
@@ -394,21 +214,66 @@
         let myProfile = { 
             id: 'me', name: 'ゲスト', exp: 0, 
             icon: 'https://cdn-icons-png.flaticon.com/512/847/847969.png', 
-            univ: '未設定', grade: '', message: 'ゼミ大辞典を探索中...' 
+            univ: '未設定', department: '', grade: '', message: 'ゼミ大辞典を探索中...', selfIntro: '自己紹介はまだありません'
         };
 
         let communityUsers = [];
 
         async function loadCommunityData() {
             try {
-                // 先ほど作成した専用のAPI（getIntroRanking）を呼び出す
-                const res = await fetch('https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/getIntroRanking');
+                const res = await fetch('https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/getAllUsersData');
                 if (!res.ok) throw new Error("APIレスポンスエラー");
-                
                 const allUsersData = await res.json();
                 
-                // API側で綺麗に整形されたデータが返ってくるので、自分以外のユーザーをセットするだけ！
-                communityUsers = allUsersData.filter(u => u.id !== myProfile.id);
+                communityUsers = allUsersData.map(doc => {
+                    let lineId = 'unknown';
+                    let p = {};
+                    let savedExpStr = "";
+                    
+                    if (doc.name && doc.fields) {
+                        lineId = doc.name.split('/').pop() || 'unknown';
+                        p = doc.fields?.profile?.mapValue?.fields || {};
+                        savedExpStr = getSafe(doc.fields?.introExp);
+                        
+                        p = {
+                            name: getSafe(p.name),
+                            pictureUrl: getSafe(p.pictureUrl),
+                            university: getSafe(p.university),
+                            department: getSafe(p.department) || getSafe(p.faculty),
+                            grade: getSafe(p.grade),
+                            statusMessage: getSafe(p.statusMessage),
+                            message: getSafe(p.message),
+                            selfIntro: getSafe(p.selfIntro) || getSafe(p.introduction)
+                        };
+                    } else {
+                        lineId = doc.lineId || doc.id || 'unknown';
+                        p = doc.profile || {};
+                        savedExpStr = doc.introExp !== undefined ? String(doc.introExp) : "";
+                    }
+
+                    let exp = 0;
+                    if (savedExpStr !== "") {
+                        exp = parseInt(savedExpStr);
+                    }
+                    
+                    // アイコンが未設定の場合のフォールバック処理を強化
+                    let userIcon = p.pictureUrl || p.icon || "https://cdn-icons-png.flaticon.com/512/847/847969.png";
+                    if (typeof userIcon !== "string" || !userIcon.startsWith("http")) {
+                        userIcon = "https://cdn-icons-png.flaticon.com/512/847/847969.png";
+                    }
+
+                    return {
+                        id: lineId,
+                        name: p.name || "匿名ゼミ生",
+                        icon: userIcon,
+                        univ: p.university || p.univ || "未設定",
+                        department: p.department || "",
+                        grade: p.grade || "",
+                        message: p.statusMessage || p.message || "よろしくお願いします！",
+                        selfIntro: p.selfIntro || "自己紹介はまだありません",
+                        exp: isNaN(exp) ? 0 : exp
+                    };
+                }).filter(u => u.id !== myProfile.id && u.id !== 'unknown');
                 
                 renderCommunity();
             } catch (e) {
@@ -468,11 +333,7 @@
             renderCommunity(); 
         }
 
-        // ==========================================
-        // 🏆 コミュニティ（ランキング・似た人）描画
-        // ==========================================
         function renderCommunity() {
-            // 自分を含めた全員のランキングを作成（自分一人の場合でも成立する）
             const allUsers = [...communityUsers, myProfile].sort((a, b) => b.exp - a.exp);
             const top5 = allUsers.slice(0, 5);
 
@@ -500,10 +361,8 @@
             });
             document.getElementById('ranking-container').innerHTML = rankingHtml;
 
-            // 似たレベルのユーザーの描画（自分以外のユーザーから）
             let similarHtml = "";
             if (communityUsers.length === 0) {
-                // 自分以外に誰もいない場合の表示
                 similarHtml = `
                     <div class="glass-card p-4 rounded-2xl w-full flex flex-col items-center justify-center text-center border border-slate-200 border-dashed">
                         <span class="text-3xl mb-2">👀</span>
@@ -683,7 +542,7 @@
         }
 
         // ==========================================
-        // 📊 モーダル制御（全ランキング・プロフィール）
+        // 📊 モーダル制御（全ランキング・詳細プロフィール）
         // ==========================================
         function showAllRanking() {
             document.getElementById('ranking-modal').classList.remove('hidden');
@@ -724,25 +583,35 @@
             if(!user) return;
             const lvl = getLevelInfo(user.exp);
 
+            // プロフィール詳細の表示内容を修正（学部学科・自己紹介を追加）
             const html = `
                 <div class="flex flex-col items-center">
                     <img src="${user.icon}" class="w-24 h-24 rounded-full object-cover shadow-md border-4 border-white mb-3" onerror="this.src='https://cdn-icons-png.flaticon.com/512/847/847969.png'">
                     <h3 class="text-xl font-black text-slate-800 mb-1">${user.name}</h3>
                     <span class="text-[10px] px-2 py-0.5 rounded-full border ${lvl.class} mb-4">${lvl.text}</span>
                     
-                    <div class="bg-slate-50 w-full rounded-2xl p-4 border border-slate-100 space-y-3 text-left">
+                    <div class="bg-slate-50 w-full rounded-2xl p-4 border border-slate-100 space-y-4 text-left">
+                        
                         <div class="flex justify-between items-center border-b border-slate-200 pb-2">
                             <span class="text-xs font-bold text-slate-400">探索経験値</span>
                             <span class="text-sm font-black text-indigo-600">${user.exp} <span class="text-[10px]">EXP</span></span>
                         </div>
+                        
                         <div class="flex justify-between items-center border-b border-slate-200 pb-2">
                             <span class="text-xs font-bold text-slate-400">所属</span>
-                            <span class="text-sm font-bold text-slate-700">${user.univ} ${user.grade}</span>
+                            <span class="text-sm font-bold text-slate-700">${user.univ} ${user.department} ${user.grade}</span>
                         </div>
+                        
                         <div>
-                            <span class="text-xs font-bold text-slate-400 block mb-1">ひとこと</span>
+                            <span class="text-xs font-bold text-slate-400 block mb-1">💬 ひとこと</span>
                             <p class="text-sm font-medium text-slate-700 bg-white p-3 rounded-xl border border-slate-100 leading-relaxed whitespace-pre-wrap">${user.message}</p>
                         </div>
+                        
+                        <div>
+                            <span class="text-xs font-bold text-slate-400 block mb-1">📝 自己紹介</span>
+                            <p class="text-sm font-medium text-slate-700 bg-white p-3 rounded-xl border border-slate-100 leading-relaxed whitespace-pre-wrap">${user.selfIntro}</p>
+                        </div>
+
                     </div>
                     
                     <button onclick="closeProfile()" class="mt-6 w-full bg-slate-800 text-white font-black py-3 rounded-xl active:scale-95 transition">閉じる</button>
@@ -792,7 +661,6 @@
                 }
             } catch (err) {
                 console.error("LIFF Init Error:", err);
-                // エラー時でもローディング表示を解除して単独モードで動かす
                 renderCommunity();
             }
         }
