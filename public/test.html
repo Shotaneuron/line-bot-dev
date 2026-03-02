@@ -64,135 +64,133 @@
 
     <main class="px-5 space-y-8">
 
-        <section class="pulse-bg border-2 border-slate-200 rounded-[2rem] p-5 text-center relative overflow-hidden shadow-inner">
+        <section class="pulse-bg border-2 border-slate-200 rounded-[2rem] p-5 relative overflow-hidden shadow-inner">
             <div class="absolute -top-4 -right-4 text-6xl opacity-10">📊</div>
-            <h2 class="text-xs font-black text-slate-500 tracking-widest mb-3">RESEARCH DATA</h2>
-            <div class="flex justify-center items-end space-x-1 mb-4">
+            <h2 class="text-xs font-black text-slate-500 tracking-widest mb-3 text-center">RESEARCH DATA</h2>
+            <div class="flex justify-center items-end space-x-1 mb-5">
                 <span class="text-sm font-bold text-slate-600 pb-1">現在、北大生</span>
                 <span id="stat-total" class="text-4xl font-black text-sky-600 tracking-tighter">--</span>
                 <span class="text-sm font-bold text-slate-600 pb-1">人が診断済！</span>
             </div>
             
-            <p class="text-[10px] font-bold text-slate-400 mb-2">👑 一番多いタイプは...</p>
-            <div class="space-y-2">
-                <div class="grid grid-cols-3 gap-2">
-                    <div class="bg-white rounded-xl py-3 px-1 shadow-sm border border-slate-100">
-                        <p class="text-[9px] font-bold text-slate-400 mb-1">🔥 やる気</p>
-                        <p id="stat-top-motivation" class="text-[11px] font-black text-orange-500 break-words">集計中...</p>
+            <div class="bg-white/80 backdrop-blur-sm rounded-xl p-4 shadow-sm border border-slate-100/50">
+                <p class="text-xs font-black text-slate-700 mb-3 flex items-center gap-2"><span>👑</span> 一番多いタイプ</p>
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm border border-slate-50">
+                        <span class="text-[11px] font-bold text-slate-500 flex items-center gap-2"><span class="text-sm">🔥</span> やる気</span>
+                        <span id="stat-top-motivation" class="text-xs font-black text-orange-500">集計中...</span>
                     </div>
-                    <div class="bg-white rounded-xl py-3 px-1 shadow-sm border border-slate-100">
-                        <p class="text-[9px] font-bold text-slate-400 mb-1">⏰ 時間帯</p>
-                        <p id="stat-top-chrono" class="text-[11px] font-black text-emerald-500 break-words">集計中...</p>
+                    <div class="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm border border-slate-50">
+                        <span class="text-[11px] font-bold text-slate-500 flex items-center gap-2"><span class="text-sm">⏰</span> 時間帯</span>
+                        <span id="stat-top-chrono" class="text-xs font-black text-emerald-500">集計中...</span>
                     </div>
-                    <div class="bg-white rounded-xl py-3 px-1 shadow-sm border border-slate-100">
-                        <p class="text-[9px] font-bold text-slate-400 mb-1">☕ コーヒー</p>
-                        <p id="stat-top-coffee" class="text-[11px] font-black text-amber-600 break-words">集計中...</p>
+                    <div class="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm border border-slate-50">
+                        <span class="text-[11px] font-bold text-slate-500 flex items-center gap-2"><span class="text-sm">☕</span> コーヒー</span>
+                        <span id="stat-top-coffee" class="text-xs font-black text-amber-600">集計中...</span>
                     </div>
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <div class="bg-white rounded-xl py-3 px-1 shadow-sm border border-slate-100">
-                        <p class="text-[9px] font-bold text-slate-400 mb-1">🌬️ 空気読み</p>
-                        <p id="stat-top-sm" class="text-[11px] font-black text-pink-500 break-words">集計中...</p>
+                    <div class="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm border border-slate-50">
+                        <span class="text-[11px] font-bold text-slate-500 flex items-center gap-2"><span class="text-sm">🌬️</span> 空気読み</span>
+                        <span id="stat-top-sm" class="text-xs font-black text-pink-500">集計中...</span>
                     </div>
-                    <div class="bg-white rounded-xl py-3 px-1 shadow-sm border border-slate-100">
-                        <p class="text-[9px] font-bold text-slate-400 mb-1">📱 スマホ依存</p>
-                        <p id="stat-top-nomophobia" class="text-[11px] font-black text-slate-600 break-words">集計中...</p>
+                    <div class="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm border border-slate-50">
+                        <span class="text-[11px] font-bold text-slate-500 flex items-center gap-2"><span class="text-sm">📱</span> スマホ依存</span>
+                        <span id="stat-top-nomophobia" class="text-xs font-black text-slate-600">集計中...</span>
                     </div>
                 </div>
-            </div>
-        </section>
-
-        <section>
-            <h2 class="text-sm font-black text-slate-700 pl-2 mb-3 border-l-4 border-indigo-500">心理テストを受ける</h2>
-            <div class="grid grid-cols-2 gap-3">
-                <a href="motivation.html" class="btn-hover block bg-gradient-to-br from-orange-400 to-rose-400 rounded-2xl p-4 text-white shadow-md">
-                    <h3 class="text-sm font-black mb-1">やる気８タイプ 🔥</h3>
-                    <p class="text-[9px] font-bold text-white/80">モチベの源泉を特定</p>
-                </a>
-                <a href="bigfive.html" class="btn-hover block bg-gradient-to-br from-indigo-500 to-cyan-500 rounded-2xl p-4 text-white shadow-md">
-                    <h3 class="text-sm font-black mb-1">Big Five診断 🧠</h3>
-                    <p class="text-[9px] font-bold text-white/80">世界基準の性格分析</p>
-                </a>
-                <a href="chronotype.html" class="btn-hover block bg-gradient-to-br from-emerald-400 to-teal-500 rounded-2xl p-4 text-white shadow-md">
-                    <h3 class="text-sm font-black mb-1">クロノタイプ ⏰</h3>
-                    <p class="text-[9px] font-bold text-white/80">最強の「時間帯」が判明</p>
-                </a>
-                <a href="coffee.html" class="btn-hover block bg-gradient-to-br from-amber-500 to-orange-400 rounded-2xl p-4 text-white shadow-md">
-                    <h3 class="text-sm font-black mb-1">コーヒー性格 ☕</h3>
-                    <p class="text-[9px] font-bold text-white/80">1問でわかる深層心理</p>
-                </a>
-                <a href="sm.html" class="btn-hover block bg-gradient-to-br from-pink-400 to-rose-500 rounded-2xl p-4 text-white shadow-md">
-                    <h3 class="text-sm font-black mb-1">空気読めるか診断 🌬️</h3>
-                    <p class="text-[9px] font-bold text-white/80">あなたの「カメレオン度」</p>
-                </a>
-                <a href="nomophobia.html" class="btn-hover block bg-gradient-to-br from-slate-700 to-slate-900 rounded-2xl p-4 text-white shadow-md">
-                    <h3 class="text-sm font-black mb-1">スマホ依存チェック 📱</h3>
-                    <p class="text-[9px] font-bold text-white/80">ノモフォビアの危険度</p>
-                </a>
             </div>
         </section>
 
         <section>
             <h2 class="text-sm font-black text-slate-700 pl-2 mb-3 border-l-4 border-sky-400">あなたの分析データ</h2>
-            <div class="space-y-3">
+            <div class="bg-white rounded-[1.5rem] shadow-sm border border-slate-200 overflow-hidden">
                 
-                <div class="glass-card rounded-[2rem] p-5">
-                    <div class="flex justify-between items-center mb-3">
-                        <span class="text-[10px] font-black text-slate-400 tracking-widest bg-slate-100 px-2 py-1 rounded">やる気８タイプ診断</span>
-                        <span id="date-motivation" class="text-[10px] font-bold text-slate-400">未診断</span>
+                <button id="btn-motivation" onclick="openModal('motivation')" class="w-full flex items-center justify-between p-4 border-b border-slate-100 active:bg-slate-50 transition text-left">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center text-lg">🔥</div>
+                        <div>
+                            <h3 class="text-sm font-black text-slate-800">やる気８タイプ</h3>
+                            <p id="date-motivation" class="text-[9px] text-slate-400 font-bold">未診断</p>
+                        </div>
                     </div>
-                    <p id="result-motivation" class="text-base font-black text-slate-400 mb-3">テストを受けてみよう！</p>
-                    <button id="btn-motivation" onclick="openModal('motivation')" class="hidden w-full bg-orange-500 text-white text-xs font-bold py-2.5 rounded-xl shadow-sm btn-hover">詳細を見る</button>
-                </div>
+                    <div class="flex items-center gap-2 max-w-[130px]">
+                        <span id="result-motivation" class="text-xs font-bold text-slate-400 truncate">テストを受ける</span>
+                        <span class="text-slate-300 text-lg">›</span>
+                    </div>
+                </button>
 
-                <div class="glass-card rounded-[2rem] p-5">
-                    <div class="flex justify-between items-center mb-3">
-                        <span class="text-[10px] font-black text-slate-400 tracking-widest bg-slate-100 px-2 py-1 rounded">Big Five 性格テスト</span>
-                        <span id="date-bigfive" class="text-[10px] font-bold text-slate-400">未診断</span>
+                <button id="btn-bigfive" onclick="openModal('bigfive')" class="w-full flex items-center justify-between p-4 border-b border-slate-100 active:bg-slate-50 transition text-left">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-lg">🧠</div>
+                        <div>
+                            <h3 class="text-sm font-black text-slate-800">Big Five性格テスト</h3>
+                            <p id="date-bigfive" class="text-[9px] text-slate-400 font-bold">未診断</p>
+                        </div>
                     </div>
-                    <p id="result-bigfive" class="text-base font-black text-slate-400 mb-3">テストを受けてみよう！</p>
-                    <button id="btn-bigfive" onclick="openModal('bigfive')" class="hidden w-full bg-indigo-500 text-white text-xs font-bold py-2.5 rounded-xl shadow-sm btn-hover">詳細を見る</button>
-                </div>
+                    <div class="flex items-center gap-2 max-w-[130px]">
+                        <span id="result-bigfive" class="text-xs font-bold text-slate-400 truncate">テストを受ける</span>
+                        <span class="text-slate-300 text-lg">›</span>
+                    </div>
+                </button>
 
-                <div class="glass-card rounded-[2rem] p-5">
-                    <div class="flex justify-between items-center mb-3">
-                        <span class="text-[10px] font-black text-slate-400 tracking-widest bg-slate-100 px-2 py-1 rounded">クロノタイプ診断</span>
-                        <span id="date-chrono" class="text-[10px] font-bold text-slate-400">未診断</span>
+                <button id="btn-chrono" onclick="openModal('chronotype')" class="w-full flex items-center justify-between p-4 border-b border-slate-100 active:bg-slate-50 transition text-left">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-lg">⏰</div>
+                        <div>
+                            <h3 class="text-sm font-black text-slate-800">クロノタイプ診断</h3>
+                            <p id="date-chrono" class="text-[9px] text-slate-400 font-bold">未診断</p>
+                        </div>
                     </div>
-                    <p id="result-chrono" class="text-base font-black text-slate-400 mb-3">テストを受けてみよう！</p>
-                    <button id="btn-chrono" onclick="openModal('chronotype')" class="hidden w-full bg-emerald-500 text-white text-xs font-bold py-2.5 rounded-xl shadow-sm btn-hover">詳細を見る</button>
-                </div>
+                    <div class="flex items-center gap-2 max-w-[130px]">
+                        <span id="result-chrono" class="text-xs font-bold text-slate-400 truncate">テストを受ける</span>
+                        <span class="text-slate-300 text-lg">›</span>
+                    </div>
+                </button>
 
-                <div class="glass-card rounded-[2rem] p-5">
-                    <div class="flex justify-between items-center mb-3">
-                        <span class="text-[10px] font-black text-slate-400 tracking-widest bg-slate-100 px-2 py-1 rounded">コーヒー性格テスト</span>
-                        <span id="date-coffee" class="text-[10px] font-bold text-slate-400">未診断</span>
+                <button id="btn-coffee" onclick="openModal('coffee')" class="w-full flex items-center justify-between p-4 border-b border-slate-100 active:bg-slate-50 transition text-left">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center text-lg">☕</div>
+                        <div>
+                            <h3 class="text-sm font-black text-slate-800">コーヒー性格テスト</h3>
+                            <p id="date-coffee" class="text-[9px] text-slate-400 font-bold">未診断</p>
+                        </div>
                     </div>
-                    <p id="result-coffee" class="text-base font-black text-slate-400 mb-3">テストを受けてみよう！</p>
-                    <button id="btn-coffee" onclick="openModal('coffee')" class="hidden w-full bg-amber-500 text-white text-xs font-bold py-2.5 rounded-xl shadow-sm btn-hover">詳細を見る</button>
-                </div>
+                    <div class="flex items-center gap-2 max-w-[130px]">
+                        <span id="result-coffee" class="text-xs font-bold text-slate-400 truncate">テストを受ける</span>
+                        <span class="text-slate-300 text-lg">›</span>
+                    </div>
+                </button>
 
-                <div class="glass-card rounded-[2rem] p-5">
-                    <div class="flex justify-between items-center mb-3">
-                        <span class="text-[10px] font-black text-slate-400 tracking-widest bg-slate-100 px-2 py-1 rounded">空気読めるか診断</span>
-                        <span id="date-sm" class="text-[10px] font-bold text-slate-400">未診断</span>
+                <button id="btn-sm" onclick="openModal('sm')" class="w-full flex items-center justify-between p-4 border-b border-slate-100 active:bg-slate-50 transition text-left">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-pink-50 flex items-center justify-center text-lg">🌬️</div>
+                        <div>
+                            <h3 class="text-sm font-black text-slate-800">空気読めるか診断</h3>
+                            <p id="date-sm" class="text-[9px] text-slate-400 font-bold">未診断</p>
+                        </div>
                     </div>
-                    <p id="result-sm" class="text-base font-black text-slate-400 mb-3">テストを受けてみよう！</p>
-                    <button id="btn-sm" onclick="openModal('sm')" class="hidden w-full bg-pink-500 text-white text-xs font-bold py-2.5 rounded-xl shadow-sm btn-hover">詳細を見る</button>
-                </div>
+                    <div class="flex items-center gap-2 max-w-[130px]">
+                        <span id="result-sm" class="text-xs font-bold text-slate-400 truncate">テストを受ける</span>
+                        <span class="text-slate-300 text-lg">›</span>
+                    </div>
+                </button>
 
-                <div class="glass-card rounded-[2rem] p-5">
-                    <div class="flex justify-between items-center mb-3">
-                        <span class="text-[10px] font-black text-slate-400 tracking-widest bg-slate-100 px-2 py-1 rounded">スマホ依存チェック</span>
-                        <span id="date-nomophobia" class="text-[10px] font-bold text-slate-400">未診断</span>
+                <button id="btn-nomophobia" onclick="openModal('nomophobia')" class="w-full flex items-center justify-between p-4 active:bg-slate-50 transition text-left">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-lg">📱</div>
+                        <div>
+                            <h3 class="text-sm font-black text-slate-800">スマホ依存チェック</h3>
+                            <p id="date-nomophobia" class="text-[9px] text-slate-400 font-bold">未診断</p>
+                        </div>
                     </div>
-                    <p id="result-nomophobia" class="text-base font-black text-slate-400 mb-3">テストを受けてみよう！</p>
-                    <button id="btn-nomophobia" onclick="openModal('nomophobia')" class="hidden w-full bg-slate-800 text-white text-xs font-bold py-2.5 rounded-xl shadow-sm btn-hover">詳細を見る</button>
-                </div>
+                    <div class="flex items-center gap-2 max-w-[130px]">
+                        <span id="result-nomophobia" class="text-xs font-bold text-slate-400 truncate">テストを受ける</span>
+                        <span class="text-slate-300 text-lg">›</span>
+                    </div>
+                </button>
 
             </div>
         </section>
-
+        
         <section>
             <h2 class="text-sm font-black text-slate-700 pl-2 mb-3 border-l-4 border-teal-400">ゼミ生の活動・コラム</h2>
             <div class="space-y-3">
