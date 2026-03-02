@@ -19,12 +19,15 @@
         .calendar-cell.today { background: linear-gradient(135deg, rgba(238, 242, 255, 0.95) 0%, rgba(224, 231, 255, 0.95) 100%); border: 1px solid #818cf8; box-shadow: 0 4px 10px rgba(99, 102, 241, 0.15), inset 0 0 0 1px #e0e7ff; }
         .calendar-cell.empty { background: transparent; border: none; box-shadow: none; }
         
-        .event-badge { display: flex; flex-direction: column; padding: 3px; border-radius: 6px; cursor: pointer; transition: transform 0.1s; }
+/* ▼▼ 古い .event-badge などの設定を以下に差し替え！ ▼▼ */
+        .event-badge { 
+            padding: 2px 4px; /* 上下の余白を限界まで削る */
+            cursor: pointer; 
+            transition: transform 0.1s; 
+        }
         .event-badge:active { transform: scale(0.95); }
-        .event-cat { font-size: 7px; font-weight: 900; line-height: 1; margin-bottom: 2px; opacity: 0.8; }
-        .event-title { font-size: 9px; font-weight: 700; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
         .no-scrollbar::-webkit-scrollbar { display: none; }
+        /* ▲▲ .event-cat や .event-title はもう使わないので消してOKです ▲▲ */
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
@@ -107,9 +110,10 @@
             try {
                 await liff.init({ liffId: "2009176797-7MWNttly" }); 
                 if (liff.isLoggedIn()) { myUserId = liff.getDecodedIDToken()?.sub; }
-                await fetchUsersData(); 
-                await fetchCalendarEvents();
-                renderCalendar();
+                
+                // ユーザーデータとカレンダーデータを「同時（並行）」に取得して高速化
+                await Promise.all([fetchUsersData(), fetchCalendarEvents()]);
+                
             } catch(e) { console.error(e); }
         }
 
@@ -128,23 +132,48 @@
         }
 
         async function fetchCalendarEvents() {
-            document.getElementById('calendar-loading').style.display = 'flex';
+            // 1. ローカルキャッシュがあれば、まずそれを使って即時描画！
+            const cachedEvents = localStorage.getItem('calendarEventsCache');
+            if (cachedEvents) {
+                allEvents = JSON.parse(cachedEvents);
+                renderCalendar(); 
+            } else {
+                // キャッシュがない初回のみローディング画面を出す
+                document.getElementById('calendar-loading').style.display = 'flex';
+            }
+
+            // 2. 裏側でこっそり最新のデータを取得
             try {
                 const res = await fetch(`https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/getCalendarEvents`);
                 const data = await res.json();
                 allEvents = data.events || [];
-            } catch(e) { alert("イベントの取得に失敗しました"); }
+                
+                // 3. 最新データをローカルに記憶させる
+                localStorage.setItem('calendarEventsCache', JSON.stringify(allEvents));
+                
+                // 4. 最新データでカレンダーを再描画（差分があればスッと切り替わる）
+                renderCalendar();
+            } catch(e) { 
+                if (!cachedEvents) alert("イベントの取得に失敗しました"); 
+            }
             document.getElementById('calendar-loading').style.display = 'none';
         }
 
         function changeMonth(diff) { currentDate.setMonth(currentDate.getMonth() + diff); renderCalendar(); }
 
-        function getCategoryStyle(cat) {
-            if (cat.includes("すこやか") || cat.includes("運動") || cat.includes("快眠") || cat.includes("瞑想")) return "bg-emerald-50 text-emerald-700 border border-emerald-200/50";
-            if (cat.includes("読書") || cat.includes("ラジオ") || cat.includes("シェア")) return "bg-orange-50 text-orange-700 border border-orange-200/50";
-            if (cat.includes("ゼミ") || cat.includes("講義")) return "bg-blue-50 text-blue-700 border border-blue-200/50";
-            if (cat.includes("カクテル") || cat.includes("ふらっと")) return "bg-pink-50 text-pink-700 border border-pink-200/50";
-            return "bg-indigo-50 text-indigo-700 border border-indigo-200/50"; 
+function getCategoryStyle(cat) {
+            if (!cat) return "bg-slate-50 text-slate-600 border-slate-200"; 
+            
+            // 🌟 合宿は特別感満載の「濃い紫×白文字」
+            if (cat.includes("合宿")) return "bg-purple-600 text-white border-purple-700 shadow-sm"; 
+            
+            if (cat.includes("すこやか") || cat.includes("運動") || cat.includes("快眠") || cat.includes("瞑想")) return "bg-emerald-50 text-emerald-700 border-emerald-200";
+            if (cat.includes("読書") || cat.includes("ラジオ") || cat.includes("シェア")) return "bg-orange-50 text-orange-700 border-orange-200";
+            if (cat.includes("ゼミ") || cat.includes("講義")) return "bg-blue-50 text-blue-700 border-blue-200";
+            if (cat.includes("カクテル") || cat.includes("ふらっと")) return "bg-pink-50 text-pink-700 border-pink-200";
+            
+            // 🌟 どれにも当てはまらない「その他イベント」はシックなグレー
+            return "bg-slate-50 text-slate-600 border-slate-200"; 
         }
 
         function renderCalendar() {
@@ -165,58 +194,61 @@
                 
                 let eventsHtml = "";
                 allEvents.forEach((ev, index) => {
-                    // 日付に「T（時間）」が含まれているISOフォーマット対策も組み込みます
                     const startDate = ev.date ? ev.date.split('T')[0] : "";
                     const endDate = ev.endDate ? ev.endDate.split('T')[0] : startDate;
                     
                     let startTime = ev.startTime || "";
                     if (!startTime && ev.date && ev.date.includes('T')) {
-                        startTime = ev.date.split('T')[1].substring(0, 5); // T以降の時間を切り出す
+                        startTime = ev.date.split('T')[1].substring(0, 5);
                     }
 
                     if (dateStr >= startDate && dateStr <= endDate) {
                         const style = getCategoryStyle(ev.category);
-                        const organizerIcon = ev.organizerIds && ev.organizerIds.length > 0 ? `<span class="mr-0.5 opacity-70">👤</span>` : "";
+                        const organizerIcon = ev.organizerIds && ev.organizerIds.length > 0 ? `<span class="mr-0.5 opacity-90">👤</span>` : "";
                         
                         let isStartDay = (dateStr === startDate);
                         let isEndDay = (dateStr === endDate);
                         let isMultiDay = (startDate !== endDate);
 
+                        // ⏱ 時間表示（少し濃い背景で区別）
                         let timeLabel = "";
                         if (startTime && isStartDay) {
-                            timeLabel = `<span class="text-[9px] bg-white/50 text-slate-800 px-1 rounded-sm mr-1 font-black shadow-sm">${startTime}</span>`;
+                            timeLabel = `<span class="bg-black/10 px-1 rounded-[3px] font-black mr-1">${startTime}</span>`;
                         }
 
-                        // ▼▼ 帯表示（リボン）のためのマジックコード ▼▼
+                        // 🏷️ カテゴリ表示（枠線つきの小さなバッジにしてタイトルと明確に区別！）
+                        let catLabel = "";
+                        if (isStartDay && ev.category) {
+                            catLabel = `<span class="border border-current px-1 rounded-[3px] text-[7px] font-bold mr-1 opacity-80 whitespace-nowrap">${ev.category}</span>`;
+                        }
+
+                        // 🎀 帯表示の隙間を完全に埋めるロジック
                         let roundedClass = "rounded-md";
                         let marginClass = "mx-0.5";
                         let contentOpacity = "opacity-100";
-                        let titleHtml = `<div class="flex items-center w-full mt-0.5">${timeLabel}<span class="event-title truncate">${organizerIcon}${ev.title}</span></div>`;
-                        let catHtml = `<span class="event-cat">${ev.category}</span>`;
-
+                        
                         if (isMultiDay) {
                             if (isStartDay) {
-                                // 初日は右側の角丸と隙間を消す
                                 roundedClass = "rounded-l-md rounded-r-none border-r-0";
-                                marginClass = "ml-0.5 mr-[-3px] z-10";
+                                marginClass = "ml-0.5 mr-[-4px] z-10"; // 右の隙間を消す
                             } else if (isEndDay) {
-                                // 最終日は左側の角丸と隙間を消す
                                 roundedClass = "rounded-r-md rounded-l-none border-l-0";
-                                marginClass = "mr-0.5 ml-[-3px] z-10";
-                                contentOpacity = "opacity-0"; // 高さを合わせるために文字は透明にする
+                                marginClass = "mr-0.5 ml-[-4px] z-10"; // 左の隙間を消す
+                                contentOpacity = "opacity-0"; // テキストは初日だけ
                             } else {
-                                // 中日は両方の角丸と隙間を消す
                                 roundedClass = "rounded-none border-l-0 border-r-0";
-                                marginClass = "mx-[-3px] z-10";
+                                marginClass = "mx-[-4px] z-10";
                                 contentOpacity = "opacity-0";
                             }
                         }
 
+                        // ▼▼ ここが最大の改善点！ flex items-center で完全に1行に収める ▼▼
                         eventsHtml += `
-                            <div onclick="openEventDetailByIndex(${index})" class="event-badge ${style} ${roundedClass} ${marginClass} mb-1 relative">
-                                <div class="${contentOpacity}">
-                                    ${catHtml}
-                                    ${titleHtml}
+                            <div onclick="openEventDetailByIndex(${index})" class="event-badge ${style} ${roundedClass} ${marginClass} mb-[2px] border relative flex items-center">
+                                <div class="flex items-center w-full truncate ${contentOpacity} text-[9px] leading-none">
+                                    ${catLabel}
+                                    ${timeLabel}
+                                    <span class="truncate font-bold">${organizerIcon}${ev.title}</span>
                                 </div>
                             </div>`;
                     }
@@ -388,7 +420,7 @@
 
                 // 3. その下にイベント本文を追加
                 html += `<div class="bg-slate-50 p-4 rounded-xl border border-slate-200 whitespace-pre-wrap text-xs text-slate-700 leading-relaxed font-medium mb-4">${data.details}</div>`;
-                
+
                 html += `<div><p class="text-[10px] font-bold text-indigo-500 mb-2">🙋 参加予定 (${data.joinsLineIds ? data.joinsLineIds.length : 0}人)</p>`;
                 if(data.joinsLineIds && data.joinsLineIds.length > 0) html += `<div class="flex flex-wrap gap-1.5">${data.joinsLineIds.map(id => createUserChip(id, "bg-white", "border-indigo-200", "text-indigo-700")).join('')}</div>`; 
                 else html += `<p class="text-[10px] text-slate-400">まだ参加者はいません</p>`; 

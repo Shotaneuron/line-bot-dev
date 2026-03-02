@@ -1155,12 +1155,8 @@ export const getCalendarEvents = functions.region("asia-northeast1").https.onReq
     if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
 
     try {
-        const today = new Date();
-        today.setDate(1); 
-        const startOfMonth = today.toISOString().split('T')[0];
-
-        const snapshot = await db.collection("events").where("date", ">=", startOfMonth).orderBy("date", "asc").get();
-
+// ▼▼ 修正後のコード ▼▼
+        const snapshot = await db.collection("events").orderBy("date", "asc").get();
         const events: any[] = [];
         snapshot.forEach(doc => {
             const data = doc.data();
