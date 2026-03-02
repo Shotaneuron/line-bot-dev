@@ -1169,9 +1169,10 @@ export const getCalendarEvents = functions.region("asia-northeast1").https.onReq
                 category: data.category,
                 tags: data.tags || [],
                 organizerIds: data.organizerIds || [],
-                // この2行が必須です
                 endDate: data.endDate || data.date, 
-                startTime: data.startTime || ""
+                startTime: data.startTime || "",
+                // ▼ この1行を追加！
+                endTime: data.endTime || ""
             });
         });
 
@@ -1212,7 +1213,9 @@ export const getEventDetails = functions.region("asia-northeast1").https.onReque
                         // ▼▼▼ ここを追加！ ▼▼▼
                         date: data.date || "",
                         endDate: data.endDate || data.date || "",
-                        startTime: data.startTime || ""
+                        startTime: data.startTime || "",
+                        endTime: data.endTime || ""
+                        
                         // ▲▲▲ ここまで ▲▲▲
                     });
                 }
@@ -1383,13 +1386,9 @@ export const updateEventStatus = functions.region("asia-northeast1").https.onReq
 
 // ★ 共通の同期ロジック（確実に動かすための関数）
 async function runEventSync() {
-    const today = new Date();
-    today.setDate(1); 
-    const startOfMonth = today.toISOString().split('T')[0];
-
+    // 💡 過去の合宿なども全て同期するため、フィルターを解除して全件取得します！
     const response = await notion.databases.query({
         database_id: EVENT_DB_ID,
-        filter: { property: PROP_EVENT_DATE, date: { on_or_after: startOfMonth } },
         sorts: [{ property: PROP_EVENT_DATE, direction: "ascending" }]
     });
 
@@ -1410,8 +1409,19 @@ async function runEventSync() {
         }
 
         const title = page.properties[PROP_EVENT_NAME]?.title[0]?.plain_text || "無題";
-        const rawDate = page.properties[PROP_EVENT_DATE]?.date?.start;
+        
+        // ▼▼ ここが最大の修正点！開始・終了・時間すべてをNotionから正しく抽出 ▼▼
+        const dateData = page.properties[PROP_EVENT_DATE]?.date;
+        const rawDate = dateData?.start || "";
+        const rawEndDate = dateData?.end || "";
+        
         const dateStr = rawDate ? rawDate.split('T')[0] : ""; 
+        const endDateStr = rawEndDate ? rawEndDate.split('T')[0] : dateStr;
+        
+        const startTime = rawDate && rawDate.includes('T') ? rawDate.split('T')[1].substring(0, 5) : "";
+        const endTime = rawEndDate && rawEndDate.includes('T') ? rawEndDate.split('T')[1].substring(0, 5) : "";
+        // ▲▲ ここまで ▲▲
+
         const tags = page.properties[PROP_EVENT_TAGS]?.multi_select?.map((t:any)=>t.name) || [];
         const organizerIds = page.properties["主催者"]?.relation?.map((r:any) => r.id) || [];
         const joins = page.properties[PROP_JOIN]?.relation?.map((r:any) => r.id) || [];
@@ -1421,11 +1431,13 @@ async function runEventSync() {
         const eventRef = db.collection("events").doc(page.id);
         batch.set(eventRef, {
             id: page.id, title, date: dateStr, category: cat, tags, organizerIds,
+            // 抽出した終了日と時間もFirestoreへ保存！
+            endDate: endDateStr, startTime, endTime,
             joins, maybes, declines, updatedAt: new Date().toISOString()
         }, { merge: true });
     }
     await batch.commit();
-    console.log("✅ Firestoreへのイベント同期完了！");
+    console.log("✅ Firestoreへのイベント同期完了（日付・時間対応版）！");
 }
 
 // ① 1時間に1回自動で動くタイマー

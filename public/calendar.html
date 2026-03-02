@@ -197,10 +197,8 @@ function getCategoryStyle(cat) {
                     const startDate = ev.date ? ev.date.split('T')[0] : "";
                     const endDate = ev.endDate ? ev.endDate.split('T')[0] : startDate;
                     
-                    let startTime = ev.startTime || "";
-                    if (!startTime && ev.date && ev.date.includes('T')) {
-                        startTime = ev.date.split('T')[1].substring(0, 5);
-                    }
+                    const startTime = ev.startTime || "";
+                    const endTime = ev.endTime || "";
 
                     if (dateStr >= startDate && dateStr <= endDate) {
                         const style = getCategoryStyle(ev.category);
@@ -210,49 +208,44 @@ function getCategoryStyle(cat) {
                         let isEndDay = (dateStr === endDate);
                         let isMultiDay = (startDate !== endDate);
 
-                        // ⏱ 時間表示（少し濃い背景で区別）
-                        let timeLabel = "";
-                        if (startTime && isStartDay) {
-                            timeLabel = `<span class="bg-black/10 px-1 rounded-[3px] font-black mr-1">${startTime}</span>`;
-                        }
+                        // 🏷️ カテゴリと時間（終了時間があれば「09:00 - 19:00」のように表示）
+                        let catLabel = ev.category ? `<span class="border border-current px-1 rounded-[3px] text-[7px] font-bold opacity-80 whitespace-nowrap">${ev.category}</span>` : "";
+                        let timeLabel = startTime ? `<span class="bg-black/10 px-1 rounded-[3px] font-black whitespace-nowrap">${startTime}${endTime ? ' - ' + endTime : ''}</span>` : "";
 
-                        // 🏷️ カテゴリ表示（枠線つきの小さなバッジにしてタイトルと明確に区別！）
-                        let catLabel = "";
-                        if (isStartDay && ev.category) {
-                            catLabel = `<span class="border border-current px-1 rounded-[3px] text-[7px] font-bold mr-1 opacity-80 whitespace-nowrap">${ev.category}</span>`;
-                        }
-
-                        // 🎀 帯表示の隙間を完全に埋めるロジック
                         let roundedClass = "rounded-md";
                         let marginClass = "mx-0.5";
-                        let contentOpacity = "opacity-100";
                         
+                        // ▼▼ 帯の隙間を消す & 文字を透明にする（高さを揃えるため） ▼▼
+                        let contentClass = "opacity-100";
                         if (isMultiDay) {
                             if (isStartDay) {
                                 roundedClass = "rounded-l-md rounded-r-none border-r-0";
-                                marginClass = "ml-0.5 mr-[-4px] z-10"; // 右の隙間を消す
+                                marginClass = "ml-0.5 mr-[-4px] z-10";
                             } else if (isEndDay) {
                                 roundedClass = "rounded-r-md rounded-l-none border-l-0";
-                                marginClass = "mr-0.5 ml-[-4px] z-10"; // 左の隙間を消す
-                                contentOpacity = "opacity-0"; // テキストは初日だけ
+                                marginClass = "mr-0.5 ml-[-4px] z-10";
+                                contentClass = "opacity-0"; // 高さを保つために文字だけ透明に
                             } else {
                                 roundedClass = "rounded-none border-l-0 border-r-0";
                                 marginClass = "mx-[-4px] z-10";
-                                contentOpacity = "opacity-0";
+                                contentClass = "opacity-0";
                             }
                         }
 
-                        // ▼▼ ここが最大の改善点！ flex items-center で完全に1行に収める ▼▼
+                        // ▼▼ タイトル長文折り返し対応（flex-col と break-words を使用） ▼▼
                         eventsHtml += `
-                            <div onclick="openEventDetailByIndex(${index})" class="event-badge ${style} ${roundedClass} ${marginClass} mb-[2px] border relative flex items-center">
-                                <div class="flex items-center w-full truncate ${contentOpacity} text-[9px] leading-none">
-                                    ${catLabel}
-                                    ${timeLabel}
-                                    <span class="truncate font-bold">${organizerIcon}${ev.title}</span>
+                            <div onclick="openEventDetailByIndex(${index})" class="event-badge ${style} ${roundedClass} ${marginClass} mb-[2px] border relative p-1">
+                                <div class="${contentClass} w-full text-[9px] leading-tight flex flex-col gap-0.5">
+                                    <div class="flex items-center gap-1 flex-wrap">
+                                        ${catLabel}
+                                        ${timeLabel}
+                                    </div>
+                                    <span class="font-bold break-words">${organizerIcon}${ev.title}</span>
                                 </div>
                             </div>`;
                     }
                 });
+                
                 html += `<div class="calendar-cell ${isToday}"><div class="text-[10px] font-black text-slate-500 pl-1 ${isToday ? 'text-indigo-600' : ''}">${i}</div><div class="flex flex-col gap-1 overflow-y-auto no-scrollbar max-h-16 pb-1">${eventsHtml}</div></div>`;
             }
             document.getElementById('calendar-body').innerHTML = html;
