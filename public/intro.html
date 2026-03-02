@@ -406,6 +406,11 @@
                 if (!res.ok) throw new Error("APIレスポンスエラー");
                 
                 const allUsersData = await res.json();
+
+                const myDbData = allUsersData.find(u => u.id === myProfile.id);
+                if (myDbData) {
+                    myProfile = { ...myProfile, ...myDbData };
+                }
                 
                 // API側で綺麗に整形されたデータが返ってくるので、自分以外のユーザーをセットするだけ！
                 communityUsers = allUsersData.filter(u => u.id !== myProfile.id);
@@ -790,7 +795,7 @@ function openProfile(userId) {
             
             setTimeout(() => { sheet.classList.add('slide-up'); }, 10);
         }
-        
+
         function closeProfile() {
             const modal = document.getElementById('profile-modal');
             const sheet = document.getElementById('profile-sheet');

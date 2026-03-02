@@ -165,24 +165,21 @@
                 
                 let eventsHtml = "";
                 allEvents.forEach((ev, index) => {
-                    // 終了日が設定されていなければ開始日と同じにする
                     const startDate = ev.date;
                     const endDate = ev.endDate || ev.date; 
 
-                    // 現在描画しているマス（dateStr）が、イベント期間内かどうかを判定
                     if (dateStr >= startDate && dateStr <= endDate) {
                         const style = getCategoryStyle(ev.category);
                         const organizerIcon = ev.organizerIds && ev.organizerIds.length > 0 ? `<span class="mr-0.5 opacity-70">👤</span>` : "";
                         
-                        // ① 時間表示の追加（イベント初日のみ、startTimeがあれば表示）
                         let timeLabel = "";
+                        // 初日のみ、時間が設定されていれば表示
                         if (ev.startTime && dateStr === startDate) {
-                            // 既存の Taildwind クラスに合わせて小さめに表示
-                            timeLabel = `<span class="text-[8px] bg-white/40 text-slate-800 px-1 rounded-sm mr-1 font-bold">${ev.startTime}</span>`;
+                            timeLabel = `<span class="text-[9px] bg-white/50 text-slate-800 px-1 rounded-sm mr-1 font-black shadow-sm">${ev.startTime}</span>`;
                         }
 
                         eventsHtml += `
-                            <div onclick="openEventDetailByIndex(${index})" class="event-badge ${style} flex items-center">
+                            <div onclick="openEventDetailByIndex(${index})" class="event-badge ${style} flex items-center mb-1">
                                 <span class="event-cat flex-shrink-0">${ev.category}</span>
                                 ${timeLabel}
                                 <span class="event-title truncate">${organizerIcon}${ev.title}</span>

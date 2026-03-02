@@ -1164,7 +1164,6 @@ export const getCalendarEvents = functions.region("asia-northeast1").https.onReq
         const events: any[] = [];
         snapshot.forEach(doc => {
             const data = doc.data();
-            // 🚨 強力なフィルター
             if (!data.category || data.category === "未分類" || data.category.includes("運営部") || data.category.includes("企画部")) return;
             events.push({
                 id: doc.id,
@@ -1172,7 +1171,10 @@ export const getCalendarEvents = functions.region("asia-northeast1").https.onReq
                 date: data.date,
                 category: data.category,
                 tags: data.tags || [],
-                organizerIds: data.organizerIds || []
+                organizerIds: data.organizerIds || [],
+                // ▼▼ この2行を追加！ ▼▼
+                endDate: data.endDate || data.date, 
+                startTime: data.startTime || ""
             });
         });
 
@@ -1546,20 +1548,23 @@ export const getIntroRanking = functions.region('asia-northeast1').https.onReque
             
             snapshot.forEach(doc => {
                 const data = doc.data();
-                // プロフィールが存在するユーザーのみ抽出して、フロントが読みやすい形に整形して返す
                 if (data && data.profile && data.profile.name) {
                     users.push({
-                        id: doc.id, // ここで確実にLINE IDを取得
+                        id: doc.id,
                         name: data.profile.name,
                         icon: data.profile.pictureUrl || "https://cdn-icons-png.flaticon.com/512/847/847969.png",
                         univ: data.profile.university || "未設定",
+                        // ▼▼ faculty と bio を追加！ ▼▼
+                        faculty: data.profile.faculty || "未設定",
                         grade: data.profile.grade || "",
                         message: data.profile.statusMessage || data.profile.message || "よろしくお願いします！",
-                        exp: typeof data.introExp === 'number' ? data.introExp : 0 // 未探索の人は0
+                        bio: data.profile.bio || "まだ自己紹介が入力されていません。",
+                        // ▲▲ ここまで ▲▲
+                        exp: typeof data.introExp === 'number' ? data.introExp : 0
                     });
                 }
             });
-            
+
             res.status(200).json(users);
         } catch (error) {
             console.error('Error in getIntroRanking:', error);
