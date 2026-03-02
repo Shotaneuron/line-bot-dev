@@ -1173,7 +1173,7 @@ export const getCalendarEvents = functions.region("asia-northeast1").https.onReq
                 category: data.category,
                 tags: data.tags || [],
                 organizerIds: data.organizerIds || [],
-                // ▼▼ この2行を追加！ ▼▼
+                // この2行が必須です
                 endDate: data.endDate || data.date, 
                 startTime: data.startTime || ""
             });
@@ -1212,7 +1212,12 @@ export const getEventDetails = functions.region("asia-northeast1").https.onReque
                         details: data.details,
                         joinsLineIds: data.joinsLineIds || [],
                         maybesLineIds: data.maybesLineIds || [],
-                        declinesLineIds: data.declinesLineIds || []
+                        declinesLineIds: data.declinesLineIds || [],
+                        // ▼▼▼ ここを追加！ ▼▼▼
+                        date: data.date || "",
+                        endDate: data.endDate || data.date || "",
+                        startTime: data.startTime || ""
+                        // ▲▲▲ ここまで ▲▲▲
                     });
                 }
             }
@@ -1277,8 +1282,21 @@ export const getEventDetails = functions.region("asia-northeast1").https.onReque
             joinsLineIds, maybesLineIds, declinesLineIds
         }, { merge: true });
 
+        // ▼▼▼ ここを追加！最新の日付データを取得する ▼▼▼
+        const latestSnap = await docRef.get();
+        const latestData = latestSnap.data() || {};
+        // ▲▲▲ ここまで ▲▲▲
+
         // 正常にデータを返す
-        return res.json({ details: textContent.trim(), joinsLineIds, maybesLineIds, declinesLineIds });
+        return res.json({ 
+            details: textContent.trim(), 
+            joinsLineIds, maybesLineIds, declinesLineIds,
+            // ▼▼▼ ここも追加！ ▼▼▼
+            date: latestData.date || "",
+            endDate: latestData.endDate || latestData.date || "",
+            startTime: latestData.startTime || ""
+            // ▲▲▲ ここまで ▲▲▲
+        });
 
     } catch(e: any) { 
         console.error("Event Detail Critical Error:", e);
