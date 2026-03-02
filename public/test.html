@@ -190,7 +190,7 @@
 
             </div>
         </section>
-        
+
         <section>
             <h2 class="text-sm font-black text-slate-700 pl-2 mb-3 border-l-4 border-teal-400">ゼミ生の活動・コラム</h2>
             <div class="space-y-3">
@@ -389,8 +389,8 @@ async function initializePortal() {
             const chartContainer = document.getElementById('chart-container');
             const modalText = document.getElementById('modal-text');
             
-            // ★ UI修正：モーダルの中の文字を「左揃え」に強制し、折り返す！
-            modalText.className = "text-xs text-slate-700 font-bold leading-relaxed whitespace-pre-wrap break-words text-left";
+            // ★UI劇的改善：文字サイズを大きく(text-sm)し、行間をゆったり(leading-relaxed)に！
+            modalText.className = "text-sm text-slate-700 font-medium leading-relaxed whitespace-pre-wrap break-words text-left";
             
             let labels = [], dataPoints = [], maxScore = 7, title = "", text = "", extraHTML = "";
             let showChart = true;
@@ -398,8 +398,7 @@ async function initializePortal() {
             function safeParse(field) {
                 if (!field) return {};
                 if (field.stringValue) {
-                    try { return JSON.parse(field.stringValue); } 
-                    catch(e) { return {}; }
+                    try { return JSON.parse(field.stringValue); } catch(e) { return {}; }
                 }
                 return field;
             }
@@ -408,22 +407,12 @@ async function initializePortal() {
             try {
                 if (testType === 'bigfive') {
                     title = "Big Five 分析 🧠";
-                    if (!userData.bigFiveScores) {
-                        text = safeString(userData.bigFiveResult);
-                        showChart = false;
-                    } else {
+                    if (!userData.bigFiveScores) { text = safeString(userData.bigFiveResult); showChart = false; } 
+                    else {
                         const s = safeParse(userData.bigFiveScores);
                         const domains = s.domainScores || s;
-                        
                         labels = ['外向性', '協調性', '誠実性', '神経症的傾向', '開放性'];
-                        dataPoints = [
-                            Number(domains.extraversion || domains.E || 0),
-                            Number(domains.agreeableness || domains.A || 0),
-                            Number(domains.conscientiousness || domains.C || 0),
-                            Number(domains.neuroticism || domains.N || 0),
-                            Number(domains.openness || domains.O || 0)
-                        ];
-                        
+                        dataPoints = [Number(domains.E||domains.extraversion||0), Number(domains.A||domains.agreeableness||0), Number(domains.C||domains.conscientiousness||0), Number(domains.N||domains.neuroticism||0), Number(domains.O||domains.openness||0)];
                         const isFull = (safeString(userData.latestTest) === "bigfive_full" || !!s.facetScores);
                         maxScore = isFull ? 120 : 7;
                         const mid = maxScore / 2;
@@ -437,36 +426,18 @@ async function initializePortal() {
                         text += "\n💡 低い項目は「欠点」ではなく、裏を返せば強力な「別の才能」です！";
 
                         if (isFull && s.facetScores && typeof s.facetScores === 'object') {
-                            extraHTML = `<div class="mt-6 border-t border-slate-200 pt-5 text-left"><h5 class="text-sm font-black text-slate-800 mb-4">🔬 30項目の詳細レポート（タップで展開）</h5><div class="space-y-3">`;
-                            const domainInfo = {
-                                'E': { icon: '🔥', name: '外向性 (Extraversion)' },
-                                'A': { icon: '🤝', name: '協調性 (Agreeableness)' },
-                                'C': { icon: '📋', name: '誠実性 (Conscientiousness)' },
-                                'N': { icon: '🌧️', name: '神経症的傾向 (Neuroticism)' },
-                                'O': { icon: '💡', name: '開放性 (Openness)' }
-                            };
+                            extraHTML = `<div class="mt-8 border-t border-slate-200 pt-6 text-left"><h5 class="text-base font-black text-slate-800 mb-4">🔬 30項目の詳細レポート</h5><div class="space-y-3">`;
+                            const domainInfo = { 'E': { icon: '🔥', name: '外向性' }, 'A': { icon: '🤝', name: '協調性' }, 'C': { icon: '📋', name: '誠実性' }, 'N': { icon: '🌧️', name: '神経症的傾向' }, 'O': { icon: '💡', name: '開放性' } };
                             ['E', 'A', 'C', 'N', 'O'].forEach(key => {
                                 const d = FACET_DICT[key];
                                 const fData = s.facetScores[key];
                                 if (fData && typeof fData === 'object' && d) {
-                                    extraHTML += `
-                                    <details class="group bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                                        <summary class="flex justify-between items-center p-4 cursor-pointer font-black text-slate-700 list-none [&::-webkit-details-marker]:hidden bg-slate-50 hover:bg-slate-100 transition">
-                                            <div class="flex items-center gap-2"><span class="text-lg">${domainInfo[key].icon}</span> ${domainInfo[key].name}</div>
-                                            <span class="transition duration-300 group-open:rotate-180 text-slate-400">▼</span>
-                                        </summary>
-                                        <div class="p-4 border-t border-slate-100 bg-white space-y-4">
-                                            <p class="text-[10px] text-slate-400 font-bold mb-3">※スコアが低い場合も「逆の強み」があることを意味します。</p>
-                                    `;
+                                    extraHTML += `<details class="group bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden"><summary class="flex justify-between items-center p-4 cursor-pointer font-black text-slate-800 list-none [&::-webkit-details-marker]:hidden bg-slate-50 hover:bg-slate-100 transition"><div class="flex items-center gap-2"><span class="text-xl">${domainInfo[key].icon}</span> <span class="text-sm">${domainInfo[key].name}</span></div><span class="transition duration-300 group-open:rotate-180 text-slate-400">▼</span></summary><div class="p-5 border-t border-slate-100 bg-white space-y-5">`;
                                     Object.keys(d.facets).forEach((idx, arrayIndex) => {
                                         let score = Number(fData[idx]);
                                         if (isNaN(score)) score = Number(Object.values(fData)[arrayIndex]) || 0;
                                         const percent = Math.min(100, Math.max(0, Math.round((score / 20) * 100)));
-                                        const facetName = d.facets[idx];
-                                        const facetDesc = d.descs ? d.descs[idx] : "";
-                                        extraHTML += `<div><div class="flex justify-between items-end mb-1"><span class="text-[11px] font-bold text-slate-800">${facetName}</span><span class="text-[10px] font-black text-slate-400">${score}/20</span></div>
-                                        <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden mb-1"><div class="h-full ${d.color} rounded-full" style="width: ${percent}%"></div></div>
-                                        <p class="text-[9px] text-slate-500 leading-tight">${facetDesc}</p></div>`;
+                                        extraHTML += `<div><div class="flex justify-between items-end mb-2"><span class="text-sm font-bold text-slate-800">${d.facets[idx]}</span><span class="text-xs font-black text-slate-400">${score}/20</span></div><div class="h-2 bg-slate-100 rounded-full overflow-hidden mb-2"><div class="h-full ${d.color} rounded-full" style="width: ${percent}%"></div></div><p class="text-xs text-slate-500 leading-relaxed">${d.descs[idx]}</p></div>`;
                                     });
                                     extraHTML += `</div></details>`;
                                 }
@@ -477,10 +448,8 @@ async function initializePortal() {
                 } 
                 else if (testType === 'motivation') {
                     title = "やる気８タイプ 分析 🔥";
-                    if (!userData.motivationScores) {
-                        text = "まだ診断データがありません。";
-                        showChart = false;
-                    } else {
+                    if (!userData.motivationScores) { text = "まだ診断データがありません。"; showChart = false; } 
+                    else {
                         const s = safeParse(userData.motivationScores);
                         const resName = safeString(userData.motivationResult).replace('やる気：', '');
                         labels = ['成長思考', '賞賛欲求', '自信']; 
@@ -497,226 +466,96 @@ async function initializePortal() {
                     title = "クロノタイプ 分析 ⏰";
                     const t = safeString(userData.chronoResult);
                     let desc = "", routine = "";
-                    if(t.includes('ライオン')) {
-                        desc = "【 ライオン型（朝型）🦁 】\n全人口の15〜20%を占める生粋の朝型。狩りをするライオンのように、目覚めとともにエネルギーが全開になります。";
-                        routine = "05:30 起床して朝食（タンパク質多め）\n06:00 - 09:00 集中して仕事（🔥 ゴールデンタイム！）\n09:00 - 10:00 カフェイン投入\n10:00 - 12:00 会議や雑用\n12:00 昼食\n13:00 - 17:00 アイデア出し等、創造的な仕事\n17:00 - 18:00 エクササイズ\n18:00 - 19:00 夕食\n22:00 スマホ・PCをオフ\n22:30 就寝";
-                    } else if(t.includes('クマ')) {
-                        desc = "【 クマ型（昼型）🐻 】\n全人口の50%を占める標準的な昼型。太陽の動きに合わせて生活し、親切で開放的な性格が多いです。";
-                        routine = "07:00 起床して2〜3分の運動\n07:30 朝食（タンパク質多め）\n09:00 - 10:00 カフェイン投入、1日の計画\n10:00 - 12:00 集中力が必要なタスク（🔥 ゴールデンタイム！）\n12:00 昼食 → 軽く散歩\n14:30 - 14:50 瞑想またはパワーナップ(昼寝)\n15:00 - 18:00 会議や雑用\n18:00 - 19:00 エクササイズ\n19:30 夕食\n20:00 - 22:00 創造的な仕事\n23:00 就寝";
-                    } else if(t.includes('オオカミ')) {
-                        desc = "【 オオカミ型（夜型）🐺 】\n全人口の15〜20%の夜型。朝は弱く、夕方以降に集中力と創造性がピークに達するクリエイター気質です。";
-                        routine = "07:30 起床して朝食（タンパク質多め）\n08:30 軽いエクササイズ\n09:00 1日の計画\n11:00 - 13:00 カフェイン投入、雑用\n13:00 昼食 → 散歩\n15:00 - 18:00 集中力が必要な仕事\n18:00 - 19:00 エクササイズ\n20:00 夕食\n21:00 - 23:00 創造的な仕事（🔥 ゴールデンタイム！）\n24:00 就寝";
-                    } else if(t.includes('イルカ')) {
-                        desc = "【 イルカ型（不規則型）🐬 】\n全人口の10%の不規則型。眠りが浅く神経質ですが、知性が高く完璧主義な一面があります。";
-                        routine = "06:30 起床して軽くエクササイズ\n07:30 朝食（タンパク質多め）\n09:30 カフェイン投入\n10:00 - 12:00 創造的な仕事\n12:00 昼食\n13:00 - 16:00 雑用またはエクササイズ\n17:00 - 18:00 集中力が必要な仕事（🔥 ゴールデンタイム！）\n18:00 瞑想やヨガ\n19:00 夕食\n23:30 就寝";
-                    }
+                    if(t.includes('ライオン')) { desc = "【 ライオン型（朝型）🦁 】\n全人口の15〜20%を占める生粋の朝型。狩りをするライオンのように、目覚めとともにエネルギーが全開になります。"; routine = "05:30 起床して朝食\n06:00 - 09:00 集中して仕事（🔥 ゴールデンタイム！）\n09:00 - 10:00 カフェイン投入\n10:00 - 12:00 会議や雑用\n12:00 昼食\n13:00 - 17:00 創造的な仕事\n17:00 - 18:00 エクササイズ\n18:00 - 19:00 夕食\n22:30 就寝"; } 
+                    else if(t.includes('クマ')) { desc = "【 クマ型（昼型）🐻 】\n全人口の50%を占める標準的な昼型。太陽の動きに合わせて生活し、親切で開放的な性格が多いです。"; routine = "07:00 起床して2〜3分の運動\n07:30 朝食\n09:00 - 10:00 カフェイン投入\n10:00 - 12:00 集中タスク（🔥 ゴールデンタイム！）\n12:00 昼食 → 軽く散歩\n15:00 - 18:00 会議や雑用\n18:00 - 19:00 エクササイズ\n19:30 夕食\n20:00 - 22:00 創造的な仕事\n23:00 就寝"; } 
+                    else if(t.includes('オオカミ')) { desc = "【 オオカミ型（夜型）🐺 】\n全人口の15〜20%の夜型。朝は弱く、夕方以降に集中力と創造性がピークに達するクリエイター気質です。"; routine = "07:30 起床して朝食\n08:30 軽いエクササイズ\n11:00 - 13:00 カフェイン投入、雑用\n13:00 昼食 → 散歩\n15:00 - 18:00 集中力が必要な仕事\n18:00 - 19:00 エクササイズ\n20:00 夕食\n21:00 - 23:00 創造的な仕事（🔥 ゴールデンタイム！）\n24:00 就寝"; } 
+                    else if(t.includes('イルカ')) { desc = "【 イルカ型（不規則型）🐬 】\n全人口の10%の不規則型。眠りが浅く神経質ですが、知性が高く完璧主義な一面があります。"; routine = "06:30 起床して軽くエクササイズ\n07:30 朝食\n09:30 カフェイン投入\n10:00 - 12:00 創造的な仕事\n12:00 昼食\n13:00 - 16:00 雑用またはエクササイズ\n17:00 - 18:00 集中タスク（🔥 ゴールデンタイム！）\n18:00 瞑想やヨガ\n19:00 夕食\n23:30 就寝"; }
                     if(desc) {
                         text = desc;
                         extraHTML = `
-                            <div class="mt-4 bg-indigo-50 p-4 rounded-xl border border-indigo-100 text-left">
-                                <h5 class="text-xs font-black text-indigo-800 mb-2">📚 診断の根拠</h5>
-                                <p class="text-[10px] text-indigo-700 leading-relaxed break-words">米国の睡眠専門医・臨床心理学者である<br><strong>マイケル・ブレウス博士</strong>の調査と著書『The Power of When』に基づいています。</p>
-                            </div>
-                            <div class="mt-5 border-t border-slate-200 pt-5 text-left">
-                                <h5 class="text-sm font-black text-slate-800 mb-3">🗓️ 推奨タイムスケジュール</h5>
-                                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-inner overflow-x-auto">
-                                    <pre class="text-[10px] text-slate-700 font-bold whitespace-pre-wrap break-words font-sans leading-relaxed min-w-full">${routine}</pre>
+                            <div class="mt-6">
+                                <h5 class="text-base font-black text-slate-800 mb-3 flex items-center gap-2"><span>🗓️</span> 理想のスケジュール</h5>
+                                <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm">
+                                    <p class="text-sm text-slate-700 font-bold leading-loose whitespace-pre-wrap break-words">${routine}</p>
                                 </div>
                             </div>
-                            <div class="mt-6 border-t border-slate-200 pt-5 text-left">
-                                <h5 class="text-sm font-black text-slate-800 mb-3">🔍 他のクロノタイプ</h5>
-                                <div class="space-y-2">
-                                    <details class="group bg-white rounded-xl shadow-sm border border-slate-200">
-                                        <summary class="flex justify-between items-center p-3 cursor-pointer font-black text-slate-700 list-none [&::-webkit-details-marker]:hidden hover:bg-slate-50 transition">
-                                            <span class="text-xs">🦁 ライオン（朝型）</span><span class="text-slate-400 group-open:rotate-180 transition">▼</span>
-                                        </summary>
-                                        <div class="p-3 border-t border-slate-100 text-[10px] text-slate-600 font-bold break-words">全人口の15〜20%。朝イチから全開で、午前中に重いタスクをこなすのが得意。午後は早い段階でエネルギー切れになりがち。</div>
-                                    </details>
-                                    <details class="group bg-white rounded-xl shadow-sm border border-slate-200">
-                                        <summary class="flex justify-between items-center p-3 cursor-pointer font-black text-slate-700 list-none [&::-webkit-details-marker]:hidden hover:bg-slate-50 transition">
-                                            <span class="text-xs">🐻 クマ（昼型）</span><span class="text-slate-400 group-open:rotate-180 transition">▼</span>
-                                        </summary>
-                                        <div class="p-3 border-t border-slate-100 text-[10px] text-slate-600 font-bold break-words">全人口の50%。太陽の動きに合わせた標準的な体内時計。親切で開放的な性格が多い。</div>
-                                    </details>
-                                    <details class="group bg-white rounded-xl shadow-sm border border-slate-200">
-                                        <summary class="flex justify-between items-center p-3 cursor-pointer font-black text-slate-700 list-none [&::-webkit-details-marker]:hidden hover:bg-slate-50 transition">
-                                            <span class="text-xs">🐺 オオカミ（夜型）</span><span class="text-slate-400 group-open:rotate-180 transition">▼</span>
-                                        </summary>
-                                        <div class="p-3 border-t border-slate-100 text-[10px] text-slate-600 font-bold break-words">全人口の15〜20%。夕方以降から本領発揮するクリエイター気質。朝は非常に弱い。</div>
-                                    </details>
-                                    <details class="group bg-white rounded-xl shadow-sm border border-slate-200">
-                                        <summary class="flex justify-between items-center p-3 cursor-pointer font-black text-slate-700 list-none [&::-webkit-details-marker]:hidden hover:bg-slate-50 transition">
-                                            <span class="text-xs">🐬 イルカ（不規則型）</span><span class="text-slate-400 group-open:rotate-180 transition">▼</span>
-                                        </summary>
-                                        <div class="p-3 border-t border-slate-100 text-[10px] text-slate-600 font-bold break-words">全人口の10%。眠りが浅く神経質だが、知性が高く完璧主義。ちょっとした音で目が覚めやすい。</div>
-                                    </details>
-                                </div>
+                            <div class="mt-6 bg-indigo-50 p-5 rounded-2xl border border-indigo-100 text-left">
+                                <h5 class="text-sm font-black text-indigo-800 mb-2">📚 診断の根拠</h5>
+                                <p class="text-xs text-indigo-700 leading-relaxed">米国の睡眠専門医・臨床心理学者であるマイケル・ブレウス博士の調査に基づいています。</p>
                             </div>
                         `;
                     } else { text = t; }
-                } 
+                }
                 else if (testType === 'coffee') {
                     showChart = false;
                     title = "コーヒー性格 分析 ☕";
                     const t = safeString(userData.coffeeResult);
                     let desc = "", strong = "", weak = "", psycho = "";
-                    
-                    if(t.includes('ブラック')) {
-                        desc = "【 ブラックコーヒー ☕ 】\n苦味をそのまま受け入れる、合理的でストレートな性格。";
-                        strong = "無駄を嫌い、効率を重んじて物事をシンプルに解決する能力に長けています。目標に向かって一直線に進む忍耐力があります。";
-                        weak = "他人のやり方に合わせるのが苦手で、少し頑固（気分屋）になりがちです。";
-                        psycho = "白黒はっきりさせたい「合理主義」の傾向。物事を複雑にせず、本質だけを見極めようとするため、ゼミのリーダーやマネージャーとしての適性が高いです。";
-                    } else if(t.includes('カフェラテ')) {
-                        desc = "【 カフェラテ（ミルク入り） 🥛 】\nコーヒーの苦味をミルクで和らげるように、人生のストレスも和らげようとする平和主義者。";
-                        strong = "非常に協調性が高く、周囲を気遣うお人好し。人間関係の潤滑油になれる天性の優しさがあります。";
-                        weak = "他人のために自分を犠牲にしすぎたり、頼み事を断れずにキャパオーバーになりがちです。";
-                        psycho = "「苦痛を和らげたい」という深層心理があり、他人に優しくすることで自分も満たされる「ギバー（与える人）」の傾向が強いです。チームの癒やし担当にぴったりです。";
-                    } else if(t.includes('フローズン')) {
-                        desc = "【 フローズン / ブレンド 🧊 】\n新しい刺激や甘いご褒美を求める、好奇心旺盛なトレンドセッター。";
-                        strong = "子どものような豊かな想像力を持ち、直感やひらめきでゼロからイチを生み出すのが得意です。社交的でノリが良いのも特徴。";
-                        weak = "計画性がやや低く、目先の楽しさや安易な解決策に飛びついて無謀な選択をしやすい一面があります。";
-                        psycho = "心理学でいう「刺激希求性（新しい体験を求める傾向）」が非常に高く、ルーティンワークよりも、イベント企画やSNS運用など変化のあるクリエイティブな場面で輝きます。";
-                    } else if(t.includes('特殊')) {
-                        desc = "【 特殊オーダー（カフェインレス・ソイ等） ✨ 】\n自分の体調やルールのコントロールを重視する、こだわりの強い完璧主義タイプ。";
-                        strong = "健康意識が高く、自分の状態を客観的に分析して正しい選択ができる自立心があります。";
-                        weak = "秩序やルールにこだわりすぎるあまり、予定が狂うと強い不安やストレスを感じやすい繊細さがあります。";
-                        psycho = "「コントロール欲求」が高く、自分の環境を細部まで自分自身で管理したい傾向があります。研究データの分析や論文のチェックなど、緻密さが求められるタスクで右に出る者はいません。";
-                    } else if(t.includes('インスタント')) {
-                        desc = "【 インスタントコーヒー 🍵 】\n手軽さや伝統的な方法を好む、究極のマイペース＆のんびり屋。";
-                        strong = "どんな状況でも気楽に構えることができ、細かいことに動じない圧倒的なスルースキルを持っています。";
-                        weak = "大事な決断やタスクをつい後回しにしてしまう、先延ばし癖（プロクラスティネーション）があります。";
-                        psycho = "「現状維持バイアス」が強く、効率や新しさよりも「いつもの安心感」を優先します。周囲が焦っている状況でも平常心を保てる、ゼミの貴重なメンタル安定剤です。";
-                    }
-
+                    if(t.includes('ブラック')) { desc = "【 ブラックコーヒー ☕ 】\n苦味をそのまま受け入れる、合理的でストレートな性格。"; strong = "無駄を嫌い、効率を重んじて物事をシンプルに解決する能力に長けています。"; weak = "他人のやり方に合わせるのが苦手で、少し頑固になりがちです。"; psycho = "白黒はっきりさせたい「合理主義」の傾向。"; } 
+                    else if(t.includes('カフェラテ')) { desc = "【 カフェラテ（ミルク入り） 🥛 】\nコーヒーの苦味をミルクで和らげるように、人生のストレスも和らげようとする平和主義者。"; strong = "非常に協調性が高く、人間関係の潤滑油になれる天性の優しさがあります。"; weak = "他人のために自分を犠牲にしすぎたり、頼み事を断れずにキャパオーバーになりがちです。"; psycho = "「苦痛を和らげたい」という深層心理があり、「ギバー（与える人）」の傾向が強いです。"; } 
+                    else if(t.includes('フローズン')) { desc = "【 フローズン / ブレンド 🧊 】\n新しい刺激や甘いご褒美を求める、好奇心旺盛なトレンドセッター。"; strong = "子どものような豊かな想像力を持ち、直感やひらめきでゼロからイチを生み出すのが得意です。"; weak = "計画性がやや低く、目先の楽しさや安易な解決策に飛びついて無謀な選択をしやすい一面があります。"; psycho = "心理学でいう「刺激希求性」が非常に高く、変化のあるクリエイティブな場面で輝きます。"; } 
+                    else if(t.includes('特殊')) { desc = "【 特殊オーダー ✨ 】\n自分の体調やルールのコントロールを重視する、こだわりの強い完璧主義タイプ。"; strong = "健康意識が高く、自分の状態を客観的に分析して正しい選択ができる自立心があります。"; weak = "秩序やルールにこだわりすぎるあまり、予定が狂うと強いストレスを感じやすいです。"; psycho = "「コントロール欲求」が高く、自分の環境を細部まで管理したい傾向があります。"; } 
+                    else if(t.includes('インスタント')) { desc = "【 インスタントコーヒー 🍵 】\n手軽さや伝統的な方法を好む、究極のマイペース＆のんびり屋。"; strong = "どんな状況でも気楽に構えることができ、圧倒的なスルースキルを持っています。"; weak = "大事な決断やタスクをつい後回しにしてしまう、先延ばし癖があります。"; psycho = "「現状維持バイアス」が強く、効率や新しさよりも「いつもの安心感」を優先します。"; }
                     if(desc) {
                         text = desc;
                         extraHTML = `
-                            <div class="mt-4 bg-orange-50 p-4 rounded-xl border border-orange-100 space-y-3 text-left">
-                                <div>
-                                    <span class="inline-block text-[10px] font-black text-orange-600 bg-orange-100 px-2 py-1 rounded mb-1">✨ 長所 (強み)</span>
-                                    <p class="text-[11px] text-slate-700 font-bold leading-relaxed ml-1 break-words">${strong}</p>
+                            <div class="mt-6 space-y-4">
+                                <div class="bg-orange-50 p-5 rounded-2xl border border-orange-100">
+                                    <h5 class="text-sm font-black text-orange-600 mb-2 flex items-center gap-2"><span>✨</span> 長所 (強み)</h5>
+                                    <p class="text-sm text-slate-700 font-medium leading-relaxed">${strong}</p>
                                 </div>
-                                <div class="pt-2 border-t border-orange-100/50">
-                                    <span class="inline-block text-[10px] font-black text-blue-600 bg-blue-100 px-2 py-1 rounded mb-1">💦 短所 (注意点)</span>
-                                    <p class="text-[11px] text-slate-700 font-bold leading-relaxed ml-1 break-words">${weak}</p>
+                                <div class="bg-blue-50 p-5 rounded-2xl border border-blue-100">
+                                    <h5 class="text-sm font-black text-blue-600 mb-2 flex items-center gap-2"><span>💦</span> 短所 (注意点)</h5>
+                                    <p class="text-sm text-slate-700 font-medium leading-relaxed">${weak}</p>
                                 </div>
-                            </div>
-
-                            <div class="mt-4 bg-indigo-50 p-4 rounded-xl border border-indigo-100 text-left">
-                                <h5 class="text-xs font-black text-indigo-800 mb-2">🧠 心理メカニズムの解説</h5>
-                                <p class="text-[11px] text-indigo-700 leading-relaxed font-bold break-words">${psycho}</p>
-                            </div>
-
-                            <div class="mt-5 bg-amber-50 p-4 rounded-xl border border-amber-100 text-left">
-                                <h5 class="text-xs font-black text-amber-800 mb-2">📚 診断の根拠</h5>
-                                <p class="text-[10px] text-amber-700 leading-relaxed break-words">カリフォルニア州立大学の臨床心理学者<br><strong>ラマニ・ドゥルバスラ博士</strong>が1000人を対象に行った行動心理学の観察研究に基づいています。</p>
-                            </div>
-
-                            <div class="mt-6 border-t border-slate-200 pt-5 text-left">
-                                <h5 class="text-sm font-black text-slate-800 mb-3">🔍 他のコーヒー性格</h5>
-                                <div class="space-y-2">
-                                    <details class="group bg-white rounded-xl shadow-sm border border-slate-200">
-                                        <summary class="flex justify-between items-center p-3 cursor-pointer font-black text-slate-700 list-none [&::-webkit-details-marker]:hidden hover:bg-slate-50 transition">
-                                            <span class="text-xs">☕ ブラック</span><span class="text-slate-400 group-open:rotate-180 transition">▼</span>
-                                        </summary>
-                                        <div class="p-3 border-t border-slate-100 text-[10px] text-slate-600 font-bold leading-relaxed break-words">忍耐強くて効率的。物事をシンプルに考えるのが得意だが、気分屋で自分のやり方に固執しがち。白黒はっきりさせたい合理主義者。</div>
-                                    </details>
-                                    <details class="group bg-white rounded-xl shadow-sm border border-slate-200">
-                                        <summary class="flex justify-between items-center p-3 cursor-pointer font-black text-slate-700 list-none [&::-webkit-details-marker]:hidden hover:bg-slate-50 transition">
-                                            <span class="text-xs">🥛 カフェラテ</span><span class="text-slate-400 group-open:rotate-180 transition">▼</span>
-                                        </summary>
-                                        <div class="p-3 border-t border-slate-100 text-[10px] text-slate-600 font-bold leading-relaxed break-words">お人好しで世話焼き。他人の面倒を見すぎるあまり、自分を犠牲にしてしまいがち。「苦痛を和らげたい」という深層心理を持つギバー。</div>
-                                    </details>
-                                    <details class="group bg-white rounded-xl shadow-sm border border-slate-200">
-                                        <summary class="flex justify-between items-center p-3 cursor-pointer font-black text-slate-700 list-none [&::-webkit-details-marker]:hidden hover:bg-slate-50 transition">
-                                            <span class="text-xs">🧊 フローズン / ブレンド</span><span class="text-slate-400 group-open:rotate-180 transition">▼</span>
-                                        </summary>
-                                        <div class="p-3 border-t border-slate-100 text-[10px] text-slate-600 font-bold leading-relaxed break-words">流行に敏感で創造性が高いが、無謀な選択をしやすく、安易な解決策に飛びつきやすい。常に新しい体験を求める「刺激希求性」が高い。</div>
-                                    </details>
-                                    <details class="group bg-white rounded-xl shadow-sm border border-slate-200">
-                                        <summary class="flex justify-between items-center p-3 cursor-pointer font-black text-slate-700 list-none [&::-webkit-details-marker]:hidden hover:bg-slate-50 transition">
-                                            <span class="text-xs">✨ 特殊オーダー</span><span class="text-slate-400 group-open:rotate-180 transition">▼</span>
-                                        </summary>
-                                        <div class="p-3 border-t border-slate-100 text-[10px] text-slate-600 font-bold leading-relaxed break-words">自立心が強く健康志向。完璧主義がゆえにルールにこだわりすぎ、不安を感じやすい。自分の環境を管理したい「コントロール欲求」が高い。</div>
-                                    </details>
-                                    <details class="group bg-white rounded-xl shadow-sm border border-slate-200">
-                                        <summary class="flex justify-between items-center p-3 cursor-pointer font-black text-slate-700 list-none [&::-webkit-details-marker]:hidden hover:bg-slate-50 transition">
-                                            <span class="text-xs">🍵 インスタント</span><span class="text-slate-400 group-open:rotate-180 transition">▼</span>
-                                        </summary>
-                                        <div class="p-3 border-t border-slate-100 text-[10px] text-slate-600 font-bold leading-relaxed break-words">気楽でのんびり屋。些細なことに動じないが、大事なことでも先送りにしがち。新しさよりも安心感を好む「現状維持バイアス」が強い。</div>
-                                    </details>
+                                <div class="bg-indigo-50 p-5 rounded-2xl border border-indigo-100">
+                                    <h5 class="text-sm font-black text-indigo-600 mb-2 flex items-center gap-2"><span>🧠</span> 心理メカニズム</h5>
+                                    <p class="text-sm text-slate-700 font-medium leading-relaxed">${psycho}</p>
                                 </div>
                             </div>
                         `;
                     } else { text = t; }
                 }
-
                 else if (testType === 'sm') {
                     title = "空気読めるか診断 🌬️";
-                    if (!userData.smScores) {
-                        text = "まだ診断データがありません。";
-                        showChart = false;
-                    } else {
+                    if (!userData.smScores) { text = "まだ診断データがありません。"; showChart = false; } 
+                    else {
                         const s = safeParse(userData.smScores);
-                        showChart = false; // レーダーチャートは使わず、専用のバーUIを出します
-                        
+                        showChart = false;
                         let typeName = s.total >= 32.5 ? "HSM（空気を読むのが得意なタイプ）" : "LSM（自分を貫くマイペースタイプ）";
-                        let typeDesc = s.total >= 32.5 
-                            ? "周囲の状況や他人の感情に敏感で、その場に合わせて柔軟に自分を演出できる「カメレオン」のような才能があります。一方で、人の目を気にしすぎて疲れてしまうこともあるので注意！"
-                            : "他人の目や周囲の空気に流されず、自分の信念やスタイルを貫ける芯の強さがあります。環境の変化やプレッシャーに強い反面、マイペースすぎると言われることも？";
-
+                        let typeDesc = s.total >= 32.5 ? "周囲の状況や他人の感情に敏感で、その場に合わせて柔軟に自分を演出できる「カメレオン」のような才能があります。一方で、人の目を気にしすぎて疲れてしまうこともあるので注意！" : "他人の目や周囲の空気に流されず、自分の信念やスタイルを貫ける芯の強さがあります。環境の変化やプレッシャーに強い反面、マイペースすぎると言われることも？";
                         text = `【 診断結果：${typeName} 】\n\n${typeDesc}\n\n`;
-                        
                         const pTotal = Math.round((s.total / 52) * 100);
                         const pRead = Math.round((s.readMind / 24) * 100);
                         const pAct = Math.round((s.adaptAct / 28) * 100);
 
                         extraHTML = `
-                            <div class="mt-4 bg-slate-50 p-4 rounded-xl border border-slate-200 text-left">
-                                <h5 class="text-xs font-black text-slate-800 mb-3">📊 あなたのスコア詳細</h5>
-                                
-                                <div class="mb-3">
-                                    <div class="flex justify-between text-[11px] font-bold text-slate-700 mb-1">
-                                        <span>総合スコア (平均32.5点)</span><span>${s.total} / 52点</span>
-                                    </div>
-                                    <div class="h-2 bg-slate-200 rounded-full overflow-hidden"><div class="h-full bg-blue-500 rounded-full" style="width: ${pTotal}%"></div></div>
+                            <div class="mt-6 bg-slate-50 p-6 rounded-3xl border border-slate-200">
+                                <h5 class="text-base font-black text-slate-800 mb-6">📊 あなたのスコア詳細</h5>
+                                <div class="mb-6">
+                                    <div class="flex justify-between items-end mb-2"><span class="text-sm font-bold text-slate-700">🏆 総合スコア (平均32.5)</span><span class="text-base font-black text-blue-600">${s.total} / 52点</span></div>
+                                    <div class="h-3 bg-slate-200 rounded-full overflow-hidden"><div class="h-full bg-blue-500 rounded-full" style="width: ${pTotal}%"></div></div>
                                 </div>
-                                
-                                <div class="mb-3">
-                                    <div class="flex justify-between text-[11px] font-bold text-slate-700 mb-1">
-                                        <span>👀 他人の心を読む能力</span><span>${s.readMind} / 24点</span>
-                                    </div>
-                                    <div class="h-2 bg-slate-200 rounded-full overflow-hidden"><div class="h-full bg-pink-500 rounded-full" style="width: ${pRead}%"></div></div>
-                                    <p class="text-[9px] text-slate-500 mt-1">相手の表情やしぐさから、本音や嘘を察知する力です。</p>
+                                <div class="mb-6">
+                                    <div class="flex justify-between items-end mb-2"><span class="text-sm font-bold text-slate-700">👀 他人の心を読む力</span><span class="text-base font-black text-pink-500">${s.readMind} / 24点</span></div>
+                                    <div class="h-3 bg-slate-200 rounded-full overflow-hidden"><div class="h-full bg-pink-500 rounded-full" style="width: ${pRead}%"></div></div>
+                                    <p class="text-xs text-slate-500 mt-2 font-medium">相手の表情やしぐさから、本音や嘘を察知する力です。</p>
                                 </div>
-                                
                                 <div>
-                                    <div class="flex justify-between text-[11px] font-bold text-slate-700 mb-1">
-                                        <span>🎭 自分を演出する能力</span><span>${s.adaptAct} / 28点</span>
-                                    </div>
-                                    <div class="h-2 bg-slate-200 rounded-full overflow-hidden"><div class="h-full bg-emerald-500 rounded-full" style="width: ${pAct}%"></div></div>
-                                    <p class="text-[9px] text-slate-500 mt-1">その場に求められる役割を瞬時に理解し、行動を変える力です。</p>
+                                    <div class="flex justify-between items-end mb-2"><span class="text-sm font-bold text-slate-700">🎭 自分を演出する力</span><span class="text-base font-black text-emerald-500">${s.adaptAct} / 28点</span></div>
+                                    <div class="h-3 bg-slate-200 rounded-full overflow-hidden"><div class="h-full bg-emerald-500 rounded-full" style="width: ${pAct}%"></div></div>
+                                    <p class="text-xs text-slate-500 mt-2 font-medium">その場に求められる役割を瞬時に理解し、行動を変える力です。</p>
                                 </div>
-                            </div>
-                            
-                            <div class="mt-4 bg-indigo-50 p-4 rounded-xl border border-indigo-100 text-left">
-                                <h5 class="text-xs font-black text-indigo-800 mb-2">📚 診断の根拠</h5>
-                                <p class="text-[10px] text-indigo-700 leading-relaxed break-words">心理学で「セルフモニタリング（SM）尺度」と呼ばれる、科学的に信頼性の高い性格テストに基づいています。</p>
                             </div>
                         `;
                     }
                 }
-                
-
                 else if (testType === 'nomophobia') {
                     title = "スマホ依存度チェック 📱";
-                    if (!userData.nomophobiaScores) {
-                        text = "まだ診断データがありません。";
-                        showChart = false;
-                    } else {
+                    if (!userData.nomophobiaScores) { text = "まだ診断データがありません。"; showChart = false; } 
+                    else {
                         const s = safeParse(userData.nomophobiaScores);
-                        showChart = false; // レーダーチャートは使わず、危険度メーターを出します
-                        
+                        showChart = false;
                         let level = "", desc = "", color = "";
                         if (s.total <= 27) { level = "問題なし"; desc = "素晴らしい！スマホと適切な距離を保てています。"; color = "bg-green-500"; }
                         else if (s.total <= 55) { level = "依存予備軍"; desc = "少し注意が必要です。意識してデジタルデトックスの時間を持ちましょう。"; color = "bg-yellow-500"; }
@@ -728,25 +567,20 @@ async function initializePortal() {
                         const percent = Math.min(100, Math.round((s.total / 140) * 100));
 
                         extraHTML = `
-                            <div class="mt-4 bg-slate-50 p-4 rounded-xl border border-slate-200 text-left">
-                                <h5 class="text-xs font-black text-slate-800 mb-3">📶 あなたの依存度スコア</h5>
-                                <div class="mb-2">
-                                    <div class="flex justify-between items-end mb-1">
-                                        <span class="text-[11px] font-bold text-slate-700">危険度メーター</span>
-                                        <span class="text-[14px] font-black ${color.replace('bg-', 'text-')}">${s.total} / 140点</span>
+                            <div class="mt-6 bg-slate-50 p-6 rounded-3xl border border-slate-200">
+                                <h5 class="text-base font-black text-slate-800 mb-5">📶 依存度メーター</h5>
+                                <div class="mb-3">
+                                    <div class="flex justify-between items-end mb-2">
+                                        <span class="text-sm font-bold text-slate-700">危険度スコア</span>
+                                        <span class="text-lg font-black ${color.replace('bg-', 'text-')}">${s.total} / 140点</span>
                                     </div>
-                                    <div class="h-3 bg-slate-200 rounded-full overflow-hidden">
+                                    <div class="h-4 bg-slate-200 rounded-full overflow-hidden shadow-inner">
                                         <div class="h-full ${color} rounded-full" style="width: ${percent}%"></div>
                                     </div>
                                 </div>
-                                <div class="flex justify-between text-[8px] font-bold text-slate-400">
+                                <div class="flex justify-between text-xs font-bold text-slate-400 px-1">
                                     <span>安全</span><span>危険</span>
                                 </div>
-                            </div>
-                            
-                            <div class="mt-4 bg-indigo-50 p-4 rounded-xl border border-indigo-100 text-left">
-                                <h5 class="text-xs font-black text-indigo-800 mb-2">📚 診断の根拠</h5>
-                                <p class="text-[10px] text-indigo-700 leading-relaxed break-words">米アイオワ州立大学の研究チームが開発した「ノモフォビア（携帯電話がない恐怖症）」の判定尺度（NMP-Q）に基づいています。</p>
                             </div>
                         `;
                     }
@@ -755,17 +589,13 @@ async function initializePortal() {
                 document.getElementById('modal-title').innerText = title;
                 modalText.innerHTML = text.replace(/\n/g, '<br>') + extraHTML;
                 
-                if (showChart) { 
-                    chartContainer.style.display = 'block'; 
-                    drawChart(labels, dataPoints, maxScore); 
-                } else { 
-                    chartContainer.style.display = 'none'; 
-                }
+                if (showChart) { chartContainer.style.display = 'block'; drawChart(labels, dataPoints, maxScore); } 
+                else { chartContainer.style.display = 'none'; }
 
             } catch (e) { 
                 console.error("データ処理エラー:", e); 
                 document.getElementById('modal-title').innerText = "エラーが発生しました 💥";
-                modalText.innerHTML = `データの解析中に予期せぬエラーが起きました。<br><br><span class="text-red-500 text-[10px] bg-red-50 p-2 rounded block break-words">${e.message}</span>`;
+                modalText.innerHTML = `データの解析中に予期せぬエラーが起きました。<br><br><span class="text-red-500 text-sm bg-red-50 p-3 rounded block break-words">${e.message}</span>`;
                 chartContainer.style.display = 'none';
             }
         }
