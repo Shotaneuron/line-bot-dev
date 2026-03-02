@@ -165,17 +165,30 @@
                 
                 let eventsHtml = "";
                 allEvents.forEach((ev, index) => {
-                    if (ev.date === dateStr) {
+                    // 終了日が設定されていなければ開始日と同じにする
+                    const startDate = ev.date;
+                    const endDate = ev.endDate || ev.date; 
+
+                    // 現在描画しているマス（dateStr）が、イベント期間内かどうかを判定
+                    if (dateStr >= startDate && dateStr <= endDate) {
                         const style = getCategoryStyle(ev.category);
                         const organizerIcon = ev.organizerIds && ev.organizerIds.length > 0 ? `<span class="mr-0.5 opacity-70">👤</span>` : "";
+                        
+                        // ① 時間表示の追加（イベント初日のみ、startTimeがあれば表示）
+                        let timeLabel = "";
+                        if (ev.startTime && dateStr === startDate) {
+                            // 既存の Taildwind クラスに合わせて小さめに表示
+                            timeLabel = `<span class="text-[8px] bg-white/40 text-slate-800 px-1 rounded-sm mr-1 font-bold">${ev.startTime}</span>`;
+                        }
+
                         eventsHtml += `
-                            <div onclick="openEventDetailByIndex(${index})" class="event-badge ${style}">
-                                <span class="event-cat">${ev.category}</span>
-                                <span class="event-title">${organizerIcon}${ev.title}</span>
+                            <div onclick="openEventDetailByIndex(${index})" class="event-badge ${style} flex items-center">
+                                <span class="event-cat flex-shrink-0">${ev.category}</span>
+                                ${timeLabel}
+                                <span class="event-title truncate">${organizerIcon}${ev.title}</span>
                             </div>`;
                     }
                 });
-
                 html += `<div class="calendar-cell ${isToday}"><div class="text-[10px] font-black text-slate-500 pl-1 ${isToday ? 'text-indigo-600' : ''}">${i}</div><div class="flex flex-col gap-1 overflow-y-auto no-scrollbar max-h-16 pb-1">${eventsHtml}</div></div>`;
             }
             document.getElementById('calendar-body').innerHTML = html;
@@ -190,10 +203,22 @@
                 const ev = allEvents[i];
                 if (ev.date >= today) {
                     const style = getCategoryStyle(ev.category);
+                    let dateDisplay = `📅 ${ev.date}`;
+                    // 終了日があり、かつ開始日と異なる場合は「〜〇日」と表示
+                    if (ev.endDate && ev.endDate !== ev.date) {
+                        // 日付部分だけを切り取って表示（例: 2026-08-10 〜 08-12）
+                        const endStr = ev.endDate.substring(5); 
+                        dateDisplay += ` 〜 ${endStr}`;
+                    }
+                    // 時間があれば表示
+                    if (ev.startTime) {
+                        dateDisplay += ` ⏱ ${ev.startTime}`;
+                    }
+
                     html += `
                     <div onclick="openEventDetailByIndex(${i})" class="flex-shrink-0 w-48 bg-white rounded-xl p-3 border border-slate-200 shadow-sm cursor-pointer hover:bg-slate-50 active:scale-95 transition flex flex-col justify-between">
                         <div>
-                            <div class="flex justify-between items-start mb-2"><span class="text-[10px] font-bold text-slate-500">📅 ${ev.date}</span><span class="${style} text-[8px] px-2 py-0.5 rounded font-black">${ev.category}</span></div>
+                            <div class="flex justify-between items-start mb-2"><span class="text-[10px] font-bold text-slate-500">${dateDisplay}</span><span class="${style} text-[8px] px-2 py-0.5 rounded font-black">${ev.category}</span></div>
                             <h4 class="text-sm font-black text-slate-800 leading-tight line-clamp-2">${ev.title}</h4>
                         </div>
                     </div>`;

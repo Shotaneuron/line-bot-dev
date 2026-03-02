@@ -486,7 +486,7 @@
                     <div class="flex items-center gap-3 p-3 ${isMe} rounded-xl shadow-sm border cursor-pointer active:scale-95 transition" onclick="openProfile('${u.id}')">
                         <div class="w-6 text-center text-lg">${crown}</div>
                         <div class="relative flex-shrink-0">
-                            <img src="${u.icon}" class="w-10 h-10 rounded-full object-cover shadow-sm border border-slate-200" onerror="this.src='https://cdn-icons-png.flaticon.com/512/847/847969.png'">
+                            <img src="${u.icon || u.pictureUrl}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/149/149071.png'" class="w-12 h-12 rounded-full border-2 border-slate-100 object-cover">
                         </div>
                         <div class="flex-1 overflow-hidden">
                             <p class="text-sm font-black text-slate-800 truncate">${u.name} ${(u.id==='me' || u.id===myProfile.id) ? '<span class="text-[9px] text-indigo-500 bg-indigo-100 px-1.5 py-0.5 rounded ml-1">あなた</span>' : ''}</p>
@@ -719,46 +719,78 @@
             document.getElementById('ranking-modal').classList.remove('flex');
         }
 
-        function openProfile(userId) {
+function openProfile(userId) {
+            // 1. ユーザーの特定処理（元のコードのまま）
             const user = (userId === 'me' || userId === myProfile.id) ? myProfile : communityUsers.find(u => u.id === userId);
             if(!user) return;
+            
+            // 2. レベル情報の取得（元のコードのまま）
             const lvl = getLevelInfo(user.exp);
 
+            // 3. データが未設定の場合の「初期値（フォールバック）」を用意しておく
+            const univ = user.univ || user.university || "未設定";
+            const faculty = user.faculty || "未設定";
+            const grade = user.grade || "未設定";
+            const message = user.message || user.oneWord || "よろしくお願いします！";
+            const bio = user.bio || "まだ自己紹介が入力されていません。";
+            // アイコン画像がない、またはエラー時の代替画像パスを設定
+            const iconSrc = user.icon || user.pictureUrl || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+
+            // 4. 追加したい5項目を組み込んだ新しいHTMLテンプレート
             const html = `
                 <div class="flex flex-col items-center">
-                    <img src="${user.icon}" class="w-24 h-24 rounded-full object-cover shadow-md border-4 border-white mb-3" onerror="this.src='https://cdn-icons-png.flaticon.com/512/847/847969.png'">
+                    <img src="${iconSrc}" class="w-24 h-24 rounded-full object-cover shadow-md border-4 border-white mb-3" onerror="this.src='https://cdn-icons-png.flaticon.com/512/149/149071.png'">
                     <h3 class="text-xl font-black text-slate-800 mb-1">${user.name}</h3>
                     <span class="text-[10px] px-2 py-0.5 rounded-full border ${lvl.class} mb-4">${lvl.text}</span>
                     
                     <div class="bg-slate-50 w-full rounded-2xl p-4 border border-slate-100 space-y-3 text-left">
+                        
                         <div class="flex justify-between items-center border-b border-slate-200 pb-2">
                             <span class="text-xs font-bold text-slate-400">探索経験値</span>
                             <span class="text-sm font-black text-indigo-600">${user.exp} <span class="text-[10px]">EXP</span></span>
                         </div>
-                        <div class="flex justify-between items-center border-b border-slate-200 pb-2">
-                            <span class="text-xs font-bold text-slate-400">所属</span>
-                            <span class="text-sm font-bold text-slate-700">${user.univ} ${user.grade}</span>
+
+                        <div class="grid grid-cols-2 gap-2 text-xs border-b border-slate-200 pb-3">
+                            <div class="bg-white p-2 rounded-xl border border-slate-100 flex items-center gap-2 shadow-sm">
+                                <span>🏫</span><span class="font-bold text-slate-700 truncate">${univ}</span>
+                            </div>
+                            <div class="bg-white p-2 rounded-xl border border-slate-100 flex items-center gap-2 shadow-sm">
+                                <span>🎓</span><span class="font-bold text-slate-700 truncate">${faculty}</span>
+                            </div>
+                            <div class="bg-white p-2 rounded-xl border border-slate-100 flex items-center gap-2 col-span-2 justify-center shadow-sm">
+                                <span>🏷️</span><span class="font-bold text-slate-700">${grade}</span>
+                            </div>
                         </div>
-                        <div>
+
+                        <div class="border-b border-slate-200 pb-3">
                             <span class="text-xs font-bold text-slate-400 block mb-1">ひとこと</span>
-                            <p class="text-sm font-medium text-slate-700 bg-white p-3 rounded-xl border border-slate-100 leading-relaxed whitespace-pre-wrap">${user.message}</p>
+                            <p class="text-sm font-medium text-slate-700 bg-white p-3 rounded-xl border border-slate-100 leading-relaxed whitespace-pre-wrap shadow-sm">${message}</p>
                         </div>
+
+                        <div>
+                            <span class="text-xs font-bold text-slate-400 block mb-1">自己紹介</span>
+                            <p class="text-xs font-medium text-slate-600 bg-white p-3 rounded-xl border border-slate-100 leading-relaxed whitespace-pre-wrap min-h-[4rem] shadow-sm">${bio}</p>
+                        </div>
+
                     </div>
                     
                     <button onclick="closeProfile()" class="mt-6 w-full bg-slate-800 text-white font-black py-3 rounded-xl active:scale-95 transition">閉じる</button>
                 </div>
             `;
             
+            // 5. 生成したHTMLをモーダル内にセット
             document.getElementById('profile-content').innerHTML = html;
             
+            // 6. モーダルを表示するアニメーション処理
             const modal = document.getElementById('profile-modal');
             const sheet = document.getElementById('profile-sheet');
+            
             modal.classList.remove('hidden');
             modal.classList.add('flex');
             
             setTimeout(() => { sheet.classList.add('slide-up'); }, 10);
         }
-
+        
         function closeProfile() {
             const modal = document.getElementById('profile-modal');
             const sheet = document.getElementById('profile-sheet');
