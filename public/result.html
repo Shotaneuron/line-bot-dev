@@ -33,54 +33,51 @@
         </div>
 
         <div id="result-content" class="hidden fade-in">
-            <div class="glass-card w-full rounded-[2rem] p-6 mb-8">
-                <h3 id="result-title" class="text-lg font-black text-slate-800 mb-4 text-center border-b-2 border-slate-100 pb-3"></h3>
-                
-                <div class="w-full aspect-square mb-6 bg-slate-50 rounded-2xl p-2 relative">
-                    <canvas id="radarChart"></canvas>
-                </div>
-                
-                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
-                    <h4 class="text-xs font-black text-indigo-600 mb-2 flex items-center"><span class="text-base mr-1">🤖</span> AI先輩の分析</h4>
-                    <p id="result-text" class="text-xs text-slate-700 font-bold leading-relaxed whitespace-pre-wrap"></p>
-                </div>
-            </div>
-
-            <div class="flex gap-3 mt-6 border-t border-slate-100 pt-6">
-                <button onclick="shareOnX()" class="flex-1 bg-black text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition shadow-sm text-sm">
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 22.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                    Xで結果をシェア
+            <div class="grid grid-cols-3 gap-2 mt-6 mb-8 border-t border-slate-100 pt-6">
+                <button onclick="shareOnX()" class="bg-black text-white font-bold py-3 rounded-xl flex flex-col items-center justify-center gap-1 active:scale-95 transition shadow-sm text-[10px]">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 22.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                    Xでシェア
                 </button>
                 
-                <button onclick="shareOnLINE()" class="flex-1 bg-[#06C755] text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition shadow-sm text-sm">
+                <button onclick="shareOnLINE()" class="bg-[#06C755] text-white font-bold py-3 rounded-xl flex flex-col items-center justify-center gap-1 active:scale-95 transition shadow-sm text-[10px]">
                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 10.304c0-5.369-5.383-9.738-12-9.738-6.616 0-12 4.369-12 9.738 0 4.814 4.269 8.846 10.036 9.608.391.084.922.258 1.057.592.12.292.031.753-.021 1.07l-.234 1.411c-.066.425-.325 1.564 1.369.851 1.693-.711 9.157-5.385 11.458-9.01.222-.352.335-.71.335-1.07v-3.452z"/></svg>
-                    LINEで友達に教える
+                    LINEで教える
+                </button>
+
+                <button onclick="shareOnInstagram()" class="bg-gradient-to-tr from-[#fd5949] to-[#d6249f] text-white font-bold py-3 rounded-xl flex flex-col items-center justify-center gap-1 active:scale-95 transition shadow-sm text-[10px]">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+                    インスタへ
                 </button>
             </div>
-
             <script>
             // 診断テストのトップページ（またはLINE登録用URL）
-            const SHARE_URL = "[https://liff.line.me/あなたのLIFF_ID](https://liff.line.me/あなたのLIFF_ID)"; // ← 適切なURLに変更してください！
+            const SHARE_URL = "https://liff.line.me/あなたのLIFF_ID"; // ← 適切なURLに変更してください！
 
             function getShareText() {
-                // 例：画面上の診断結果のテキストを取得（id="result-type" などの要素から引っ張る）
-                // ※実際のHTMLのIDに合わせて適宜書き換えてください
-                const typeName = document.getElementById('result-type') ? document.getElementById('result-type').innerText : "〇〇タイプ"; 
-                
-                return `北大心理ゼミの心理診断で、私の結果は「${typeName}」でした！🧠✨\n\nあなたも自分の心理タイプを診断してみよう👇\n`;
+                const typeName = document.getElementById('result-title') ? document.getElementById('result-title').innerText.replace(' 分析完了', '') : "〇〇タイプ"; 
+                return `北大心理ゼミの心理診断で、私の結果は「${typeName}」でした！🧠✨\n\nあなたも自分の心理タイプを診断してみよう👇\n${SHARE_URL}`;
             }
 
             function shareOnX() {
                 const text = encodeURIComponent(getShareText());
-                const url = encodeURIComponent(SHARE_URL);
-                // Xの投稿画面を別タブで開く
-                window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
+                window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
             }
 
             function shareOnLINE() {
-                const text = encodeURIComponent(getShareText() + SHARE_URL);
-                // LINEの友達選択画面（シェア）を開く
+                const text = encodeURIComponent(getShareText());
                 window.open(`https://line.me/R/msg/text/?${text}`, '_blank');
+            }
+
+            function shareOnInstagram() {
+                const text = getShareText();
+                // クリップボードにテキストをコピー
+                navigator.clipboard.writeText(text).then(() => {
+                    alert("✅ 診断結果のテキストをコピーしました！\n\nInstagramを開くので、ストーリーズや投稿のテキストに「ペースト（貼り付け）」してシェアしてください✨");
+                    // Instagramアプリを開く（スマホの場合）
+                    window.location.href = "instagram://camera";
+                }).catch(err => {
+                    alert("コピーに失敗しました。画面のテキストを手動でコピーしてください🙇‍♂️");
+                });
             }
             </script>
 
