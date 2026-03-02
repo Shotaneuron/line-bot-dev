@@ -409,9 +409,11 @@
 
                 const myDbData = allUsersData.find(u => u.id === myProfile.id);
                 if (myDbData) {
-                    myProfile = { ...myProfile, ...myDbData };
+                    // LINEアイコンが消えていたらDBのアイコンを使う
+                    const safeIcon = myProfile.icon || myDbData.icon;
+                    myProfile = { ...myProfile, ...myDbData, icon: safeIcon };
                 }
-                
+
                 // API側で綺麗に整形されたデータが返ってくるので、自分以外のユーザーをセットするだけ！
                 communityUsers = allUsersData.filter(u => u.id !== myProfile.id);
                 

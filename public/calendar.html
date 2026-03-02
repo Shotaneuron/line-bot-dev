@@ -173,16 +173,18 @@
                         const organizerIcon = ev.organizerIds && ev.organizerIds.length > 0 ? `<span class="mr-0.5 opacity-70">👤</span>` : "";
                         
                         let timeLabel = "";
-                        // 初日のみ、時間が設定されていれば表示
                         if (ev.startTime && dateStr === startDate) {
                             timeLabel = `<span class="text-[9px] bg-white/50 text-slate-800 px-1 rounded-sm mr-1 font-black shadow-sm">${ev.startTime}</span>`;
                         }
 
+                        // ▼▼ クラスの衝突を直し、カテゴリと時間を綺麗に2段に分ける ▼▼
                         eventsHtml += `
-                            <div onclick="openEventDetailByIndex(${index})" class="event-badge ${style} flex items-center mb-1">
-                                <span class="event-cat flex-shrink-0">${ev.category}</span>
-                                ${timeLabel}
-                                <span class="event-title truncate">${organizerIcon}${ev.title}</span>
+                            <div onclick="openEventDetailByIndex(${index})" class="event-badge ${style} mb-1">
+                                <span class="event-cat">${ev.category}</span>
+                                <div class="flex items-center w-full mt-0.5">
+                                    ${timeLabel}
+                                    <span class="event-title truncate">${organizerIcon}${ev.title}</span>
+                                </div>
                             </div>`;
                     }
                 });

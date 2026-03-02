@@ -1164,6 +1164,7 @@ export const getCalendarEvents = functions.region("asia-northeast1").https.onReq
         const events: any[] = [];
         snapshot.forEach(doc => {
             const data = doc.data();
+            // 🚨 強力なフィルター
             if (!data.category || data.category === "未分類" || data.category.includes("運営部") || data.category.includes("企画部")) return;
             events.push({
                 id: doc.id,
@@ -1550,7 +1551,7 @@ export const getIntroRanking = functions.region('asia-northeast1').https.onReque
                 const data = doc.data();
                 if (data && data.profile && data.profile.name) {
                     users.push({
-                        id: doc.id,
+                        id: doc.id, 
                         name: data.profile.name,
                         icon: data.profile.pictureUrl || "https://cdn-icons-png.flaticon.com/512/847/847969.png",
                         univ: data.profile.university || "未設定",
