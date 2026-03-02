@@ -46,6 +46,44 @@
                 </div>
             </div>
 
+            <div class="flex gap-3 mt-6 border-t border-slate-100 pt-6">
+                <button onclick="shareOnX()" class="flex-1 bg-black text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition shadow-sm text-sm">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 22.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                    Xで結果をシェア
+                </button>
+                
+                <button onclick="shareOnLINE()" class="flex-1 bg-[#06C755] text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition shadow-sm text-sm">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 10.304c0-5.369-5.383-9.738-12-9.738-6.616 0-12 4.369-12 9.738 0 4.814 4.269 8.846 10.036 9.608.391.084.922.258 1.057.592.12.292.031.753-.021 1.07l-.234 1.411c-.066.425-.325 1.564 1.369.851 1.693-.711 9.157-5.385 11.458-9.01.222-.352.335-.71.335-1.07v-3.452z"/></svg>
+                    LINEで友達に教える
+                </button>
+            </div>
+
+            <script>
+            // 診断テストのトップページ（またはLINE登録用URL）
+            const SHARE_URL = "[https://liff.line.me/あなたのLIFF_ID](https://liff.line.me/あなたのLIFF_ID)"; // ← 適切なURLに変更してください！
+
+            function getShareText() {
+                // 例：画面上の診断結果のテキストを取得（id="result-type" などの要素から引っ張る）
+                // ※実際のHTMLのIDに合わせて適宜書き換えてください
+                const typeName = document.getElementById('result-type') ? document.getElementById('result-type').innerText : "〇〇タイプ"; 
+                
+                return `北大心理ゼミの心理診断で、私の結果は「${typeName}」でした！🧠✨\n\nあなたも自分の心理タイプを診断してみよう👇\n`;
+            }
+
+            function shareOnX() {
+                const text = encodeURIComponent(getShareText());
+                const url = encodeURIComponent(SHARE_URL);
+                // Xの投稿画面を別タブで開く
+                window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
+            }
+
+            function shareOnLINE() {
+                const text = encodeURIComponent(getShareText() + SHARE_URL);
+                // LINEの友達選択画面（シェア）を開く
+                window.open(`https://line.me/R/msg/text/?${text}`, '_blank');
+            }
+            </script>
+
             <button onclick="window.location.href='test.html'" class="w-full bg-slate-800 text-white text-sm font-black py-4 rounded-2xl shadow-lg btn-hover flex justify-center items-center">
                 🏠 ホーム（ポータル）へ戻る
             </button>

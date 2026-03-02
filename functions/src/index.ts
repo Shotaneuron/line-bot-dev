@@ -110,10 +110,10 @@ export const scheduledEventNotification = functions.region("asia-northeast1").pu
                 const memberTags = member.properties[PROP_MEMBER_TAGS]?.multi_select?.map((t: any) => t.name) || [];
                 if (memberTags.length === 0) continue;
 
-                const matchedEvents = [];
+                const matchedEvents: any[] = [];
                 for (const event of newEvents.results) {
                     const title = event.properties[PROP_EVENT_NAME]?.title[0]?.plain_text || "無題";
-                    const date = formatDate(event.properties[PROP_EVENT_DATE]?.date?.start);
+                    const displayDate = formatDate(event.properties[PROP_EVENT_DATE]?.date?.start);
 
                     const eventTags = event.properties[PROP_EVENT_TAGS]?.multi_select?.map((t: any) => t.name) || [];
                     const eventCat = event.properties[PROP_EVENT_CAT]?.select?.name || "";
@@ -121,18 +121,22 @@ export const scheduledEventNotification = functions.region("asia-northeast1").pu
 
                     const isMatch = memberTags.some((mTag: string) => eventTags.includes(mTag));
 
-                    if (isMatch) matchedEvents.push(`🆕 ${title} (${eventTags.join(", ")})\n📅 ${date}`);
+                    // ▼ マッチした場合、通知用のフルサイズカード（4つのボタン付き）を作成！
+                    if (isMatch) {
+                        matchedEvents.push({
+                            type: "bubble", header: { type: "box", layout: "vertical", contents: [{ type: "text", text: `✨ マッチした新着イベント`, color: "#ff9f43", size: "xs", weight: "bold" }, { type: "text", text: title, weight: "bold", size: "lg", wrap: true }] },
+                            body: { type: "box", layout: "vertical", contents: [{ type: "box", layout: "baseline", contents: [{ type: "text", text: "📅", flex: 1, size: "sm" }, { type: "text", text: displayDate, flex: 5, size: "sm", color: "#666666" }] }, { type: "box", layout: "baseline", margin: "md", contents: [{ type: "text", text: "🏷️", flex: 1, size: "sm" }, { type: "text", text: eventTags.join(", "), flex: 5, size: "sm", color: "#666666", wrap: true }] }] },
+                            footer: { type: "box", layout: "vertical", spacing: "sm", contents: [{ type: "box", layout: "horizontal", spacing: "sm", contents: [{ type: "button", style: "primary", color: "#2ecc71", height: "sm", action: { type: "postback", label: "参加👍", data: `action=join&eventId=${event.id}`, displayText: `「${title}」に参加します！` } }, { type: "button", style: "secondary", height: "sm", action: { type: "postback", label: "迷い中🤔", data: `action=maybe&eventId=${event.id}`, displayText: `「${title}」迷い中です…` } }] }, { type: "box", layout: "horizontal", spacing: "sm", contents: [{ type: "button", style: "secondary", height: "sm", action: { type: "postback", label: "不参加😢", data: `action=decline&eventId=${event.id}`, displayText: `「${title}」今回は不参加で…` } }, { type: "button", style: "secondary", height: "sm", action: { type: "postback", label: "参加者・詳細📄", data: `action=detail&eventId=${event.id}` } }] }] }
+                        });
+                    }
                 }
 
                 if (matchedEvents.length > 0) {
                     try {
+                        const carouselContents = matchedEvents.slice(0, 10); // 上限10枚
                         await lineClient.pushMessage(targetLineId, {
-                            type: "flex", altText: "✨ 新着イベントのお知らせ",
-                            contents: {
-                                type: "bubble", header: { type: "box", layout: "vertical", backgroundColor: "#ff9f43", contents: [{ type: "text", text: "✨ 新着イベントのお知らせ", weight: "bold", color: "#ffffff" }] },
-                                body: { type: "box", layout: "vertical", spacing: "md", contents: [{ type: "text", text: "あなたの「興味タグ」にマッチする新着情報です！", size: "xs", color: "#666666" }, { type: "separator" }, { type: "text", text: matchedEvents.join("\n\n"), wrap: true, size: "sm" }] },
-                                footer: { type: "box", layout: "vertical", contents: [{ type: "button", style: "link", height: "sm", action: { type: "message", label: "詳細を見る", text: "イベント" } }] }
-                            }
+                            type: "flex", altText: "✨ 興味タグにマッチする新着イベントのお知らせ",
+                            contents: { type: "carousel", contents: carouselContents }
                         });
                     } catch (e) { console.error(`Push failed`, e); }
                 }
@@ -426,31 +430,52 @@ async function handleStatusUpdate(replyToken: string, userId: string, eventId: s
 async function handleShowDetail(replyToken: string, eventId: string) {
     try {
         const page: any = await notion.pages.retrieve({ page_id: eventId });
-        const joinIds = page.properties[PROP_JOIN]?.relation || [];
-        let participantNames = "まだいません";
-        if (joinIds.length > 0) {
-            const fetchLimit = Math.min(joinIds.length, 10);
+        
+        // 参加・迷い中・不参加のメンバー名前を取得する便利関数（最大10名まで）
+        const fetchNames = async (relationIds: any[]) => {
+            if (!relationIds || relationIds.length === 0) return "まだいません";
+            const limit = Math.min(relationIds.length, 10);
             const names = [];
-            for (let i = 0; i < fetchLimit; i++) { const m: any = await notion.pages.retrieve({ page_id: joinIds[i].id }); names.push(m.properties[PROP_MEMBER_NAME]?.title[0]?.plain_text || "不明"); }
-            participantNames = names.join("、");
-            if (joinIds.length > 10) participantNames += `、他${joinIds.length - 10}名`;
-        }
+            for (let i = 0; i < limit; i++) { 
+                const m: any = await notion.pages.retrieve({ page_id: relationIds[i].id }); 
+                names.push(m.properties[PROP_MEMBER_NAME]?.title[0]?.plain_text || "不明"); 
+            }
+            let res = names.join("、");
+            if (relationIds.length > limit) res += `、他${relationIds.length - limit}名`;
+            return res;
+        };
+
+        const joinIds = page.properties[PROP_JOIN]?.relation || [];
+        const maybeIds = page.properties[PROP_MAYBE]?.relation || [];
+        const declineIds = page.properties[PROP_DECLINE]?.relation || [];
+
+        // 並行して3つのステータスの名前リストを取得して高速化
+        const [joinNames, maybeNames, declineNames] = await Promise.all([
+            fetchNames(joinIds), fetchNames(maybeIds), fetchNames(declineIds)
+        ]);
+
         const blocks = await notion.blocks.children.list({ block_id: eventId });
         let contentText = "";
+        
         for (const block of blocks.results as any[]) {
             let blockText = "";
             if (block.type === "paragraph" && block.paragraph.rich_text.length > 0) blockText = block.paragraph.rich_text.map((t: any) => t.plain_text).join("");
             else if (block.type.startsWith("heading")) blockText = "【" + block[block.type].rich_text.map((t: any) => t.plain_text).join("") + "】";
             else if (block.type.endsWith("list_item")) blockText = "・" + block[block.type].rich_text.map((t: any) => t.plain_text).join("");
 
+            // 🌟 Notion側の「🚧」が出現したら、それ以降（運営用）は読み込まないでストップ！
             if (blockText.includes(ADMIN_SEPARATOR)) break;
 
             if (blockText) contentText += blockText + "\n";
             if (block.type === "paragraph") contentText += "\n";
         }
+        
         if (!contentText.trim()) contentText = page.properties[PROP_DETAIL_TEXT]?.rich_text[0]?.plain_text || "詳細情報はありません。";
-        if (contentText.length > 500) contentText = contentText.substring(0, 500) + "\n(省略)";
-        await reply(replyToken, `👥 **現在の参加者 (${joinIds.length}名)**\n${participantNames}\n\n──────────\n📄 **イベント詳細**\n\n${contentText}`);
+        if (contentText.length > 700) contentText = contentText.substring(0, 700) + "\n(省略)";
+
+        // ▼ トークルームに詳細メッセージを送信！
+        await reply(replyToken, `🙋 参加 (${joinIds.length}名)\n${joinNames}\n\n🤔 迷い中 (${maybeIds.length}名)\n${maybeNames}\n\n🙅 不参加 (${declineIds.length}名)\n${declineNames}\n\n──────────\n📄 イベント詳細\n\n${contentText.trim()}`);
+        
     } catch (e: any) { console.error(e); await reply(replyToken, `❌ エラー: ${e.message}`); }
 }
 
@@ -1469,7 +1494,7 @@ export const manualSyncEvents = functions.region("asia-northeast1").https.onRequ
 // ───────────────────────────────────────────
 // 9. LINE用：「直近のイベント」カルーセル送信
 // ───────────────────────────────────────────
-export async function handleRecentEvents(replyToken: string) {
+async function handleRecentEvents(replyToken: string) {
     try {
         const today = new Date();
         const twoWeeksLater = new Date();
@@ -1501,37 +1526,26 @@ export async function handleRecentEvents(replyToken: string) {
                     cat = text ? text : "未分類";
                 }
             }
+            // 運営部や企画部の内部イベントは除外
             if (cat.includes("運営部") || cat.includes("企画部")) continue;
 
             const title = page.properties[PROP_EVENT_NAME]?.title[0]?.plain_text || "無題";
-            const dateStr = page.properties[PROP_EVENT_DATE]?.date?.start?.split('T')[0] || "";
+            const displayDate = formatDate(page.properties[PROP_EVENT_DATE]?.date?.start);
 
+            // ▼ フルサイズのイベントカードを作成
             bubbles.push({
-                type: "bubble", size: "micro",
-                body: {
-                    type: "box", layout: "vertical",
-                    contents: [
-                        { type: "text", text: cat, size: "xxs", color: "#8b5cf6", weight: "bold" },
-                        { type: "text", text: title, weight: "bold", size: "sm", wrap: true, margin: "sm" },
-                        { type: "text", text: `📅 ${dateStr}`, size: "xs", color: "#888888", margin: "sm" }
-                    ]
-                },
-                footer: {
-                    type: "box", layout: "vertical", spacing: "sm",
-                    contents: [
-                        { type: "button", style: "primary", color: "#4f46e5", height: "sm", action: { type: "postback", label: "🙋 参加", data: `action=join&eventId=${page.id}` } },
-                        { type: "button", style: "secondary", height: "sm", action: { type: "postback", label: "🤔 迷い中", data: `action=maybe&eventId=${page.id}` } }
-                    ]
-                }
+                type: "bubble", header: { type: "box", layout: "vertical", contents: [{ type: "text", text: cat, color: "#aaaaaa", size: "xs" }, { type: "text", text: title, weight: "bold", size: "lg", wrap: true }] },
+                body: { type: "box", layout: "vertical", contents: [{ type: "box", layout: "baseline", contents: [{ type: "text", text: "📅", flex: 1, size: "sm" }, { type: "text", text: displayDate, flex: 5, size: "sm", color: "#666666" }] }, { type: "box", layout: "baseline", margin: "md", contents: [{ type: "text", text: "👥", flex: 1, size: "sm" }, { type: "text", text: `参加: ${page.properties[PROP_JOIN]?.relation?.length || 0}名`, flex: 5, size: "sm", color: "#666666" }] }] },
+                footer: { type: "box", layout: "vertical", spacing: "sm", contents: [{ type: "box", layout: "horizontal", spacing: "sm", contents: [{ type: "button", style: "primary", color: "#2ecc71", height: "sm", action: { type: "postback", label: "参加👍", data: `action=join&eventId=${page.id}`, displayText: `「${title}」に参加します！` } }, { type: "button", style: "secondary", height: "sm", action: { type: "postback", label: "迷い中🤔", data: `action=maybe&eventId=${page.id}`, displayText: `「${title}」迷い中です…` } }] }, { type: "box", layout: "horizontal", spacing: "sm", contents: [{ type: "button", style: "secondary", height: "sm", action: { type: "postback", label: "不参加😢", data: `action=decline&eventId=${page.id}`, displayText: `「${title}」今回は不参加で…` } }, { type: "button", style: "secondary", height: "sm", action: { type: "postback", label: "参加者・詳細📄", data: `action=detail&eventId=${page.id}` } }] }] }
             });
-            if (bubbles.length >= 12) break; 
+
+            if (bubbles.length >= 10) break; // LINEのカルーセル上限（10枚）でストップ
         }
 
         if (bubbles.length === 0) { await reply(replyToken, "直近2週間の全体向けイベントは現在ありません！"); return; }
         await lineClient.replyMessage(replyToken, { type: "flex", altText: "直近のイベント一覧", contents: { type: "carousel", contents: bubbles } });
     } catch (e) { console.error(e); await reply(replyToken, "イベントの取得に失敗しました。"); }
 }
-
 
 // 🎮 探索ポータル（intro.html）専用API：経験値更新 ＆ ランキング取得
 // ============================================================================
