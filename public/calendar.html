@@ -117,18 +117,22 @@
             } catch(e) { console.error(e); }
         }
 
+        // 👇 爆速化！先ほど作ったAPIを使い回して全ユーザーの綺麗なデータを取得
         async function fetchUsersData() {
             try {
-                const res = await fetch(`https://firestore.googleapis.com/v1/projects/shinrizemi-linebot/databases/default/documents/users?pageSize=1000`);
-                const json = await res.json();
-                if(json.documents) {
-                    allUsersData = json.documents;
-                    allUsersData.forEach(doc => {
-                        const lineId = doc.name.split('/').pop();
-                        usersDict[lineId] = doc;
+                const res = await fetch(`https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/getAllUsersData`);
+                if (!res.ok) throw new Error("ユーザー取得エラー");
+                const users = await res.json();
+                
+                if(users && Array.isArray(users)) {
+                    allUsersData = users;
+                    usersDict = {};
+                    // LINE ID をキーにして辞書（Dict）を作成し、一瞬で検索できるようにする
+                    allUsersData.forEach(user => {
+                        usersDict[user.id] = user;
                     });
                 }
-            } catch(e){}
+            } catch(e){ console.error("ユーザーデータ取得失敗:", e); }
         }
 
         async function fetchCalendarEvents() {
@@ -138,11 +142,10 @@
                 allEvents = JSON.parse(cachedEvents);
                 renderCalendar(); 
             } else {
-                // キャッシュがない初回のみローディング画面を出す
                 document.getElementById('calendar-loading').style.display = 'flex';
             }
 
-            // 2. 裏側でこっそり最新のデータを取得
+            // 2. 裏側で最新のデータを取得
             try {
                 const res = await fetch(`https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/getCalendarEvents`);
                 const data = await res.json();
@@ -151,7 +154,7 @@
                 // 3. 最新データをローカルに記憶させる
                 localStorage.setItem('calendarEventsCache', JSON.stringify(allEvents));
                 
-                // 4. 最新データでカレンダーを再描画（差分があればスッと切り替わる）
+                // 4. 最新データでカレンダーを再描画
                 renderCalendar();
             } catch(e) { 
                 if (!cachedEvents) alert("イベントの取得に失敗しました"); 
@@ -161,18 +164,13 @@
 
         function changeMonth(diff) { currentDate.setMonth(currentDate.getMonth() + diff); renderCalendar(); }
 
-function getCategoryStyle(cat) {
+        function getCategoryStyle(cat) {
             if (!cat) return "bg-slate-50 text-slate-600 border-slate-200"; 
-            
-            // 🌟 合宿は特別感満載の「濃い紫×白文字」
             if (cat.includes("合宿")) return "bg-purple-600 text-white border-purple-700 shadow-sm"; 
-            
             if (cat.includes("すこやか") || cat.includes("運動") || cat.includes("快眠") || cat.includes("瞑想")) return "bg-emerald-50 text-emerald-700 border-emerald-200";
             if (cat.includes("読書") || cat.includes("ラジオ") || cat.includes("シェア")) return "bg-orange-50 text-orange-700 border-orange-200";
             if (cat.includes("ゼミ") || cat.includes("講義")) return "bg-blue-50 text-blue-700 border-blue-200";
             if (cat.includes("カクテル") || cat.includes("ふらっと")) return "bg-pink-50 text-pink-700 border-pink-200";
-            
-            // 🌟 どれにも当てはまらない「その他イベント」はシックなグレー
             return "bg-slate-50 text-slate-600 border-slate-200"; 
         }
 
@@ -196,7 +194,6 @@ function getCategoryStyle(cat) {
                 allEvents.forEach((ev, index) => {
                     const startDate = ev.date ? ev.date.split('T')[0] : "";
                     const endDate = ev.endDate ? ev.endDate.split('T')[0] : startDate;
-                    
                     const startTime = ev.startTime || "";
                     const endTime = ev.endTime || "";
 
@@ -208,31 +205,22 @@ function getCategoryStyle(cat) {
                         let isEndDay = (dateStr === endDate);
                         let isMultiDay = (startDate !== endDate);
 
-                        // 🏷️ カテゴリと時間（終了時間があれば「09:00 - 19:00」のように表示）
                         let catLabel = ev.category ? `<span class="border border-current px-1 rounded-[3px] text-[7px] font-bold opacity-80 whitespace-nowrap">${ev.category}</span>` : "";
                         let timeLabel = startTime ? `<span class="bg-black/10 px-1 rounded-[3px] font-black whitespace-nowrap">${startTime}${endTime ? ' - ' + endTime : ''}</span>` : "";
 
                         let roundedClass = "rounded-md";
                         let marginClass = "mx-0.5";
-                        
-                        // ▼▼ 帯の隙間を消す & 文字を透明にする（高さを揃えるため） ▼▼
                         let contentClass = "opacity-100";
                         if (isMultiDay) {
                             if (isStartDay) {
-                                roundedClass = "rounded-l-md rounded-r-none border-r-0";
-                                marginClass = "ml-0.5 mr-[-4px] z-10";
+                                roundedClass = "rounded-l-md rounded-r-none border-r-0"; marginClass = "ml-0.5 mr-[-4px] z-10";
                             } else if (isEndDay) {
-                                roundedClass = "rounded-r-md rounded-l-none border-l-0";
-                                marginClass = "mr-0.5 ml-[-4px] z-10";
-                                contentClass = "opacity-0"; // 高さを保つために文字だけ透明に
+                                roundedClass = "rounded-r-md rounded-l-none border-l-0"; marginClass = "mr-0.5 ml-[-4px] z-10"; contentClass = "opacity-0"; 
                             } else {
-                                roundedClass = "rounded-none border-l-0 border-r-0";
-                                marginClass = "mx-[-4px] z-10";
-                                contentClass = "opacity-0";
+                                roundedClass = "rounded-none border-l-0 border-r-0"; marginClass = "mx-[-4px] z-10"; contentClass = "opacity-0";
                             }
                         }
 
-                        // ▼▼ タイトル長文折り返し対応（flex-col と break-words を使用） ▼▼
                         eventsHtml += `
                             <div onclick="openEventDetailByIndex(${index})" class="event-badge ${style} ${roundedClass} ${marginClass} mb-[2px] border relative p-1">
                                 <div class="${contentClass} w-full text-[9px] leading-tight flex flex-col gap-0.5">
@@ -261,16 +249,11 @@ function getCategoryStyle(cat) {
                 if (ev.date >= today) {
                     const style = getCategoryStyle(ev.category);
                     let dateDisplay = `📅 ${ev.date}`;
-                    // 終了日があり、かつ開始日と異なる場合は「〜〇日」と表示
                     if (ev.endDate && ev.endDate !== ev.date) {
-                        // 日付部分だけを切り取って表示（例: 2026-08-10 〜 08-12）
                         const endStr = ev.endDate.substring(5); 
                         dateDisplay += ` 〜 ${endStr}`;
                     }
-                    // 時間があれば表示
-                    if (ev.startTime) {
-                        dateDisplay += ` ⏱ ${ev.startTime}`;
-                    }
+                    if (ev.startTime) { dateDisplay += ` ⏱ ${ev.startTime}`; }
 
                     html += `
                     <div onclick="openEventDetailByIndex(${i})" class="flex-shrink-0 w-48 bg-white rounded-xl p-3 border border-slate-200 shadow-sm cursor-pointer hover:bg-slate-50 active:scale-95 transition flex flex-col justify-between">
@@ -287,7 +270,6 @@ function getCategoryStyle(cat) {
             document.getElementById('pickup-events').innerHTML = html;
         }
 
-        function getSafe(f) { if (!f) return ""; if (f.stringValue !== undefined) return f.stringValue; return ""; }
         function getRoleBadgeHtml(role) {
             let badgeClass = "", badgeIcon = "";
             if (role === "代表") { badgeIcon = "👑"; badgeClass = "bg-yellow-500/20 text-yellow-800 border border-yellow-400"; } 
@@ -297,27 +279,28 @@ function getCategoryStyle(cat) {
             return `<span class="inline-block ${badgeClass} text-[10px] font-black tracking-widest px-2 py-0.5 rounded shadow-sm">${badgeIcon} ${role}</span>`;
         }
 
+        // 👇 ユーザーの参照が劇的にシンプルになりました！
         function openProfileByLineId(lineId) {
             if (!lineId) return;
             if (lineId === myUserId) { alert("これはあなた自身です！マイページから確認してください。"); return; }
-            const doc = usersDict[lineId]; 
-            if (doc) {
+            
+            const user = usersDict[lineId]; 
+            if (user) {
                 closeEventDetail();
-                const p = doc.fields?.profile?.mapValue?.fields || {}; // ★ 安全に書き換え！
-                const nameStr = getSafe(p.name) || "匿名";
-                document.getElementById('other-name').innerText = nameStr + " さん";
-                document.getElementById('other-icon').src = getSafe(p.iconUrl) || "https://via.placeholder.com/150";
+                document.getElementById('other-name').innerText = (user.name || "匿名") + " さん";
+                document.getElementById('other-icon').src = user.icon || "https://via.placeholder.com/150";
                 
-                let roles = []; if (p.roles && p.roles.arrayValue && p.roles.arrayValue.values) roles = p.roles.arrayValue.values.map(v => getSafe(v)); else if (p.role) roles = [getSafe(p.role)];
-                const badgesContainer = document.getElementById('other-role-badges'); badgesContainer.innerHTML = "";
-                if (roles.length > 0 && !roles.includes("一般メンバー") && !roles.includes("未設定")) {
-                     roles.forEach(role => { badgesContainer.innerHTML += getRoleBadgeHtml(role); });
+                const badgesContainer = document.getElementById('other-role-badges'); 
+                badgesContainer.innerHTML = "";
+                if (user.roles && user.roles.length > 0 && !user.roles.includes("一般メンバー") && !user.roles.includes("未設定")) {
+                     user.roles.forEach(role => { badgesContainer.innerHTML += getRoleBadgeHtml(role); });
                 }
-                const uni = getSafe(p.uni); const grade = getSafe(p.grade);
-                document.getElementById('other-univ').innerText = (uni || grade) ? `${uni} ${grade}` : "";
-                document.getElementById('other-intro').innerText = getSafe(p.intro) || getSafe(p.selfIntro) || "よろしくお願いします！";
                 
-                document.getElementById('other-profile-modal').classList.remove('hidden'); document.getElementById('other-profile-modal').classList.add('flex');
+                document.getElementById('other-univ').innerText = (user.uni || user.grade) ? `${user.uni} ${user.grade}` : "";
+                document.getElementById('other-intro').innerText = user.intro || "よろしくお願いします！";
+                
+                document.getElementById('other-profile-modal').classList.remove('hidden'); 
+                document.getElementById('other-profile-modal').classList.add('flex');
             } else { alert("このメンバーはまだマイページを作成していません。"); }
         }
         function closeOtherProfile() { document.getElementById('other-profile-modal').classList.add('hidden'); document.getElementById('other-profile-modal').classList.remove('flex'); }
@@ -347,15 +330,16 @@ function getCategoryStyle(cat) {
             if (newIndex >= 0 && newIndex < allEvents.length) { openEventDetailByIndex(newIndex); }
         }
 
+        // 👇 チップ作成も超シンプルに！
         function createUserChip(lineId, colorClass, borderClass, textClass) {
-            const doc = usersDict[lineId];
-            if (!doc) return `<span class="text-[9px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-full">匿名</span>`;
-            const p = doc.fields?.profile?.mapValue?.fields || {}; // ★ || {} を追加！
-            const name = getSafe(p.name) || "匿名";
-            const icon = getSafe(p.iconUrl) || "https://via.placeholder.com/150";
+            const user = usersDict[lineId];
+            if (!user) return `<span class="text-[9px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-full">匿名</span>`;
+            
+            const name = user.name || "匿名";
+            const icon = user.icon || "https://via.placeholder.com/150";
             return `
                 <div onclick="openProfileByLineId('${lineId}')" class="flex items-center gap-1.5 ${colorClass} px-2 py-1 rounded-full border ${borderClass} cursor-pointer active:scale-95 shadow-sm transition">
-                    <img src="${icon}" class="w-5 h-5 rounded-full object-cover">
+                    <img src="${icon}" class="w-5 h-5 rounded-full object-cover border border-slate-200">
                     <span class="text-[10px] font-bold ${textClass}">${name}</span>
                 </div>`;
         }
@@ -373,12 +357,10 @@ function getCategoryStyle(cat) {
                 const url = `https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/getEventDetails?eventId=${eventId}${forceRefresh ? '&forceRefresh=true' : ''}`;
                 const res = await fetch(url);
                 
-                // ★ 修正：APIエラーだった場合に、わかりやすいエラーを投げる
                 if (!res.ok) throw new Error(`サーバーエラー (Status: ${res.status}) - Botのコードが正しく更新されていない可能性があります`);
                 
                 const data = await res.json();
 
-                // バックエンドが「⚠️データの取得に失敗しました」という安全なテキストを返してきた場合
                 if (data.details && data.details.includes("⚠️")) {
                     throw new Error(data.details);
                 }
@@ -387,23 +369,17 @@ function getCategoryStyle(cat) {
                 const isMaybe = data.maybesLineIds && data.maybesLineIds.includes(myUserId);
                 const isDecline = data.declinesLineIds && data.declinesLineIds.includes(myUserId);
 
-                // 1. 日付と時間の表示テキストを作成
                 let dateDisplay = data.date ? data.date.split('T')[0] : "日程未定";
-                
-                // 終了日があれば「〜」でつなぐ（別日の場合のみ）
                 if (data.endDate && data.endDate.split('T')[0] !== dateDisplay) {
                     dateDisplay += ` 〜 ${data.endDate.split('T')[0]}`;
                 }
                 
-                // 開始時間があれば足す
                 if (data.startTime) {
                     dateDisplay += ` ⏱ ${data.startTime}`;
                 } else if (data.date && data.date.includes('T')) {
-                    // もし date の中に "2026-03-27T14:00:00" のように時間が含まれていればそれを切り出す
                     dateDisplay += ` ⏱ ${data.date.split('T')[1].substring(0, 5)}`;
                 }
 
-                // 2. HTMLの組み立て（一番上にカレンダーアイコン付きの日付パネルを追加！）
                 let html = `
                     <div class="flex items-center gap-3 text-slate-700 bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm mb-4">
                         <span class="text-2xl drop-shadow-sm">📅</span>
@@ -411,7 +387,6 @@ function getCategoryStyle(cat) {
                     </div>
                 `;
 
-                // 3. その下にイベント本文を追加
                 html += `<div class="bg-slate-50 p-4 rounded-xl border border-slate-200 whitespace-pre-wrap text-xs text-slate-700 leading-relaxed font-medium mb-4">${data.details}</div>`;
 
                 html += `<div><p class="text-[10px] font-bold text-indigo-500 mb-2">🙋 参加予定 (${data.joinsLineIds ? data.joinsLineIds.length : 0}人)</p>`;
@@ -439,7 +414,6 @@ function getCategoryStyle(cat) {
                 document.getElementById('event-modal-content').innerHTML = html;
                 
             } catch(e) { 
-                // ★ 修正：エラー内容を画面に赤文字でデカデカと表示する！
                 document.getElementById('event-modal-content').innerHTML = `
                     <div class="flex flex-col items-center justify-center py-6 px-4">
                         <span class="text-3xl mb-2">🚨</span>

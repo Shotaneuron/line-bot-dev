@@ -1589,6 +1589,7 @@ export const getIntroRanking = functions.region('asia-northeast1').https.onReque
             return;
         }
         try {
+            res.set('Cache-Control', 'public, max-age=300, s-maxage=300');
             const db = admin.firestore();
             const snapshot = await db.collection('users').get();
             const users: any[] = [];
@@ -1828,6 +1829,49 @@ export const getUserData = functions.region("asia-northeast1").https.onRequest(a
         }
     } catch(e: any) { 
         console.error("getUserData API Error:", e);
+        res.status(500).json({ error: e.message }); 
+    }
+});
+
+// ───────────────────────────────────────────
+// 12. マイページ用 API: 全ユーザーの簡易データ取得（爆速キャッシュ版）
+// ───────────────────────────────────────────
+export const getAllUsersData = functions.region("asia-northeast1").https.onRequest(async (req: any, res: any) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+
+    try {
+        // 全ユーザーデータも5分間キャッシュしてデータベースアクセスを極限まで減らす！
+        res.set('Cache-Control', 'public, max-age=300, s-maxage=300');
+
+        const snapshot = await db.collection("users").get();
+        const users: any[] = [];
+
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.profile) {
+                users.push({
+                    id: doc.id,
+                    name: data.profile.name || "匿名",
+                    icon: data.profile.pictureUrl || data.profile.iconUrl || "https://via.placeholder.com/150",
+                    roles: data.profile.roles || [],
+                    tags: data.profile.tags || [],
+                    intro: data.profile.intro || data.profile.selfIntro || "よろしくお願いします！",
+                    uni: data.profile.uni || "",
+                    grade: data.profile.grade || "",
+                    chronoResult: data.chronoResult || "",
+                    bigFiveResult: data.bigFiveResult || "",
+                    coffeeResult: data.coffeeResult || "",
+                    smResult: data.smResult || "",
+                    motivationResult: data.motivationResult || ""
+                });
+            }
+        });
+
+        res.json(users);
+    } catch(e: any) { 
+        console.error("getAllUsersData API Error:", e);
         res.status(500).json({ error: e.message }); 
     }
 });

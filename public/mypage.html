@@ -185,13 +185,6 @@
         let AVAILABLE_TAGS = [];
         let globalPastEvents = []; 
 
-        function getSafe(field) {
-            if (!field) return "";
-            if (field.stringValue !== undefined) return field.stringValue;
-            if (field.integerValue !== undefined) return field.integerValue;
-            return "";
-        }
-
         async function fetchAvailableTags() {
             try {
                 const res = await fetch(`https://firestore.googleapis.com/v1/projects/shinrizemi-linebot/databases/default/documents/system/metadata`);
@@ -204,7 +197,7 @@
             } catch (e) { console.error("タグ取得エラー", e); }
         }
 
-        // 🌟 役職バッジのHTMLを生成する共通関数（自分用にも他人用にも使える！）
+        // 🌟 役職バッジのHTMLを生成する共通関数
         function getRoleBadgeHtml(role) {
             let badgeClass = "", badgeIcon = "";
             if (role === "代表") { badgeIcon = "👑"; badgeClass = "bg-yellow-500/20 text-yellow-800 border border-yellow-400"; } 
@@ -222,7 +215,7 @@
                 const events = await res.json();
                 globalPastEvents = events.past; 
 
-                // 🚀 参加予定（縦並び）
+                // 🚀 参加予定
                 if (events.planned.length > 0) {
                     document.getElementById('dashboard-planned').className = "space-y-3";
                     document.getElementById('dashboard-planned').innerHTML = events.planned.map(ev => `
@@ -235,7 +228,7 @@
                     document.getElementById('dashboard-planned').innerHTML = '<p class="text-xs text-slate-400 font-bold px-2 py-4">参加予定のイベントはありません。ポータルから探そう！</p>';
                 }
 
-                // 🤔 迷い中 ＆ ✨ おすすめ（横並び）
+                // 🤔 迷い中 ＆ ✨ おすすめ
                 const createHorizontalCard = (ev, borderCol, bgCol) => `
                     <div onclick="openEventDetail('${ev.id}', '${ev.title}')" class="flex-shrink-0 w-48 bg-white rounded-xl p-4 border ${borderCol} ${bgCol} shadow-sm cursor-pointer hover:bg-slate-50 active:scale-95 transition flex flex-col justify-between">
                         <div>
@@ -247,7 +240,7 @@
                 if (events.maybe.length > 0) document.getElementById('dashboard-maybe').innerHTML = events.maybe.map(e => createHorizontalCard(e, "border-orange-200", "bg-orange-50/50")).join('');
                 if (events.recommended.length > 0) document.getElementById('dashboard-recommended').innerHTML = events.recommended.map(e => createHorizontalCard(e, "border-pink-200", "bg-pink-50/50")).join('');
 
-                // 🏆 活動履歴（横並び、直近5件 ＋ すべて見る）
+                // 🏆 活動履歴
                 if (events.past.length > 0) {
                     document.getElementById('dashboard-past').className = "flex gap-3 overflow-x-auto no-scrollbar pb-2 pt-1"; 
                     let pastHtml = events.past.slice(0, 5).map(ev => `
@@ -272,13 +265,17 @@
                 const profile = await liff.getProfile();
                 myUserId = profile.userId;
                 document.getElementById('user-icon').src = profile.pictureUrl; document.getElementById('user-name').innerText = profile.displayName + " さん";
+                
                 await fetchAvailableTags();
                 fetchDashboardEvents();
-                const res = await fetch(`https://firestore.googleapis.com/v1/projects/shinrizemi-linebot/databases/default/documents/users/${myUserId}`);
+                
+                // 👇 バックエンド化：自分のデータを綺麗に取得
+                const res = await fetch(`https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/getUserData?userId=${myUserId}`);
                 if (res.ok) {
-                    const json = await res.json();
-                    if (json.fields) { myData = json.fields; renderProfile(myData); renderTags(myData); }
+                    myData = await res.json();
+                    if (myData) { renderProfile(myData); renderTags(myData); }
                 } else { renderEditTags([]); }
+                
                 fetchConnections();
             } catch (err) { console.error("初期化エラー:", err); }
         }
@@ -296,7 +293,7 @@
                 if (role === "代表") highestRarity = Math.min(highestRarity, 1);
                 else if (["秘書", "統括", "広報", "補佐"].some(r => role.includes(r))) highestRarity = Math.min(highestRarity, 2);
                 else if (role.includes("部") || role.includes("PJ") || ["ゼミ", "講義"].some(r => role.includes(r))) highestRarity = Math.min(highestRarity, 3);
-                badgesContainer.innerHTML += getRoleBadgeHtml(role); // 共通関数を使用
+                badgesContainer.innerHTML += getRoleBadgeHtml(role);
             });
             if (highestRarity === 1) card.classList.add('card-gold'); else if (highestRarity === 2) card.classList.add('card-silver'); else card.classList.add('card-special');
         }
@@ -318,11 +315,10 @@
         }
 
         function renderProfile(data) {
-            if (data.profile && data.profile.mapValue && data.profile.mapValue.fields) {
-                const p = data.profile.mapValue.fields;
-                const name = getSafe(p.name); const uni = getSafe(p.uni); const grade = getSafe(p.grade); const intro = getSafe(p.intro); const selfIntro = getSafe(p.selfIntro); 
-                let roles = []; if (p.roles && p.roles.arrayValue && p.roles.arrayValue.values) roles = p.roles.arrayValue.values.map(v => getSafe(v)); else if (p.role) roles = [getSafe(p.role)];
-                let tags = []; if (p.tags && p.tags.arrayValue && p.tags.arrayValue.values) tags = p.tags.arrayValue.values.map(v => getSafe(v));
+            if (data.profile) {
+                const p = data.profile;
+                const name = p.name || ""; const uni = p.uni || ""; const grade = p.grade || ""; const intro = p.intro || ""; const selfIntro = p.selfIntro || ""; 
+                const roles = p.roles || []; const tags = p.tags || [];
 
                 if (name) document.getElementById('user-name').innerText = name + " さん";
                 if (uni || grade) document.getElementById('user-univ').innerText = `${uni} ${grade}`;
@@ -332,7 +328,7 @@
                 let tagsHtml = ""; tags.forEach(tag => { tagsHtml += `<span class="bg-indigo-50 text-indigo-600 border border-indigo-200 text-[10px] font-bold px-2.5 py-1 rounded shadow-sm">🏷️ ${tag}</span>`; });
                 if(tagsHtml) document.getElementById('my-interest-tags').innerHTML = tagsHtml;
 
-                document.getElementById('edit-name').value = name; document.getElementById('edit-uni').value = uni; document.getElementById('edit-faculty').value = getSafe(p.faculty);
+                document.getElementById('edit-name').value = name; document.getElementById('edit-uni').value = uni; document.getElementById('edit-faculty').value = p.faculty || "";
                 document.getElementById('edit-grade').value = grade || "学部1年"; document.getElementById('edit-selfintro').value = selfIntro;
                 renderEditTags(tags);
             } else { renderEditTags([]); }
@@ -340,29 +336,28 @@
 
         function renderTags(data) {
             const container = document.getElementById('tags-container'); let html = "";
-            if (data.motivationResult) html += `<button onclick="showSameTypeUsers('${getSafe(data.motivationResult).replace('やる気：', '')}', 'motivation', '🔥 やる気タイプ')" class="bg-orange-50 hover:bg-orange-100 text-orange-600 border border-orange-200 text-xs font-bold px-3 py-1.5 rounded-lg active:scale-95 transition shadow-sm">🔥 ${getSafe(data.motivationResult).replace('やる気：', '')}</button>`;
-            if (data.bigFiveResult) { const match = getSafe(data.bigFiveResult).match(/Big Five：(.+?)が特徴的/); if (match) html += `<button onclick="showSameTypeUsers('${match[1]}', 'bigFive', '🧠 性格タイプ')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 text-xs font-bold px-3 py-1.5 rounded-lg active:scale-95 transition shadow-sm">🧠 ${match[1]}派</button>`; }
-            if (data.chronoResult) html += `<button onclick="showSameTypeUsers('${getSafe(data.chronoResult).split('（')[0]}', 'chrono', '⏰ クロノタイプ')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-200 text-xs font-bold px-3 py-1.5 rounded-lg active:scale-95 transition shadow-sm">⏰ ${getSafe(data.chronoResult).split('（')[0]}</button>`;
-            if (data.coffeeResult) html += `<button onclick="showSameTypeUsers('${getSafe(data.coffeeResult).split(' ')[0]}', 'coffee', '☕ コーヒー性格')" class="bg-amber-50 hover:bg-amber-100 text-amber-600 border border-amber-200 text-xs font-bold px-3 py-1.5 rounded-lg active:scale-95 transition shadow-sm">☕ ${getSafe(data.coffeeResult).split(' ')[0]}好き</button>`;
-            if (data.smResult) html += `<button onclick="showSameTypeUsers('${getSafe(data.smResult).split('（')[0]}', 'sm', '🌬️ ストレスマネジメント')" class="bg-pink-50 hover:bg-pink-100 text-pink-600 border border-pink-200 text-xs font-bold px-3 py-1.5 rounded-lg active:scale-95 transition shadow-sm">🌬️ ${getSafe(data.smResult).split('（')[0]}</button>`;
+            if (data.motivationResult) html += `<button onclick="showSameTypeUsers('${data.motivationResult.replace('やる気：', '')}', 'motivation', '🔥 やる気タイプ')" class="bg-orange-50 hover:bg-orange-100 text-orange-600 border border-orange-200 text-xs font-bold px-3 py-1.5 rounded-lg active:scale-95 transition shadow-sm">🔥 ${data.motivationResult.replace('やる気：', '')}</button>`;
+            if (data.bigFiveResult) { const match = data.bigFiveResult.match(/Big Five：(.+?)が特徴的/); if (match) html += `<button onclick="showSameTypeUsers('${match[1]}', 'bigFive', '🧠 性格タイプ')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 text-xs font-bold px-3 py-1.5 rounded-lg active:scale-95 transition shadow-sm">🧠 ${match[1]}派</button>`; }
+            if (data.chronoResult) html += `<button onclick="showSameTypeUsers('${data.chronoResult.split('（')[0]}', 'chrono', '⏰ クロノタイプ')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-200 text-xs font-bold px-3 py-1.5 rounded-lg active:scale-95 transition shadow-sm">⏰ ${data.chronoResult.split('（')[0]}</button>`;
+            if (data.coffeeResult) html += `<button onclick="showSameTypeUsers('${data.coffeeResult.split(' ')[0]}', 'coffee', '☕ コーヒー性格')" class="bg-amber-50 hover:bg-amber-100 text-amber-600 border border-amber-200 text-xs font-bold px-3 py-1.5 rounded-lg active:scale-95 transition shadow-sm">☕ ${data.coffeeResult.split(' ')[0]}好き</button>`;
+            if (data.smResult) html += `<button onclick="showSameTypeUsers('${data.smResult.split('（')[0]}', 'sm', '🌬️ ストレスマネジメント')" class="bg-pink-50 hover:bg-pink-100 text-pink-600 border border-pink-200 text-xs font-bold px-3 py-1.5 rounded-lg active:scale-95 transition shadow-sm">🌬️ ${data.smResult.split('（')[0]}</button>`;
             if (html !== "") { container.innerHTML = html; document.getElementById('tags-hint').classList.remove('hidden'); }
         }
 
-        // 🌟 名前からプロフィールを開くための機能（LINE IDをキーにする）
+        // 🌟 名前からプロフィールを開くための機能
         function openProfileByLineId(lineId) {
             if (!lineId) { alert("プロフィールが紐づいていません"); return; }
             if (lineId === myUserId) { alert("これはあなた自身です！"); return; }
-            // allUsersDataの doc.name には FirestoreのドキュメントID (=LINE ID) が含まれている
-            const index = allUsersData.findIndex(doc => doc.name.includes(lineId));
+            const index = allUsersData.findIndex(doc => doc.id === lineId);
             if (index !== -1) {
-                closeEventDetail(); // イベントモーダルは一旦閉じる
+                closeEventDetail(); 
                 showOtherProfile(index);
             } else {
                 alert("このメンバーはまだマイページを作成していません。");
             }
         }
 
-async function openEventDetail(eventId, title) {
+        async function openEventDetail(eventId, title) {
             document.getElementById('event-modal-title').innerText = title;
             document.getElementById('event-modal-content').innerHTML = `
                 <div class="flex flex-col items-center justify-center py-10">
@@ -374,32 +369,29 @@ async function openEventDetail(eventId, title) {
                 const res = await fetch(`https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/getEventDetails?eventId=${eventId}`);
                 const data = await res.json();
 
-                // バックエンドからの安全なエラーメッセージがあれば表示
-                if (data.details && data.details.includes("⚠️")) {
-                    throw new Error(data.details);
-                }
+                if (data.details && data.details.includes("⚠️")) throw new Error(data.details);
 
                 let html = `<div class="bg-slate-50 p-4 rounded-xl border border-slate-200 whitespace-pre-wrap text-xs text-slate-700 leading-relaxed font-medium">${data.details}</div>`;
 
-                // 🙋 参加予定リスト（APIの仕様に合わせて joinsLineIds を使用）
+                // 🙋 参加予定リスト
                 const joins = data.joinsLineIds || [];
                 html += `<div class="mt-4"><p class="text-[10px] font-bold text-indigo-500 mb-2">🙋 参加予定 (${joins.length}人)</p>`;
                 if(joins.length > 0) {
                     html += `<div class="flex flex-wrap gap-1.5">${joins.map(id => {
-                        const userDoc = allUsersData.find(doc => doc.name.includes(id));
-                        const name = userDoc ? (getSafe(userDoc.fields?.profile?.mapValue?.fields?.name) || "匿名") : "匿名";
+                        const userDoc = allUsersData.find(doc => doc.id === id);
+                        const name = userDoc ? userDoc.name : "匿名";
                         return `<button onclick="openProfileByLineId('${id}')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-[10px] font-bold px-2.5 py-1 rounded-md border border-indigo-200 active:scale-95 transition shadow-sm">${name}</button>`;
                     }).join('')}</div>`;
                 } else { html += `<p class="text-[10px] text-slate-400">まだ参加者はいません</p>`; }
                 html += `</div>`;
 
-                // 🤔 迷い中リスト（APIの仕様に合わせて maybesLineIds を使用）
+                // 🤔 迷い中リスト
                 const maybes = data.maybesLineIds || [];
                 html += `<div class="mt-4"><p class="text-[10px] font-bold text-orange-500 mb-2">🤔 迷い中 (${maybes.length}人)</p>`;
                 if(maybes.length > 0) {
                     html += `<div class="flex flex-wrap gap-1.5">${maybes.map(id => {
-                        const userDoc = allUsersData.find(doc => doc.name.includes(id));
-                        const name = userDoc ? (getSafe(userDoc.fields?.profile?.mapValue?.fields?.name) || "匿名") : "匿名";
+                        const userDoc = allUsersData.find(doc => doc.id === id);
+                        const name = userDoc ? userDoc.name : "匿名";
                         return `<button onclick="openProfileByLineId('${id}')" class="bg-orange-50 hover:bg-orange-100 text-orange-600 text-[10px] font-bold px-2.5 py-1 rounded-md border border-orange-200 active:scale-95 transition shadow-sm">${name}</button>`;
                     }).join('')}</div>`;
                 } else { html += `<p class="text-[10px] text-slate-400">迷い中の人はいません</p>`; }
@@ -427,28 +419,26 @@ async function openEventDetail(eventId, title) {
             if (allUsersData.length === 0) { alert("データを読み込み中です。少し待ってからお試しください！"); return; }
             document.getElementById('same-type-title').innerText = `${titlePrefix} が同じ仲間`;
             const matchedUsers = [];
-            allUsersData.forEach((doc, index) => {
-                if (doc.name.includes(myUserId)) return; 
-                const f = doc.fields;
-                if (!f || !f.profile || !f.profile.mapValue) return;
+            
+            allUsersData.forEach((user, index) => {
+                if (user.id === myUserId) return; 
                 let isMatch = false;
-                if (typeCategory === 'chrono' && getSafe(f.chronoResult).includes(typeValue)) isMatch = true;
-                else if (typeCategory === 'bigFive' && getSafe(f.bigFiveResult).includes(typeValue)) isMatch = true;
-                else if (typeCategory === 'coffee' && getSafe(f.coffeeResult).includes(typeValue)) isMatch = true;
-                else if (typeCategory === 'sm' && getSafe(f.smResult).includes(typeValue)) isMatch = true;
-                else if (typeCategory === 'motivation' && getSafe(f.motivationResult).includes(typeValue)) isMatch = true;
+                if (typeCategory === 'chrono' && user.chronoResult.includes(typeValue)) isMatch = true;
+                else if (typeCategory === 'bigFive' && user.bigFiveResult.includes(typeValue)) isMatch = true;
+                else if (typeCategory === 'coffee' && user.coffeeResult.includes(typeValue)) isMatch = true;
+                else if (typeCategory === 'sm' && user.smResult.includes(typeValue)) isMatch = true;
+                else if (typeCategory === 'motivation' && user.motivationResult.includes(typeValue)) isMatch = true;
+                
                 if (isMatch) {
-                    const p = f.profile.mapValue.fields;
-                    let roles = []; if (p.roles && p.roles.arrayValue && p.roles.arrayValue.values) roles = p.roles.arrayValue.values.map(v => getSafe(v)); else if (p.role) roles = [getSafe(p.role)];
-                    matchedUsers.push({ index: index, name: getSafe(p.name) || "匿名メンバー", icon: getSafe(p.iconUrl) || "https://via.placeholder.com/150", roles: roles });
+                    matchedUsers.push({ index: index, name: user.name, icon: user.icon, roles: user.roles });
                 }
             });
+            
             document.getElementById('same-type-count').innerText = `あなた以外に ${matchedUsers.length} 人見つかりました！`;
             const listContainer = document.getElementById('same-type-list');
             if (matchedUsers.length > 0) {
                 let html = "";
                 matchedUsers.forEach(user => {
-                    // ★ここでも共通のバッジ関数を使用！
                     const topRoleBadge = user.roles.length > 0 && user.roles[0] !== "未設定" && user.roles[0] !== "一般メンバー" ? getRoleBadgeHtml(user.roles[0]) : "";
                     html += `<div onclick="closeSameTypeModal(); showOtherProfile(${user.index})" class="flex items-center gap-4 bg-slate-50 p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-100 active:scale-95 transition shadow-sm">
                         <img src="${user.icon}" class="w-12 h-12 rounded-full object-cover border border-slate-300">
@@ -462,30 +452,28 @@ async function openEventDetail(eventId, title) {
         function closeSameTypeModal() { document.getElementById('same-type-modal').classList.add('hidden'); document.getElementById('same-type-modal').classList.remove('flex'); }
 
         function showOtherProfile(index) {
-            const doc = allUsersData[index]; const f = doc.fields; const p = f.profile.mapValue.fields;
-            document.getElementById('other-name').innerText = getSafe(p.name) + " さん";
-            document.getElementById('other-icon').src = getSafe(p.iconUrl) || "https://via.placeholder.com/150";
+            const user = allUsersData[index];
+            document.getElementById('other-name').innerText = user.name + " さん";
+            document.getElementById('other-icon').src = user.icon;
             
-            let roles = []; if (p.roles && p.roles.arrayValue && p.roles.arrayValue.values) roles = p.roles.arrayValue.values.map(v => getSafe(v)); else if (p.role) roles = [getSafe(p.role)];
             const badgesContainer = document.getElementById('other-role-badges');
             badgesContainer.innerHTML = "";
-            if (roles.length > 0 && !roles.includes("一般メンバー") && !roles.includes("未設定")) {
-                 roles.forEach(role => { badgesContainer.innerHTML += getRoleBadgeHtml(role); }); // ★共通のバッジ関数を使用！
+            if (user.roles.length > 0 && !user.roles.includes("一般メンバー") && !user.roles.includes("未設定")) {
+                 user.roles.forEach(role => { badgesContainer.innerHTML += getRoleBadgeHtml(role); });
             }
             
-            const uni = getSafe(p.uni); const grade = getSafe(p.grade);
-            document.getElementById('other-univ').innerText = (uni || grade) ? `${uni} ${grade}` : "";
-            document.getElementById('other-intro').innerText = getSafe(p.intro) || getSafe(p.selfIntro) || "よろしくお願いします！";
+            document.getElementById('other-univ').innerText = (user.uni || user.grade) ? `${user.uni} ${user.grade}` : "";
+            document.getElementById('other-intro').innerText = user.intro || "よろしくお願いします！";
+            
             let tagsHtml = "";
-            if (p.tags && p.tags.arrayValue && p.tags.arrayValue.values) {
-                p.tags.arrayValue.values.forEach(v => { tagsHtml += `<span class="bg-slate-100 text-slate-600 text-[9px] font-bold px-2 py-1 rounded border border-slate-200">🏷️ ${getSafe(v)}</span>`; });
-            }
+            user.tags.forEach(tag => { tagsHtml += `<span class="bg-slate-100 text-slate-600 text-[9px] font-bold px-2 py-1 rounded border border-slate-200">🏷️ ${tag}</span>`; });
             if(tagsHtml === "") tagsHtml = `<span class="text-[10px] text-slate-400">タグ未設定</span>`;
             document.getElementById('other-tags').innerHTML = tagsHtml;
+            
             document.getElementById('other-profile-modal').classList.remove('hidden'); document.getElementById('other-profile-modal').classList.add('flex');
         }
-
         function closeOtherProfile() { document.getElementById('other-profile-modal').classList.add('hidden'); document.getElementById('other-profile-modal').classList.remove('flex'); }
+
         function editHitokoto() {
             const current = document.getElementById('user-intro').innerText; const text = current === "ここをタップしてひとことを設定！" ? "" : current;
             const input = prompt("いまのひとこと（マイページ用）を入力してください✨\n※最大40文字程度", text);
@@ -507,27 +495,47 @@ async function openEventDetail(eventId, title) {
             }).catch((err) => { alert("エラーが発生しました: " + err); });
         }
 
+        // 👇 バックエンド化：全ユーザーのデータをAPI経由で爆速取得！
         async function fetchConnections() {
             if (!myData) return;
             try {
-                const res = await fetch(`https://firestore.googleapis.com/v1/projects/shinrizemi-linebot/databases/default/documents/users?pageSize=1000`);
-                const json = await res.json();
-                if (!json.documents) return;
-                allUsersData = json.documents;
-                const myChrono = getSafe(myData.chronoResult).split('（')[0]; const myBigFiveMatch = getSafe(myData.bigFiveResult).match(/Big Five：(.+?)が特徴的/); const myBigFive = myBigFiveMatch ? myBigFiveMatch[1] : ""; const myCoffee = getSafe(myData.coffeeResult).split(' ')[0];
+                const res = await fetch(`https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/getAllUsersData`);
+                if (!res.ok) throw new Error("APIエラー");
+                allUsersData = await res.json();
+                
+                const myChrono = myData.chronoResult ? myData.chronoResult.split('（')[0] : ""; 
+                const myBigFiveMatch = myData.bigFiveResult ? myData.bigFiveResult.match(/Big Five：(.+?)が特徴的/) : null; 
+                const myBigFive = myBigFiveMatch ? myBigFiveMatch[1] : ""; 
+                const myCoffee = myData.coffeeResult ? myData.coffeeResult.split(' ')[0] : "";
+                const mySm = myData.smResult ? myData.smResult.split('（')[0] : "";
+                
                 let chronoSameCount = 0; let syncRanking = [];
-                json.documents.forEach((doc, index) => {
-                    if (doc.name.includes(myUserId)) return;
-                    const f = doc.fields; if (!f || !f.profile || !f.profile.mapValue) return; 
-                    const p = f.profile.mapValue.fields; const otherName = getSafe(p.name); const otherIcon = getSafe(p.iconUrl) || "https://via.placeholder.com/150"; if (!otherName) return;
-                    let roles = []; if (p.roles && p.roles.arrayValue && p.roles.arrayValue.values) roles = p.roles.arrayValue.values.map(v => getSafe(v));
-                    let otherChrono = getSafe(f.chronoResult).split('（')[0]; if (myChrono && otherChrono === myChrono) chronoSameCount++;
+                
+                allUsersData.forEach((user, index) => {
+                    if (user.id === myUserId) return;
+                    
+                    let otherChrono = user.chronoResult.split('（')[0]; 
+                    if (myChrono && otherChrono === myChrono) chronoSameCount++;
+                    
                     let score = 0;
-                    if (myChrono && otherChrono === myChrono) score += 25; if (myBigFive && getSafe(f.bigFiveResult).includes(myBigFive)) score += 35; if (myCoffee && getSafe(f.coffeeResult).includes(myCoffee)) score += 20; if (getSafe(myData.smResult) && getSafe(f.smResult) && getSafe(myData.smResult).split('（')[0] === getSafe(f.smResult).split('（')[0]) score += 20;
-                    if (score >= 15) syncRanking.push({ index: index, name: otherName, icon: otherIcon, score: score, topRole: roles.length > 0 ? roles[0] : "メンバー" });
+                    if (myChrono && otherChrono === myChrono) score += 25; 
+                    if (myBigFive && user.bigFiveResult.includes(myBigFive)) score += 35; 
+                    if (myCoffee && user.coffeeResult.includes(myCoffee)) score += 20; 
+                    if (mySm && user.smResult && mySm === user.smResult.split('（')[0]) score += 20;
+                    
+                    if (score >= 15) {
+                        syncRanking.push({ 
+                            index: index, name: user.name, icon: user.icon, score: score, 
+                            topRole: user.roles.length > 0 ? user.roles[0] : "メンバー" 
+                        });
+                    }
                 });
+                
                 if (myChrono) document.getElementById('rare-text').innerHTML = `あなたと同じ「${myChrono}」のゼミ生は、<br>全体で <strong class="text-pink-500 text-sm drop-shadow-sm">${chronoSameCount + 1}人</strong> います！`;
-                syncRanking.sort((a,b) => b.score - a.score); const container = document.getElementById('sync-users-container');
+                
+                syncRanking.sort((a,b) => b.score - a.score); 
+                const container = document.getElementById('sync-users-container');
+                
                 if (syncRanking.length > 0) {
                     let html = "";
                     syncRanking.slice(0, 5).forEach((user, i) => {
@@ -540,7 +548,7 @@ async function openEventDetail(eventId, title) {
                     });
                     container.innerHTML = html;
                 } else { container.innerHTML = `<p class="text-xs text-slate-400 font-bold w-full text-center py-4">まだ似ている人が見つかりません。仲間が増えるのを待とう！</p>`; }
-            } catch (e) { console.error(e); }
+            } catch (e) { console.error("コネクション取得エラー", e); }
         }
 
         initMyPage();

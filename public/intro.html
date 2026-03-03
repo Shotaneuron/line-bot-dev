@@ -382,11 +382,6 @@
         extractAllPages(exploreData);
         const MAX_EXP = allPageIds.length;
 
-        function getSafe(field) {
-            if (!field) return "";
-            return field.stringValue || field.integerValue || "";
-        }
-
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('btn-total-q').innerText = MAX_EXP;
         });
