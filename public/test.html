@@ -282,13 +282,12 @@
                 descs: { 1: "空想を好み、豊かな内面世界を持つ傾向", 2: "音楽や美術などの美しさに深く感動する傾向", 3: "自分の感情の動きを大切にする傾向", 4: "新しい活動や場所、未知のものを好む傾向", 5: "抽象的なアイデアや知的な遊びを好む傾向", 6: "伝統を疑い、新しい価値観を受け入れる傾向" } }
         };
 
-async function initializePortal() {
+        async function initializePortal() {
             try {
                 await liff.init({ liffId: "2009176797-S5FV668D" }); 
                 fetchStatistics();
                 if (!liff.isLoggedIn()) { liff.login(); return; }
                 
-                // 👤 LINEのプロフィール情報を取得して画面に表示！
                 const profile = await liff.getProfile();
                 const userId = profile.userId;
                 document.getElementById('user-name').innerText = profile.displayName + " さん";
@@ -296,12 +295,13 @@ async function initializePortal() {
                     document.getElementById('user-icon').src = profile.pictureUrl;
                 }
 
-                const url = `https://firestore.googleapis.com/v1/projects/shinrizemi-linebot/databases/default/documents/users/${userId}`;
+                // 👇 バックエンドのAPIを呼ぶように変更！セキュアになりました
+                const url = `https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/getUserData?userId=${userId}`;
                 const res = await fetch(url);
                 if (res.ok) {
-                    const json = await res.json();
-                    if (json.fields) {
-                        userData = json.fields;
+                    const data = await res.json();
+                    if (data) {
+                        userData = data; // 綺麗なデータがそのまま入る！
                         reflectData('motivation', userData.motivationResult, userData.motivationDate);
                         reflectData('bigfive', userData.bigFiveResult, userData.bigFiveDate);
                         reflectData('chrono', userData.chronoResult, userData.chronoDate);
@@ -309,55 +309,49 @@ async function initializePortal() {
                         reflectData('sm', userData.smResult, userData.smDate);
                         reflectData('nomophobia', userData.nomophobiaResult, userData.nomophobiaDate);
                         
-                        // 🏷️ トリセツタグの生成
                         generateUserTags(userData);
                     }
                 }
             } catch (err) { console.error("初期化エラー:", err); }
         }
 
-        // --- 🏷️ 取得したデータから「トリセツタグ」を生成する関数 ---
+        // --- 🏷️ .stringValue が不要になりスッキリしました ---
         function generateUserTags(data) {
             const tagsContainer = document.getElementById('user-tags');
             let tagsHTML = "";
 
-            // 各テストの結果から、キーワードだけを抜き出してタグ化する
             if (data.motivationResult) {
-                const text = data.motivationResult.stringValue.replace('やる気：', '');
+                const text = data.motivationResult.replace('やる気：', '');
                 tagsHTML += `<span class="bg-orange-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-full shadow-sm">🔥 ${text}</span>`;
             }
             if (data.bigFiveResult) {
-                // "Big Five：開放性が特徴的..." などから抜き出し
-                const match = data.bigFiveResult.stringValue.match(/Big Five：(.+?)が特徴的/);
+                const match = data.bigFiveResult.match(/Big Five：(.+?)が特徴的/);
                 const text = match ? match[1] : "分析済";
                 tagsHTML += `<span class="bg-indigo-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-full shadow-sm">🧠 ${text}派</span>`;
             }
             if (data.chronoResult) {
-                const text = data.chronoResult.stringValue.split('（')[0];
+                const text = data.chronoResult.split('（')[0];
                 tagsHTML += `<span class="bg-emerald-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-full shadow-sm">⏰ ${text}</span>`;
             }
             if (data.coffeeResult) {
-                const text = data.coffeeResult.stringValue.split(' ')[0];
+                const text = data.coffeeResult.split(' ')[0];
                 tagsHTML += `<span class="bg-amber-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-full shadow-sm">☕ ${text}好き</span>`;
             }
             if (data.smResult) {
-                const text = data.smResult.stringValue.split('（')[0];
+                const text = data.smResult.split('（')[0];
                 tagsHTML += `<span class="bg-pink-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-full shadow-sm">🌬️ ${text}</span>`;
             }
 
-            // タグが1つでもあれば、初期メッセージを消してタグを表示
-            if (tagsHTML !== "") {
-                tagsContainer.innerHTML = tagsHTML;
-            }
+            if (tagsHTML !== "") tagsContainer.innerHTML = tagsHTML;
         }
 
-        function reflectData(type, resultField, dateField) {
-            if(resultField && resultField.stringValue) {
-                document.getElementById(`result-${type}`).innerText = resultField.stringValue;
+        function reflectData(type, resultValue, dateValue) {
+            if(resultValue) {
+                document.getElementById(`result-${type}`).innerText = resultValue;
                 document.getElementById(`result-${type}`).style.color = "#1e293b";
                 document.getElementById(`btn-${type}`).classList.remove('hidden');
-                if(dateField && dateField.timestampValue) {
-                    const d = new Date(dateField.timestampValue);
+                if(dateValue) {
+                    const d = new Date(dateValue); // API側で変換済みの文字列から日付を作成
                     document.getElementById(`date-${type}`).innerText = d.toLocaleDateString() + " 実施";
                 }
             }
@@ -365,52 +359,23 @@ async function initializePortal() {
 
         async function fetchStatistics() {
             try {
-                const statsUrl = `https://firestore.googleapis.com/v1/projects/shinrizemi-linebot/databases/default/documents/users?pageSize=1000`;
+                // 👇 バックエンドに作成した新しいAPIを呼び出す
+                const statsUrl = `https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/getStatistics`;
                 const statsRes = await fetch(statsUrl);
-                const statsJson = await statsRes.json();
+                const statsData = await statsRes.json();
                 
-                if (statsJson.documents) {
-                    let totalUsers = 0;
-                    let motiCounts = {}, chronoCounts = {}, coffeeCounts = {}, smCounts = {}, nomoCounts = {};
-                    
-                    statsJson.documents.forEach(doc => {
-                        const f = doc.fields;
-                        if (f) {
-                            let tested = false;
-                            if (f.motivationResult) { tested = true; let t = f.motivationResult.stringValue.replace('やる気：', ''); motiCounts[t] = (motiCounts[t] || 0) + 1; }
-                            if (f.chronoResult) { tested = true; let t = f.chronoResult.stringValue.split('（')[0]; chronoCounts[t] = (chronoCounts[t] || 0) + 1; }
-                            if (f.coffeeResult) { tested = true; let t = f.coffeeResult.stringValue.split(' ')[0]; coffeeCounts[t] = (coffeeCounts[t] || 0) + 1; }
-                            
-                            // ★ 新規追加分の集計
-                            if (f.smResult) { 
-                                tested = true; 
-                                let t = f.smResult.stringValue.split('（')[0]; // 「HSM（空気を...」から「HSM」だけ切り取る
-                                smCounts[t] = (smCounts[t] || 0) + 1; 
-                            }
-                            if (f.nomophobiaResult) { 
-                                tested = true; 
-                                let t = f.nomophobiaResult.stringValue; 
-                                nomoCounts[t] = (nomoCounts[t] || 0) + 1; 
-                            }
-                            
-                            if (tested) totalUsers++;
-                        }
-                    });
-
-                    // 画面に反映
-                    if (totalUsers > 0) {
-                        document.getElementById('stat-total').innerText = totalUsers;
-                        
-                        const getTop = (counts) => Object.keys(counts).length > 0 ? Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b) : "まだ";
-
-                        document.getElementById('stat-top-motivation').innerText = getTop(motiCounts);
-                        document.getElementById('stat-top-chrono').innerText = getTop(chronoCounts);
-                        document.getElementById('stat-top-coffee').innerText = getTop(coffeeCounts);
-                        document.getElementById('stat-top-sm').innerText = getTop(smCounts);
-                        document.getElementById('stat-top-nomophobia').innerText = getTop(nomoCounts);
-                    }
+                // 画面に反映
+                if (statsData && statsData.total !== undefined) {
+                    document.getElementById('stat-total').innerText = statsData.total;
+                    document.getElementById('stat-top-motivation').innerText = statsData.topMotivation;
+                    document.getElementById('stat-top-chrono').innerText = statsData.topChrono;
+                    document.getElementById('stat-top-coffee').innerText = statsData.topCoffee;
+                    document.getElementById('stat-top-sm').innerText = statsData.topSm;
+                    document.getElementById('stat-top-nomophobia').innerText = statsData.topNomophobia;
                 }
-            } catch (e) { console.error("統計取得エラー:", e); }
+            } catch (e) { 
+                console.error("統計取得エラー:", e); 
+            }
         }
 
         function openModal(testType) {
@@ -418,22 +383,21 @@ async function initializePortal() {
             document.getElementById('detail-modal').style.display = 'flex';
             const chartContainer = document.getElementById('chart-container');
             const modalText = document.getElementById('modal-text');
-            
-            // ★UI劇的改善：文字サイズを大きく(text-sm)し、行間をゆったり(leading-relaxed)に！
             modalText.className = "text-sm text-slate-700 font-medium leading-relaxed whitespace-pre-wrap break-words text-left";
             
             let labels = [], dataPoints = [], maxScore = 7, title = "", text = "", extraHTML = "";
             let showChart = true;
 
+            // --- 💡 データ抽出のヘルパー関数もシンプルに！ ---
             function safeParse(field) {
                 if (!field) return {};
-                if (field.stringValue) {
-                    try { return JSON.parse(field.stringValue); } catch(e) { return {}; }
+                if (typeof field === 'string') {
+                    try { return JSON.parse(field); } catch(e) { return {}; }
                 }
-                return field;
+                return field; // すでにオブジェクトならそのまま返す
             }
-            function safeString(field) { return field && field.stringValue ? field.stringValue : "データなし"; }
-
+            function safeString(field) { return field ? field : "データなし"; }
+            
             try {
                 if (testType === 'bigfive') {
                     title = "Big Five 分析 🧠";

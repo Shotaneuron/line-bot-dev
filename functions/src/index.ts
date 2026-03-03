@@ -1720,3 +1720,114 @@ export const getNotionEvents = functions.region('asia-northeast1').https.onReque
         }
     });
 });
+
+// ───────────────────────────────────────────
+// 10. ポータル用 API: 統計データ（RESEARCH DATA）の取得
+// ───────────────────────────────────────────
+export const getStatistics = functions.region("asia-northeast1").https.onRequest(async (req: any, res: any) => {
+    // どのドメインからでもアクセスできるようにする（CORS対応）
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+
+    try {
+        // キャッシュヘッダーを設定（CDNやブラウザで5分間使い回す＝データベースの節約＆爆速化！）
+        res.set('Cache-Control', 'public, max-age=300, s-maxage=300');
+
+        const snapshot = await db.collection("users").get();
+        
+        let totalUsers = 0;
+        let motiCounts: { [key: string]: number } = {};
+        let chronoCounts: { [key: string]: number } = {};
+        let coffeeCounts: { [key: string]: number } = {};
+        let smCounts: { [key: string]: number } = {};
+        let nomoCounts: { [key: string]: number } = {};
+
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            let tested = false;
+            
+            // Firebase Admin SDKは自動で型変換してくれるので .stringValue は不要！
+            if (data.motivationResult) { 
+                tested = true; 
+                let t = data.motivationResult.replace('やる気：', ''); 
+                motiCounts[t] = (motiCounts[t] || 0) + 1; 
+            }
+            if (data.chronoResult) { 
+                tested = true; 
+                let t = data.chronoResult.split('（')[0]; 
+                chronoCounts[t] = (chronoCounts[t] || 0) + 1; 
+            }
+            if (data.coffeeResult) { 
+                tested = true; 
+                let t = data.coffeeResult.split(' ')[0]; 
+                coffeeCounts[t] = (coffeeCounts[t] || 0) + 1; 
+            }
+            if (data.smResult) { 
+                tested = true; 
+                let t = data.smResult.split('（')[0]; 
+                smCounts[t] = (smCounts[t] || 0) + 1; 
+            }
+            if (data.nomophobiaResult) { 
+                tested = true; 
+                let t = data.nomophobiaResult; 
+                nomoCounts[t] = (nomoCounts[t] || 0) + 1; 
+            }
+            
+            if (tested) totalUsers++;
+        });
+
+        // 1番多いものを抽出する関数
+        const getTop = (counts: { [key: string]: number }) => 
+            Object.keys(counts).length > 0 ? Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b) : "まだ";
+
+        const statsData = {
+            total: totalUsers,
+            topMotivation: getTop(motiCounts),
+            topChrono: getTop(chronoCounts),
+            topCoffee: getTop(coffeeCounts),
+            topSm: getTop(smCounts),
+            topNomophobia: getTop(nomoCounts)
+        };
+
+        res.json(statsData);
+    } catch(e: any) { 
+        console.error("Statistics API Error:", e);
+        res.status(500).json({ error: e.message }); 
+    }
+});
+
+// ───────────────────────────────────────────
+// 11. ポータル用 API: 個人のユーザーデータの取得（セキュア版）
+// ───────────────────────────────────────────
+export const getUserData = functions.region("asia-northeast1").https.onRequest(async (req: any, res: any) => {
+    // どのドメインからでもアクセスできるようにする（CORS対応）
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+
+    const userId = req.query.userId;
+    if (!userId) { res.status(400).json({ error: "No userId provided" }); return; }
+
+    try {
+        const docRef = db.collection("users").doc(userId);
+        const docSnap = await docRef.get();
+
+        if (docSnap.exists) {
+            const data = docSnap.data() || {};
+            
+            // 日付データ（FirestoreのTimestamp）を扱いやすい文字列に変換してあげる優しさ
+            for (const key in data) {
+                if (data[key] && typeof data[key] === 'object' && '_seconds' in data[key]) {
+                    data[key] = new Date(data[key]._seconds * 1000).toISOString();
+                }
+            }
+            res.json(data); // 綺麗なJSONとしてフロントに返す
+        } else {
+            res.json(null); // データがない場合は null を返す
+        }
+    } catch(e: any) { 
+        console.error("getUserData API Error:", e);
+        res.status(500).json({ error: e.message }); 
+    }
+});
