@@ -778,6 +778,81 @@ async function handleEvent(event: any) {
     if (event.type !== "message" || event.message.type !== "text") return null;
     const text = event.message.text.trim();
 
+    // ▼▼ ここから追加: デジタル名刺（ワンタップ連絡先交換）の処理 ▼▼
+    if (text.startsWith("名刺交換:")) {
+        const targetId = text.replace("名刺交換:", "").trim();
+        if (targetId === userId) return null;
+
+        try {
+            // 自分と相手のデータをFirestoreから取得
+            const [myDoc, targetDoc] = await Promise.all([
+                db.collection("users").doc(userId).get(),
+                db.collection("users").doc(targetId).get()
+            ]);
+
+            if (!targetDoc.exists || !myDoc.exists) {
+                await reply(replyToken, "データが見つかりませんでした。先にマイページを登録してください！");
+                return null;
+            }
+
+            const myData = myDoc.data() || {};
+            const targetData = targetDoc.data() || {};
+            const myName = myData.profile?.name || "あなた";
+            const targetName = targetData.profile?.name || "ゼミ生";
+
+            // Geminiに2人のデータから相性を分析させる
+            const prompt = `
+あなたは心理学コミュニティのAIです。
+以下の「${myName}」さんと「${targetName}」さんが今、現実のイベントで名刺交換をしました！
+2人の心理診断データを比較し、「どんな相性か」「一緒にどんなプロジェクト・行動をすると面白いか」を、100文字程度のポップで熱いメッセージで出力してください。
+
+【${myName}さんのデータ】
+やる気: ${myData.motivationResult || "未設定"}, BigFive: ${myData.bigFiveResult || "未設定"}, クロノタイプ: ${myData.chronoResult || "未設定"}
+
+【${targetName}さんのデータ】
+やる気: ${targetData.motivationResult || "未設定"}, BigFive: ${targetData.bigFiveResult || "未設定"}, クロノタイプ: ${targetData.chronoResult || "未設定"}
+`;
+            const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_NAME });
+            const result = await model.generateContent(prompt);
+            const aiText = result.response.text().trim();
+
+            // 共通のFlex Messageを作成
+            const createMessage = (partnerName: string, partnerId: string, aiAnalysis: string) => ({
+                type: "flex", altText: `🤝 ${partnerName}さんと繋がりました！`,
+                contents: {
+                    type: "bubble",
+                    body: {
+                        type: "box", layout: "vertical", spacing: "md",
+                        contents: [
+                            { type: "text", text: "🤝 新たな繋がり！", weight: "bold", color: "#10b981", size: "sm" },
+                            { type: "text", text: `${partnerName}さんとデジタル名刺を交換しました！`, size: "sm", wrap: true, weight: "bold" },
+                            { type: "separator", margin: "md" },
+                            { type: "text", text: "🤖 AI相性分析", size: "xs", color: "#3498db", weight: "bold", margin: "md" },
+                            { type: "text", text: aiAnalysis, size: "sm", wrap: true, color: "#333333" }
+                        ]
+                    },
+                    footer: { type: "box", layout: "vertical", contents: [{ type: "button", style: "primary", color: "#10b981", action: { type: "uri", label: "📄 相手のプロフを見る", uri: `https://liff.line.me/2009176797-MJ4zJxOt` } }] }
+                }
+            });
+
+            // スキャンした側（自分）に返信
+            await reply(replyToken, createMessage(targetName, targetId, aiText) as any);
+
+            // スキャンされた側（相手）にもプッシュ通知で報告！
+            try {
+                await lineClient.pushMessage(targetId, createMessage(myName, userId, aiText) as any);
+            } catch (e) { console.error("プッシュ通知エラー:", e); }
+
+            // （おまけ）お互いのバディ履歴やコネクションデータベースに記録する処理を後でここに書くこともできます
+            return null;
+        } catch (e) {
+            console.error("名刺交換エラー:", e);
+            await reply(replyToken, "名刺の処理中にエラーが発生しました🙇‍♂️");
+            return null;
+        }
+    }
+    // ▲▲ 名刺交換処理ここまで ▲▲
+
     // ▼▼ 差し替え：感想入力モードかどうかを判定し、Notionへコメント追加 ▼▼
     const userDoc = await db.collection("users").doc(userId).get();
     const userData = userDoc.data();

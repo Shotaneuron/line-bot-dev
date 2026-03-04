@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@700;900&family=Zen+Kaku+Gothic+New:wght@700;900&family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         body { font-family: 'Zen Maru Gothic', sans-serif; background: linear-gradient(-45deg, #ffffff, #f8fafc, #eff6ff, #fdf4ff, #fffbeb); background-size: 300% 300%; animation: auroraBG 15s ease infinite; color: #1e293b; min-height: 100vh; padding-bottom: 5rem; }
         @keyframes auroraBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
@@ -63,6 +64,9 @@
                     <p id="user-intro" class="text-xs font-bold leading-relaxed">ここをタップしてひとことを設定！</p>
                 </div>
                 <span class="opacity-40 text-xs">✏️</span>
+                <button onclick="openQrModal()" class="mt-4 w-full bg-slate-800 text-white text-xs font-bold py-3 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition shadow-lg">
+                <span class="text-base">📱</span> デジタル名刺を見せる（連絡先交換）
+                </button>
             </div>
         </div>
     </header>
@@ -638,6 +642,54 @@
                 } else throw new Error("API Error");
             } catch (err) { btn.innerHTML = '❌ エラー'; setTimeout(() => { btn.innerHTML = '<span>💾 設定を保存する</span>'; btn.disabled = false; }, 2000); }
         }
+        // 🤝 デジタル名刺の表示処理
+        let qrcodeObj = null;
+        function openQrModal() {
+            const modal = document.getElementById('qr-modal');
+            const content = document.getElementById('qr-modal-content');
+            modal.classList.remove('hidden');
+            
+            // LIFF IDを含めたスキャン用URLを生成
+            // ?action=connect&targetId=自分のID を付与します
+            const liffUrl = `https://liff.line.me/${liff.id}?action=connect&targetId=${myUserId}`;
+            
+            const container = document.getElementById('qrcode-container');
+            container.innerHTML = ""; // 初期化
+            qrcodeObj = new QRCode(container, {
+                text: liffUrl,
+                width: 180, height: 180,
+                colorDark : "#1e293b", colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.M
+            });
+
+            setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); }, 10);
+        }
+
+        function closeQrModal() {
+            const modal = document.getElementById('qr-modal');
+            const content = document.getElementById('qr-modal-content');
+            modal.classList.add('opacity-0'); content.classList.add('scale-95');
+            setTimeout(() => { modal.classList.add('hidden'); }, 300);
+        }
+
+        // 🚀 URLパラメータを監視して、スキャンされたらBotにメッセージを送信する処理
+        // （既存の initMyPage の一番最初、 liff.getProfile() の後に追加してください）
+        async function checkConnection(userId) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const action = urlParams.get('action');
+            const targetId = urlParams.get('targetId');
+
+            if (action === 'connect' && targetId) {
+                if (targetId === userId) {
+                    alert("自分のQRコードは読み込めません！");
+                    return;
+                }
+                // LINE Botに裏側でメッセージを送信し、画面を閉じる
+                document.getElementById('loading').innerHTML = '<div class="text-4xl animate-bounce mb-4">🤝</div><p class="text-amber-400 font-black">名刺交換中...</p>';
+                await liff.sendMessages([{ type: "text", text: `名刺交換:${targetId}` }]);
+                liff.closeWindow(); // 読み込んだら即座にLINEのトーク画面に戻す！
+            }
+        }
         initMyPage();
     </script>
 
@@ -654,6 +706,20 @@
             <button onclick="savePrivacySettings()" id="btn-save-privacy" class="w-full bg-slate-800 text-white text-sm font-black py-4 rounded-xl active:scale-95 transition shadow-lg flex justify-center items-center gap-2">
                 <span>💾 設定を保存する</span>
             </button>
+        </div>
+    </div>
+    <div id="qr-modal" class="fixed inset-0 bg-slate-900/80 z-[100] flex justify-center items-center p-5 hidden transition-opacity duration-300 opacity-0 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-sm rounded-[2rem] p-8 text-center shadow-2xl transform scale-95 transition-transform duration-300" id="qr-modal-content">
+            <h3 class="text-xl font-black text-slate-800 mb-2">🤝 デジタル名刺</h3>
+            <p class="text-[10px] font-bold text-slate-500 mb-6">相手のLINEのQRリーダーで読み込んでもらおう！</p>
+            
+            <div class="bg-slate-50 p-4 rounded-3xl border border-slate-200 inline-block mb-6 shadow-inner">
+                <div id="qrcode-container" class="w-48 h-48 mx-auto flex items-center justify-center"></div>
+            </div>
+
+            <p class="text-xs font-bold text-slate-700 bg-amber-50 text-amber-600 py-2 px-4 rounded-xl inline-block mb-6">読み込むとAIが相性を分析します✨</p>
+
+            <button onclick="closeQrModal()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-black py-4 rounded-xl transition active:scale-95">閉じる</button>
         </div>
     </div>
 </body>
