@@ -37,6 +37,9 @@
     <header id="id-card" class="card-normal rounded-3xl p-6 mb-6 fade-in relative overflow-hidden transition-all duration-500">
         <div class="absolute top-[-50%] right-[-20%] w-[200px] h-[200px] bg-white/50 rounded-full filter blur-[20px]"></div>
         <button onclick="openEditModal()" class="absolute top-4 right-4 bg-white/80 hover:bg-white text-slate-700 text-[10px] font-bold px-3 py-1.5 rounded-full backdrop-blur-md transition z-20 flex items-center gap-1 border border-slate-200 shadow-sm"><span>✏️</span> 編集</button>
+        <button onclick="openPrivacyModal()" class="w-full bg-slate-50 border border-slate-200 text-slate-600 text-xs font-bold py-3 rounded-xl flex items-center justify-center gap-2 active:bg-slate-100 transition">
+                🔒 診断結果の公開設定を変更
+            </button>
         <div class="relative z-10 pr-16"> 
             <div class="flex items-center gap-4 mb-4">
                 <img id="user-icon" src="https://via.placeholder.com/150" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-white shadow-md object-cover flex-shrink-0">
@@ -550,8 +553,100 @@
                 } else { container.innerHTML = `<p class="text-xs text-slate-400 font-bold w-full text-center py-4">まだ似ている人が見つかりません。仲間が増えるのを待とう！</p>`; }
             } catch (e) { console.error("コネクション取得エラー", e); }
         }
+        // ==========================================
+        // 🔒 プライバシー設定の制御 (mypage用)
+        // ==========================================
+        let currentPrivacy = { chrono: true, bigFive: true, coffee: true, sm: true, motivation: true, nomophobia: true };
+
+        const testNames = {
+            motivation: { icon: "🔥", name: "やる気８タイプ" },
+            bigFive: { icon: "🧠", name: "Big Five性格" },
+            chrono: { icon: "⏰", name: "クロノタイプ" },
+            coffee: { icon: "☕", name: "コーヒー性格" },
+            sm: { icon: "🌬️", name: "空気読めるか" },
+            nomophobia: { icon: "📱", name: "スマホ依存度" }
+        };
+
+        function openPrivacyModal() {
+            const modal = document.getElementById('privacy-modal');
+            const content = document.getElementById('privacy-modal-content');
+            modal.classList.remove('hidden');
+            
+            // mypage.htmlでは userData が純粋なJSONオブジェクトとして取得されている想定
+            if (userData && userData.privacy) {
+                currentPrivacy = {
+                    motivation: userData.privacy.motivation !== false,
+                    bigFive: userData.privacy.bigFive !== false,
+                    chrono: userData.privacy.chrono !== false,
+                    coffee: userData.privacy.coffee !== false,
+                    sm: userData.privacy.sm !== false,
+                    nomophobia: userData.privacy.nomophobia !== false
+                };
+            }
+
+            const container = document.getElementById('privacy-toggles-container');
+            container.innerHTML = "";
+            for (const key in testNames) {
+                const isChecked = currentPrivacy[key];
+                container.innerHTML += `
+                    <div class="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center text-lg shadow-sm border border-slate-100">${testNames[key].icon}</div>
+                            <span class="text-sm font-bold text-slate-700">${testNames[key].name}</span>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer" id="toggle-${key}" ${isChecked ? 'checked' : ''}>
+                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                        </label>
+                    </div>
+                `;
+            }
+            setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('translate-y-full'); }, 10);
+        }
+
+        function closePrivacyModal() {
+            const modal = document.getElementById('privacy-modal');
+            const content = document.getElementById('privacy-modal-content');
+            modal.classList.add('opacity-0'); content.classList.add('translate-y-full');
+            setTimeout(() => { modal.classList.add('hidden'); }, 300);
+        }
+
+        async function savePrivacySettings() {
+            const btn = document.getElementById('btn-save-privacy');
+            btn.innerHTML = '<span class="animate-spin">🌀</span> 保存中...'; btn.disabled = true;
+            const profile = await liff.getProfile(); const userId = profile.userId;
+            const newPrivacy = {};
+            for (const key in testNames) { newPrivacy[key] = document.getElementById(`toggle-${key}`).checked; }
+
+            try {
+                const res = await fetch('https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/updatePrivacySettings', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: userId, privacy: newPrivacy })
+                });
+                if (res.ok) {
+                    if (userData) userData.privacy = newPrivacy; // ローカル更新
+                    btn.innerHTML = '✅ 保存しました！'; btn.classList.replace('bg-slate-800', 'bg-emerald-500');
+                    setTimeout(() => { closePrivacyModal(); btn.innerHTML = '<span>💾 設定を保存する</span>'; btn.classList.replace('bg-emerald-500', 'bg-slate-800'); btn.disabled = false; }, 1500);
+                } else throw new Error("API Error");
+            } catch (err) { btn.innerHTML = '❌ エラー'; setTimeout(() => { btn.innerHTML = '<span>💾 設定を保存する</span>'; btn.disabled = false; }, 2000); }
+        }
 
         initMyPage();
     </script>
+
+    <div id="privacy-modal" class="fixed inset-0 bg-slate-900/60 z-50 flex justify-center items-end pb-0 sm:items-center sm:p-5 hidden transition-opacity duration-300 opacity-0">
+        <div class="bg-white w-full sm:w-96 rounded-t-[2rem] sm:rounded-[2rem] p-6 max-h-[90vh] overflow-y-auto shadow-2xl transform translate-y-full transition-transform duration-300" id="privacy-modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h3 class="text-lg font-black text-slate-800">公開設定 🔒</h3>
+                    <p class="text-[10px] font-bold text-slate-500 mt-1">他のゼミ生に結果を見せるか選べます</p>
+                </div>
+                <button onclick="closePrivacyModal()" class="text-slate-400 hover:text-slate-600 font-bold text-xl bg-slate-100 rounded-full w-8 h-8 flex justify-center items-center">×</button>
+            </div>
+            <div class="space-y-4 mb-8" id="privacy-toggles-container"></div>
+            <button onclick="savePrivacySettings()" id="btn-save-privacy" class="w-full bg-slate-800 text-white text-sm font-black py-4 rounded-xl active:scale-95 transition shadow-lg flex justify-center items-center gap-2">
+                <span>💾 設定を保存する</span>
+            </button>
+        </div>
+    </div>
 </body>
 </html>
