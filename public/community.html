@@ -24,14 +24,15 @@
         @keyframes pulse-gold { 0% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(251, 191, 36, 0); } 100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0); } }
         .claim-ready { animation: pulse-gold 2s infinite; background: var(--guild-gold) !important; color: var(--guild-bg) !important; }
 
-        /* レベルアップフラッシュ */
         #level-up-overlay { display: none; position: fixed; inset: 0; background: rgba(251, 191, 36, 0.3); z-index: 100; animation: flash 0.5s ease-out; }
         @keyframes flash { 0% { opacity: 0; } 50% { opacity: 1; } 100% { opacity: 0; } }
 
         .exp-bar-inner { transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        
-        /* クエストボード用紙風 */
         .quest-paper { background: #fef3c7; color: #78350f; border-left: 4px solid #b45309; }
+        
+        /* スクロールバー非表示 */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="pb-10">
@@ -45,9 +46,9 @@
 
     <main id="app-content" class="p-5 space-y-6 max-w-lg mx-auto hidden">
         
-        <header class="text-center pt-4 mb-8">
+        <header class="text-center pt-4 mb-4">
             <div class="inline-block relative">
-                <h1 class="text-3xl font-black font-serif-jp tracking-tighter text-amber-400 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">北大心理ゼミ</h1>
+                <h1 class="text-[28px] font-black font-serif-jp tracking-[0.15em] text-amber-400 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">北大心理ゼミ</h1>
                 <div class="h-1 w-full bg-gradient-to-r from-transparent via-amber-500 to-transparent mt-1"></div>
             </div>
             <p class="text-[9px] font-black text-amber-200/60 mt-2 tracking-[0.2em] uppercase">The Practice of Academic Discipline</p>
@@ -70,7 +71,7 @@
                 </div>
             </div>
 
-            <div class="space-y-2">
+            <div class="space-y-2 mb-6">
                 <div class="flex justify-between text-[10px] font-black text-amber-200/50 uppercase tracking-tighter">
                     <span>Experience Points</span>
                     <span id="exp-text">0 / 500</span>
@@ -81,7 +82,29 @@
                     </div>
                 </div>
             </div>
-        </header>
+
+            <div class="border-t border-slate-700 pt-4 mt-4">
+                <h3 class="text-[10px] font-black text-amber-500 mb-3 tracking-widest text-center">📊 ADVENTURER STATS</h3>
+                <div class="grid grid-cols-2 gap-x-6 gap-y-3 px-2">
+                    <div>
+                        <div class="flex justify-between text-[9px] text-slate-300 font-bold mb-1"><span>⚔️ 行動力 (STR)</span><span class="text-amber-400" id="stat-str-rank">A</span></div>
+                        <div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden"><div id="stat-str" class="h-full bg-red-500 w-[80%] rounded-full"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-[9px] text-slate-300 font-bold mb-1"><span>🧠 分析力 (INT)</span><span class="text-amber-400" id="stat-int-rank">S</span></div>
+                        <div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden"><div id="stat-int" class="h-full bg-blue-500 w-[95%] rounded-full"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-[9px] text-slate-300 font-bold mb-1"><span>🛡️ メンタル (VIT)</span><span class="text-amber-400" id="stat-vit-rank">B</span></div>
+                        <div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden"><div id="stat-vit" class="h-full bg-emerald-500 w-[60%] rounded-full"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-[9px] text-slate-300 font-bold mb-1"><span>💨 適応力 (AGI)</span><span class="text-amber-400" id="stat-agi-rank">A</span></div>
+                        <div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden"><div id="stat-agi" class="h-full bg-purple-500 w-[75%] rounded-full"></div></div>
+                    </div>
+                </div>
+            </div>
+        </section>
 
         <button id="btn-login" onclick="claimLoginBonus()" class="w-full bg-slate-800 border-2 border-slate-600 py-4 rounded-2xl flex items-center justify-center gap-3 active:scale-95 transition shadow-lg group">
             <span class="text-2xl group-hover:rotate-12 transition">🍺</span>
@@ -91,12 +114,17 @@
             </div>
         </button>
 
-        <section class="space-y-4">
+        <div class="bg-slate-800/80 border-l-4 border-amber-500 p-4 rounded-r-2xl relative overflow-hidden shadow-md">
+            <span class="absolute -right-3 -bottom-4 text-6xl opacity-10">🦉</span>
+            <p class="text-[10px] text-amber-500 font-black mb-1 flex items-center gap-1"><span>🤖</span> ギルドマスター (AI) より</p>
+            <p id="guild-msg" class="text-xs text-slate-300 font-bold leading-relaxed">「冒険者よ、まずは己を知ることから始めよ。下のクエスト掲示板から、診断テストを受けてくるのだ。」</p>
+        </div>
+
+        <section class="space-y-4 pt-2">
             <div class="flex items-center gap-2 px-2">
                 <span class="text-amber-500">📜</span>
                 <h3 class="text-sm font-black text-white tracking-widest">クエスト掲示板</h3>
             </div>
-
             <div id="quest-list" class="space-y-3">
                 <div id="q-profile" class="quest-paper p-4 rounded-2xl flex justify-between items-center opacity-50 transition-all duration-500">
                     <div>
@@ -105,7 +133,6 @@
                     </div>
                     <button onclick="claimQuest('profile', 200)" class="btn-claim px-4 py-2 bg-slate-300 text-slate-500 rounded-xl text-xs font-black disabled:cursor-not-allowed" disabled>未達成</button>
                 </div>
-
                 <div id="q-bigfive" class="quest-paper p-4 rounded-2xl flex justify-between items-center opacity-50 transition-all duration-500">
                     <div>
                         <h4 class="text-sm font-black">🔍 自己の深淵を覗く</h4>
@@ -113,13 +140,38 @@
                     </div>
                     <button onclick="claimQuest('bigfive', 300)" class="btn-claim px-4 py-2 bg-slate-300 text-slate-500 rounded-xl text-xs font-black" disabled>未達成</button>
                 </div>
-
                 <div id="q-event" class="quest-paper p-4 rounded-2xl flex justify-between items-center opacity-50 transition-all duration-500">
                     <div>
                         <h4 class="text-sm font-black">⚔️ 実践への第一歩</h4>
                         <p class="text-[10px] font-bold opacity-70">ゼミのイベントに1回参加せよ</p>
                     </div>
                     <button onclick="claimQuest('event', 500)" class="btn-claim px-4 py-2 bg-slate-300 text-slate-500 rounded-xl text-xs font-black" disabled>未達成</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="space-y-3 pt-4">
+            <div class="flex items-center gap-2 px-2">
+                <span class="text-amber-500">🎒</span>
+                <h3 class="text-sm font-black text-white tracking-widest">アイテムポーチ (獲得バッジ)</h3>
+            </div>
+            <div class="flex gap-3 overflow-x-auto no-scrollbar pb-2 px-1">
+                <div class="w-[72px] h-[72px] flex-shrink-0 bg-gradient-to-br from-amber-900/40 to-slate-900 border border-amber-500/50 rounded-2xl flex flex-col items-center justify-center shadow-[0_0_15px_rgba(245,158,11,0.15)] relative">
+                    <div class="absolute inset-0 bg-white/5 rounded-2xl"></div>
+                    <span class="text-2xl drop-shadow-md">🔰</span>
+                    <span class="text-[8px] font-black text-amber-400 mt-1">ギルド登録</span>
+                </div>
+                <div class="w-[72px] h-[72px] flex-shrink-0 bg-slate-800/80 border border-slate-700 rounded-2xl flex flex-col items-center justify-center opacity-40">
+                    <span class="text-2xl grayscale">🎪</span>
+                    <span class="text-[8px] font-bold text-slate-400 mt-1">???</span>
+                </div>
+                <div class="w-[72px] h-[72px] flex-shrink-0 bg-slate-800/80 border border-slate-700 rounded-2xl flex flex-col items-center justify-center opacity-40">
+                    <span class="text-2xl grayscale">🤝</span>
+                    <span class="text-[8px] font-bold text-slate-400 mt-1">???</span>
+                </div>
+                <div class="w-[72px] h-[72px] flex-shrink-0 bg-slate-800/80 border border-slate-700 rounded-2xl flex flex-col items-center justify-center opacity-40">
+                    <span class="text-2xl grayscale">👑</span>
+                    <span class="text-[8px] font-bold text-slate-400 mt-1">???</span>
                 </div>
             </div>
         </section>
@@ -134,7 +186,7 @@
 
         async function initCommunity() {
             try {
-                await liff.init({ liffId: "2009176797-tgpGsUUz" }); 
+                await liff.init({ liffId: "2009176797-MJ4zJxOt" }); // ※LIFF IDは環境に合わせて変更してください
                 if (!liff.isLoggedIn()) { liff.login(); return; }
                 const profile = await liff.getProfile();
                 myUserId = profile.userId;
@@ -142,7 +194,6 @@
                 document.getElementById('user-icon').src = profile.pictureUrl;
                 document.getElementById('user-name').innerText = profile.displayName;
 
-                // データの取得
                 const [userRes, eventRes] = await Promise.all([
                     fetch(`https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/getUserData?userId=${myUserId}`),
                     fetch(`https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/getUserEvents?userId=${myUserId}`)
@@ -152,16 +203,14 @@
                     myData = await userRes.json();
                     const eventData = await eventRes.json();
                     
-                    // 初期経験値の計算（バックエンド連動前なのでロジックで仮算出）
                     const pastCount = eventData.past ? eventData.past.length : 0;
                     totalExp = (pastCount * 100); 
-
-                    // 既に獲得済みのEXPをlocalStorageから反映
                     totalExp += parseInt(localStorage.getItem('claimed_exp_' + myUserId) || 0);
 
                     updateStatusUI();
                     checkQuests(myData, eventData);
                     checkLoginStatus();
+                    updateGuildMessage(myData, eventData);
                 }
 
                 document.getElementById('loading').classList.add('hidden');
@@ -176,7 +225,7 @@
             const percent = (currentLevelExp / LV_STEP) * 100;
 
             const oldLevel = parseInt(document.getElementById('user-level').innerText);
-            if (level > oldLevel && oldLevel !== 0) {
+            if (level > oldLevel && oldLevel !== 1) {
                 triggerLevelUpEffect();
             }
 
@@ -184,18 +233,36 @@
             document.getElementById('exp-text').innerText = `${currentLevelExp} / ${LV_STEP}`;
             document.getElementById('exp-bar').style.width = `${percent}%`;
 
-            // ランク判定
             const rankEl = document.getElementById('user-rank');
             if (level >= 10) { rankEl.innerText = "RANK: GOLD"; rankEl.className = "text-[10px] text-amber-400 font-bold bg-amber-900/50 px-2 py-0.5 rounded mt-1 inline-block border border-amber-500"; }
             else if (level >= 5) { rankEl.innerText = "RANK: SILVER"; rankEl.className = "text-[10px] text-slate-200 font-bold bg-slate-700/50 px-2 py-0.5 rounded mt-1 inline-block border border-slate-400"; }
 
-            // 称号
             if (myData) {
                 let title = "見習い冒険者";
                 if(myData.chronoResult?.includes("オオカミ")) title = "夜を統べる魔術師";
                 if(myData.chronoResult?.includes("ライオン")) title = "暁の聖騎士";
                 if(myData.coffeeResult?.includes("ブラック")) title = "不屈の戦士";
                 document.getElementById('user-title').innerText = `【 ${title} 】`;
+
+                // RPGパラメータの擬似連動（※後で本物のデータと繋ぎます）
+                if(myData.bigFiveResult) {
+                    document.getElementById('stat-str').style.width = "85%"; document.getElementById('stat-str-rank').innerText = "A";
+                    document.getElementById('stat-int').style.width = "90%"; document.getElementById('stat-int-rank').innerText = "S";
+                }
+            }
+        }
+
+        function updateGuildMessage(data, events) {
+            const msgEl = document.getElementById('guild-msg');
+            const hasProfile = data.profile && data.profile.uni;
+            const hasBigFive = !!data.bigFiveResult;
+            
+            if (!hasProfile) {
+                msgEl.innerText = "「お主、まだ身元を明かしておらんようじゃな。マイページからプロフィールを登録するのじゃ！」";
+            } else if (!hasBigFive) {
+                msgEl.innerText = "「順調じゃな！次は己の深淵を覗くのだ。Big Five診断を受ければ、さらに道が開けるぞ。」";
+            } else {
+                msgEl.innerText = "「素晴らしい！立派な冒険者に育っておる。次のイベントに参加して、仲間（バディ）を見つけるのじゃ！」";
             }
         }
 
@@ -209,7 +276,7 @@
             quests.forEach(q => {
                 const isClaimed = localStorage.getItem(`quest_${q.id}_${myUserId}`);
                 if (isClaimed) {
-                    document.getElementById(q.el).style.display = 'none'; // 獲得済みは消去
+                    document.getElementById(q.el).style.display = 'none'; 
                 } else if (q.condition) {
                     const row = document.getElementById(q.el);
                     row.classList.remove('opacity-50');
@@ -234,6 +301,10 @@
                 row.style.display = "none";
                 updateStatusUI();
                 confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#fbbf24', '#ffffff'] });
+                
+                // クエスト受取後に神託を更新
+                const msgEl = document.getElementById('guild-msg');
+                msgEl.innerText = "「おおっ、クエスト達成じゃな！その調子でどんどん経験値を稼ぐのじゃ！」";
             }, 500);
         }
 
@@ -243,8 +314,9 @@
             if (lastLogin === today) {
                 const btn = document.getElementById('btn-login');
                 btn.disabled = true;
-                btn.opacity = "0.5";
+                btn.style.opacity = "0.6";
                 btn.querySelector('p:last-child').innerText = "本日の出勤済み";
+                btn.querySelector('p:last-child').classList.replace('text-white', 'text-slate-400');
             }
         }
 
@@ -257,10 +329,9 @@
             checkLoginStatus();
             updateStatusUI();
             
-            // 浮遊する "+50" エフェクト
             const effect = document.createElement('div');
             effect.innerText = "+50 EXP";
-            effect.className = "fixed text-amber-400 font-black z-[100] animate-[floatUp_1s_ease-out_forwards]";
+            effect.className = "fixed text-amber-400 text-xl drop-shadow-[0_0_10px_rgba(251,191,36,0.8)] font-black z-[100] animate-[floatUp_1s_ease-out_forwards]";
             effect.style.left = "50%";
             effect.style.top = "50%";
             document.body.appendChild(effect);
@@ -272,12 +343,11 @@
             overlay.style.display = 'block';
             setTimeout(() => { overlay.style.display = 'none'; }, 500);
             
-            confetti({ particleCount: 200, spread: 100, origin: { y: 0.5 }, colors: ['#fbbf24', '#f59e0b', '#ffffff'] });
+            confetti({ particleCount: 200, spread: 100, origin: { y: 0.5 }, colors: ['#fbbf24', '#f59e0b', '#ffffff'], zIndex: 1000 });
             
-            // 簡易的な通知
             const msg = document.createElement('div');
-            msg.innerHTML = `<div class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[110] text-center">
-                <p class="text-6xl font-black text-amber-400 italic font-serif-jp animate-bounce shadow-xl">LEVEL UP!</p>
+            msg.innerHTML = `<div class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[110] text-center w-full pointer-events-none">
+                <p class="text-5xl font-black text-amber-400 italic font-serif-jp animate-bounce drop-shadow-[0_0_20px_rgba(251,191,36,0.8)]">LEVEL UP!</p>
             </div>`;
             document.body.appendChild(msg);
             setTimeout(() => msg.remove(), 2500);
