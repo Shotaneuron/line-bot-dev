@@ -343,11 +343,11 @@ ${rawFeedbacks}
     });
 
 // ───────────────────────────────────────────
-// 3. 定期実行: 前日リマインド (毎日21:00)
+// 3. 定期実行: 前日リマインド ＆ AIバディ・マッチング (毎日21:00)
 // ───────────────────────────────────────────
 export const scheduledEventReminder = functions.region("asia-northeast1").pubsub
     .schedule("0 21 * * *").timeZone("Asia/Tokyo").onRun(async (context) => {
-        console.log("⏰ 前日リマインド開始");
+        console.log("⏰ 前日リマインド＆バディマッチング開始");
         const now = new Date();
         const tomorrow = new Date(now);
         tomorrow.setDate(now.getDate() + 1);
@@ -363,6 +363,7 @@ export const scheduledEventReminder = functions.region("asia-northeast1").pubsub
             });
             if (eventsResponse.results.length === 0) return null;
 
+            // メンバーのLineIDマップを作成
             const membersResponse = await notion.databases.query({ database_id: MEMBER_DB_ID, page_size: 100 });
             const memberMap: { [key: string]: string } = {};
             membersResponse.results.forEach((member: any) => {
@@ -376,9 +377,116 @@ export const scheduledEventReminder = functions.region("asia-northeast1").pubsub
                 const participants = (event as any).properties[PROP_JOIN]?.relation || [];
                 if (participants.length === 0) continue;
 
+                // 1. 参加者のデータをFirestoreから一括取得（公開設定を考慮）
+                const participantData: any[] = [];
+                const fallbackLineIds: string[] = []; // AI失敗時の送信用
+
                 for (const p of participants) {
-                    const targetLineId = memberMap[p.id];
-                    if (targetLineId) {
+                    const lineId = memberMap[p.id];
+                    if (lineId) {
+                        fallbackLineIds.push(lineId);
+                        const userDoc = await db.collection("users").doc(lineId).get();
+                        if (userDoc.exists) {
+                            const ud = userDoc.data();
+                            if (!ud) continue;
+                            
+                            // 先ほど作ったプライバシー設定をここで読み込む
+                            const privacy = ud.privacy || { chrono: true, bigFive: true, coffee: true, sm: true, motivation: true, nomophobia: true };
+                            
+                            let bigfiveData = "非公開";
+                            if (privacy.bigFive) {
+                                if (ud.bigFiveScores) {
+                                    const s = JSON.parse(ud.bigFiveScores);
+                                    if (s.domainScores) bigfiveData = `外向性:${s.domainScores.extraversion}, 協調性:${s.domainScores.agreeableness}, 誠実性:${s.domainScores.conscientiousness}, 神経症的傾向:${s.domainScores.neuroticism}, 開放性:${s.domainScores.openness}`;
+                                    else bigfiveData = `外向性:${s.extraversion||0}, 協調性:${s.agreeableness||0}`;
+                                } else if (ud.bigFiveResult) bigfiveData = ud.bigFiveResult;
+                            }
+
+                            // 公開されているデータだけでAIへの分析用プロフィールを作成
+                            participantData.push({
+                                id: lineId,
+                                name: ud.profile?.name || "メンバー",
+                                data: `やる気:${privacy.motivation ? ud.motivationResult || "未設定" : "非公開"}, BigFive:${bigfiveData}, クロノタイプ:${privacy.chrono ? ud.chronoResult || "未設定" : "非公開"}, コーヒー:${privacy.coffee ? ud.coffeeResult || "未設定" : "非公開"}, SM尺度:${privacy.sm ? ud.smResult || "未設定" : "非公開"}`
+                            });
+                        }
+                    }
+                }
+
+                let isAiSuccess = false;
+
+                // 2. 参加者が2名以上ならGeminiでバディ・マッチング！
+                if (participantData.length >= 2) {
+                    const prompt = `
+あなたは心理学コミュニティの優秀なAIバディ・マッチャーです。
+明日のイベント参加者リストを元に、全員を2人組（奇数の場合は1組だけ3人組）に分けてください。
+診断データを分析し、「性格が似ていて意気投合しそう」または「真逆で補完関係になりそう」な最高のペアを作ってください。
+（※「非公開」となっている項目は分析に使わないでください）
+
+【参加者リスト】
+${JSON.stringify(participantData)}
+
+【出力JSONフォーマット】
+以下の形式のJSON配列のみを出力してください（Markdownの記号やその他の文章は一切不要です）。
+[
+  {
+    "userIds": ["LINE_ID_A", "LINE_ID_B"],
+    "reason": "マッチングの理由（例：2人とも夜型でクリエイティビティが高いため）",
+    "topic": "明日会ったら最初に話すべき話題の提案"
+  }
+]
+`;
+                    try {
+                        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_NAME });
+                        const result = await model.generateContent(prompt);
+                        let text = result.response.text();
+                        // 余計な文字を削って純粋なJSONにする
+                        text = text.replace(/```json/g, "").replace(/```/g, "").trim();
+                        const pairings = JSON.parse(text);
+
+                        // 3. マッチング結果を元に個別LINE送信
+                        for (const group of pairings) {
+                            const memberNames = group.userIds.map((uid: string) => participantData.find(p => p.id === uid)?.name).filter(Boolean);
+
+                            for (const targetUid of group.userIds) {
+                                // 自分以外の名前を取得
+                                const partnerNames = memberNames.filter((n: string) => n !== participantData.find(p => p.id === targetUid)?.name);
+                                if (partnerNames.length === 0) continue;
+                                const partnerText = partnerNames.join("さん、") + "さん";
+
+                                await lineClient.pushMessage(targetUid, {
+                                    type: "flex", altText: `🤝 明日のバディは${partnerText}です！`,
+                                    contents: {
+                                        type: "bubble",
+                                        header: { type: "box", layout: "vertical", backgroundColor: "#f43f5e", contents: [{ type: "text", text: "🤝 明日のバディ発表！", weight: "bold", color: "#ffffff", size: "sm" }] },
+                                        body: { 
+                                            type: "box", layout: "vertical", spacing: "md", 
+                                            contents: [
+                                                { type: "text", text: `明日の「${title}」、\nあなたのバディ（相棒）は…`, size: "xs", color: "#666666", wrap: true },
+                                                { type: "text", text: partnerText, weight: "bold", size: "xl", color: "#f43f5e", wrap: true },
+                                                { type: "separator", margin: "md" },
+                                                { type: "text", text: "🤖 AIからの分析", size: "xs", color: "#3498db", weight: "bold" },
+                                                { type: "text", text: group.reason, size: "sm", color: "#333333", wrap: true },
+                                                { type: "separator", margin: "md" },
+                                                { type: "text", text: "💬 おすすめの話題", size: "xs", color: "#2ecc71", weight: "bold" },
+                                                { type: "text", text: group.topic, size: "sm", color: "#333333", wrap: true, weight: "bold" }
+                                            ] 
+                                        },
+                                        footer: { type: "box", layout: "vertical", contents: [{ type: "button", style: "secondary", height: "sm", action: { type: "postback", label: "イベント詳細を確認", data: `action=detail&eventId=${event.id}` } }] }
+                                    }
+                                });
+                            }
+                        }
+                        isAiSuccess = true;
+                        console.log(`✅ 「${title}」のAIバディマッチング完了！`);
+                    } catch (e) {
+                        console.error("AI Buddy Matching Error:", e);
+                        isAiSuccess = false;
+                    }
+                }
+
+                // 4. AIマッチングに失敗した、または参加者が1名以下の場合は通常リマインド
+                if (!isAiSuccess) {
+                    for (const targetLineId of fallbackLineIds) {
                         try {
                             await lineClient.pushMessage(targetLineId, {
                                 type: "flex", altText: `⏰ リマインド: 明日は「${title}」です！`,
@@ -395,7 +503,7 @@ export const scheduledEventReminder = functions.region("asia-northeast1").pubsub
         } catch (e) { console.error("Reminder Error:", e); }
         return null;
     });
-
+    
 // ───────────────────────────────────────────
 // 4. Googleカレンダーからの更新通知を受け取るWebhook
 // ───────────────────────────────────────────
