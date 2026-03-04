@@ -36,10 +36,15 @@
 
     <header id="id-card" class="card-normal rounded-3xl p-6 mb-6 fade-in relative overflow-hidden transition-all duration-500">
         <div class="absolute top-[-50%] right-[-20%] w-[200px] h-[200px] bg-white/50 rounded-full filter blur-[20px]"></div>
-        <button onclick="openEditModal()" class="absolute top-4 right-4 bg-white/80 hover:bg-white text-slate-700 text-[10px] font-bold px-3 py-1.5 rounded-full backdrop-blur-md transition z-20 flex items-center gap-1 border border-slate-200 shadow-sm"><span>✏️</span> 編集</button>
-        <button onclick="openPrivacyModal()" class="w-full bg-slate-50 border border-slate-200 text-slate-600 text-xs font-bold py-3 rounded-xl flex items-center justify-center gap-2 active:bg-slate-100 transition">
-                🔒 診断結果の公開設定を変更
+        
+        <div class="absolute top-4 right-4 z-20 flex items-center gap-2">
+            <button onclick="openPrivacyModal()" class="bg-white/80 hover:bg-white text-slate-700 text-[10px] font-bold px-3 py-1.5 rounded-full backdrop-blur-md transition flex items-center gap-1 border border-slate-200 shadow-sm active:scale-95">
+                <span>🔒</span> 公開設定
             </button>
+            <button onclick="openEditModal()" class="bg-white/80 hover:bg-white text-slate-700 text-[10px] font-bold px-3 py-1.5 rounded-full backdrop-blur-md transition flex items-center gap-1 border border-slate-200 shadow-sm active:scale-95">
+                <span>✏️</span> 編集
+            </button>
+        </div>
         <div class="relative z-10 pr-16"> 
             <div class="flex items-center gap-4 mb-4">
                 <img id="user-icon" src="https://via.placeholder.com/150" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-white shadow-md object-cover flex-shrink-0">

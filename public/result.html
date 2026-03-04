@@ -154,7 +154,7 @@ async function initResult() {
             document.getElementById('loading').innerHTML = `<p class="text-red-500 font-bold">エラーが発生しました: ${err.message}</p>`;
         }
     }
-    
+
     function displayResult(userData, allUsers, userId, testType) {
         document.getElementById('loading').classList.add('hidden');
         document.getElementById('result-content').classList.remove('hidden');
@@ -327,9 +327,6 @@ async function initResult() {
             sm: { icon: "🌬️", name: "空気読めるか" },
             nomophobia: { icon: "📱", name: "スマホ依存度" }
         };
-
-        // 既存の initResult 関数の中で、json.fields を globalUserData に代入するように1行足してください（すでにある場合は不要です）
-        globalUserData = json.fields;
 
         function openPrivacyModal() {
             const modal = document.getElementById('privacy-modal');
