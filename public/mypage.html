@@ -656,8 +656,9 @@
             
             // LIFF IDを含めたスキャン用URLを生成
             // ?action=connect&targetId=自分のID を付与します
-            const liffUrl = `https://liff.line.me/${liff.id}?action=connect&targetId=${myUserId}`;
-            
+            // ? ではなく /? にし、パラメータ全体を一度エンコードして渡すのがLINE公式推奨の安全な渡し方です
+            const query = new URLSearchParams({ action: "connect", targetId: myUserId }).toString();
+            const liffUrl = `https://liff.line.me/${liff.id}/?${query}`;            
             const container = document.getElementById('qrcode-container');
             container.innerHTML = ""; // 初期化
             qrcodeObj = new QRCode(container, {
