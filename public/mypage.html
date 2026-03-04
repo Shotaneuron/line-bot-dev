@@ -47,8 +47,8 @@
             </button>
         </div>
 
-        <div class="relative z-10 pr-16 pt-2"> 
-            <div class="flex items-center gap-4 mb-4">
+        <div class="relative z-10 pt-2"> 
+            <div class="flex items-center gap-4 mb-4 pr-16">
                 <img id="user-icon" src="https://via.placeholder.com/150" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-white shadow-md object-cover flex-shrink-0">
                 <div>
                     <p id="user-univ" class="text-[9px] font-bold opacity-80 mb-0.5">大学・学部を設定しよう</p>
@@ -57,17 +57,18 @@
                 </div>
             </div>
             
-            <div class="bg-black/5 rounded-xl p-3 border border-black/5 flex items-start gap-2 relative group cursor-pointer active:scale-95 transition" onclick="editHitokoto()">
+            <div class="bg-black/5 rounded-xl p-3 border border-black/5 flex items-start gap-2 relative group cursor-pointer active:scale-95 transition w-full" onclick="editHitokoto()">
                 <span class="text-sm">💬</span>
                 <div class="flex-1">
                     <p class="text-[9px] opacity-60 font-bold mb-0.5">今のひとこと (タップで編集)</p>
                     <p id="user-intro" class="text-xs font-bold leading-relaxed">ここをタップしてひとことを設定！</p>
                 </div>
-                <span class="opacity-40 text-xs">✏️</span>
-                <button onclick="openQrModal()" class="mt-4 w-full bg-slate-800 text-white text-xs font-bold py-3 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition shadow-lg">
-                <span class="text-base">📱</span> デジタル名刺を見せる（連絡先交換）
-                </button>
+                <span class="opacity-40 text-xs mt-1">✏️</span>
             </div>
+
+            <button onclick="openQrModal()" class="mt-4 w-full bg-slate-800 text-white text-xs font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition shadow-lg">
+                <span class="text-base">📱</span> デジタル名刺を見せる（連絡先交換）
+            </button>
         </div>
     </header>
 
