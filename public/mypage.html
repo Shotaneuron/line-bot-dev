@@ -279,7 +279,11 @@
                 if (!liff.isLoggedIn()) { liff.login(); return; }
                 const profile = await liff.getProfile();
                 myUserId = profile.userId;
-                document.getElementById('user-icon').src = profile.pictureUrl; document.getElementById('user-name').innerText = profile.displayName + " さん";
+
+                await checkConnection(myUserId);
+
+                document.getElementById('user-icon').src = profile.pictureUrl; 
+                document.getElementById('user-name').innerText = profile.displayName + " さん";
                 
                 await fetchAvailableTags();
                 fetchDashboardEvents();
