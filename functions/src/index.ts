@@ -146,6 +146,203 @@ export const scheduledEventNotification = functions.region("asia-northeast1").pu
     });
 
 // ───────────────────────────────────────────
+// 🎯 定期実行: イベント終了日 22:00 の感想ヒアリング
+// ───────────────────────────────────────────
+export const scheduledFeedbackRequest = functions.region("asia-northeast1").pubsub
+    .schedule("0 22 * * *").timeZone("Asia/Tokyo").onRun(async (context) => {
+        console.log("📝 感想収集バッチ開始");
+        
+        // 日本時間の「今日」の日付を取得
+        const jpDate = new Date(new Date().getTime() + 9 * 60 * 60 * 1000);
+        const todayStr = jpDate.toISOString().split('T')[0];
+
+        try {
+            // 本日が「終了日（endDate）」になっているイベントをFirestoreから探す
+            const snapshot = await db.collection("events").where("endDate", "==", todayStr).get();
+            if (snapshot.empty) return null;
+
+            for (const doc of snapshot.docs) {
+                const data = doc.data();
+                const eventId = doc.id;
+                const title = data.title || "イベント";
+                
+                // 「参加」と「迷い中」のNotion IDリストを取得
+                const joinIds = data.joins || []; 
+                const maybeIds = data.maybes || [];
+
+                // 参加・迷い中が誰もいなければスキップ
+                if (joinIds.length === 0 && maybeIds.length === 0) continue;
+
+                // IDからLINEユーザーIDを取得するヘルパー関数
+                const fetchLineIds = async (notionIds: string[]) => {
+                    const ids: string[] = [];
+                    for (const id of notionIds) {
+                        try {
+                            const p: any = await notion.pages.retrieve({ page_id: id });
+                            const lineId = p.properties[PROP_LINE_USER_ID]?.rich_text?.[0]?.plain_text;
+                            if (lineId) ids.push(lineId);
+                        } catch(e) { console.error(`Participant error (${id}):`, e); } 
+                        finally { await new Promise(resolve => setTimeout(resolve, 333)); } // API制限回避
+                    }
+                    return ids;
+                };
+
+                const joinLineIds = await fetchLineIds(joinIds);
+                const maybeLineIds = await fetchLineIds(maybeIds);
+
+                // 🙋‍♂️ 【参加予定だった人向け】のメッセージ作成＆送信
+                if (joinLineIds.length > 0) {
+                    const joinMessage = {
+                        type: "flex", altText: `「${title}」の感想を教えてください！`,
+                        contents: {
+                            type: "bubble",
+                            body: {
+                                type: "box", layout: "vertical", spacing: "md",
+                                contents: [
+                                    { type: "text", text: "✨ お疲れ様でした！", weight: "bold", color: "#4f46e5", size: "sm" },
+                                    { type: "text", text: `本日の「${title}」はいかがでしたか？\n今後のゼミ活動の参考にしたいので、一番の学びや楽しかったことをぜひ教えてください！`, wrap: true, size: "sm", color: "#333333" }
+                                ]
+                            },
+                            footer: {
+                                type: "box", layout: "vertical",
+                                contents: [{ type: "button", style: "primary", color: "#4f46e5", action: { type: "postback", label: "💬 感想をLINEで送る", data: `action=feedback_start&eventId=${eventId}`, displayText: "感想を書きます！" } }]
+                            }
+                        }
+                    };
+                    await lineClient.multicast(joinLineIds, joinMessage as any);
+                    console.log(`✅ 「${title}」の参加者 ${joinLineIds.length}名 に感想ヒアリングを送信`);
+                }
+
+                // 🤔 【迷い中だった人向け】のメッセージ作成＆送信
+                if (maybeLineIds.length > 0) {
+                    const maybeMessage = {
+                        type: "flex", altText: `「${title}」終了のお知らせ`,
+                        contents: {
+                            type: "bubble",
+                            body: {
+                                type: "box", layout: "vertical", spacing: "md",
+                                contents: [
+                                    { type: "text", text: "🌙 イベント終了！", weight: "bold", color: "#f97316", size: "sm" },
+                                    { type: "text", text: `気になっていた「${title}」が無事終了しました！\n\nもし「今日フラッと参加してみたよ！」という場合は、ぜひ下のボタンから感想を教えてください！（参加できなかった場合も、また次の企画で待ってますね✨）`, wrap: true, size: "sm", color: "#333333" }
+                                ]
+                            },
+                            footer: {
+                                type: "box", layout: "vertical",
+                                contents: [{ type: "button", style: "primary", color: "#f97316", action: { type: "postback", label: "💬 参加したので感想を送る", data: `action=feedback_start&eventId=${eventId}`, displayText: "参加したので感想を書きます！" } }]
+                            }
+                        }
+                    };
+                    await lineClient.multicast(maybeLineIds, maybeMessage as any);
+                    console.log(`✅ 「${title}」の迷い中 ${maybeLineIds.length}名 にヒアリングを送信`);
+                }
+            }
+        } catch (e) { console.error("感想収集バッチエラー:", e); }
+        return null;
+    });
+
+// ───────────────────────────────────────────
+// 🚀 定期実行: イベント2日後の20:00に「AI要約＆レポート配信」
+// ───────────────────────────────────────────
+export const scheduledReportGeneration = functions.region("asia-northeast1").pubsub
+    .schedule("0 20 * * *").timeZone("Asia/Tokyo").onRun(async (context) => {
+        console.log("🔥 AIレポート作成バッチ開始");
+
+        // 日本時間の「2日前」の日付を取得 (例: イベントが20日終了なら、22日の20時に実行)
+        const jpDate = new Date(new Date().getTime() + 9 * 60 * 60 * 1000);
+        jpDate.setDate(jpDate.getDate() - 2); 
+        const targetDateStr = jpDate.toISOString().split('T')[0];
+
+        try {
+            // 終了日が2日前のイベントを探す
+            const snapshot = await db.collection("events").where("endDate", "==", targetDateStr).get();
+            if (snapshot.empty) return null;
+
+            for (const doc of snapshot.docs) {
+                const data = doc.data();
+                const eventId = doc.id;
+                const title = data.title || "イベント";
+
+                // 1. Notion APIを使って、該当イベントページの「コメント」一覧を取得
+                const commentsResponse = await notion.comments.list({ block_id: eventId });
+                const comments = commentsResponse.results;
+                
+                if (comments.length === 0) continue; // 感想が1つもなければスキップ
+
+                // 2. コメントのテキストをひとまとめにする
+                let rawFeedbacks = "";
+                for (const comment of comments) {
+                    const text = comment.rich_text.map((t: any) => t.plain_text).join("");
+                    // LINEからBot経由で書き込まれた感想のみを抽出（手動のコメントなどは除外）
+                    if (text.includes("からの感想】")) { 
+                        rawFeedbacks += `- ${text}\n`;
+                    }
+                }
+
+                if (!rawFeedbacks) continue; // 抽出した感想がなければスキップ
+
+                // 3. Gemini AIによる要約生成
+                const prompt = `
+以下のテキストは、「${title}」という大学の心理学ゼミのイベントに参加した学生たちから寄せられたLINEの感想です。
+この感想を元に、イベントの熱量や学びが伝わる「熱いハイライトレポート」を300〜400文字程度で作成してください。
+文体は親しみやすく、絵文字を適度に使い、後輩や不参加の人が「次は絶対に行きたい！」と思えるようなポジティブな内容にしてください。
+
+【みんなの感想】
+${rawFeedbacks}
+`;
+                // Gemini APIを呼び出す
+                const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_NAME });
+                const result = await model.generateContent(prompt);
+                const reportText = result.response.text();
+                
+                if (!reportText) continue;
+
+                // 4. Notionのページ本文（一番下）にAIレポートをブロックとして追記！
+                await notion.blocks.children.append({
+                    block_id: eventId,
+                    children: [
+                        {
+                            object: 'block',
+                            type: 'heading_2',
+                            heading_2: { rich_text: [{ type: 'text', text: { content: '🤖 みんなの感想ハイライト（AI生成）' } }] }
+                        },
+                        {
+                            object: 'block',
+                            type: 'paragraph',
+                            paragraph: { rich_text: [{ type: 'text', text: { content: reportText } }] }
+                        }
+                    ]
+                });
+
+                // 5. LINEで「全員」にレポート完成のハイライトを配信！
+                const message = {
+                    type: "flex", altText: `「${title}」のハイライトレポートが完成！`,
+                    contents: {
+                        type: "bubble",
+                        body: {
+                            type: "box", layout: "vertical", spacing: "md",
+                            contents: [
+                                { type: "text", text: "🔥 イベントレポート完成", weight: "bold", color: "#f43f5e", size: "sm" },
+                                { type: "text", text: `「${title}」の感想まとめレポートをAIが作成しました！\n\n${reportText.substring(0, 60)}...\n\n👇 続きは「詳細」からチェック！`, wrap: true, size: "sm", color: "#333333" }
+                            ]
+                        },
+                        footer: {
+                            type: "box", layout: "vertical",
+                            contents: [{ type: "button", style: "primary", color: "#f43f5e", action: { type: "postback", label: "📄 レポート全文を読む", data: `action=detail&eventId=${eventId}` } }]
+                        }
+                    }
+                };
+                
+                // 全員へ一斉配信 (ブロードキャスト)
+                await lineClient.broadcast(message as any);
+                console.log(`✅ 「${title}」のAIレポート作成と全体配信が完了しました！`);
+            }
+        } catch (e) {
+            console.error("レポート作成バッチエラー:", e);
+        }
+        return null;
+    });
+
+// ───────────────────────────────────────────
 // 3. 定期実行: 前日リマインド (毎日21:00)
 // ───────────────────────────────────────────
 export const scheduledEventReminder = functions.region("asia-northeast1").pubsub
@@ -308,6 +505,14 @@ async function handleEvent(event: any) {
             if (action === "decline") await handleStatusUpdate(replyToken, userId, eventId, PROP_DECLINE, "不参加");
             if (action === "detail") await handleShowDetail(replyToken, eventId);
         }
+        // ▼▼ 既存の処理の並びにこれを追加 ▼▼
+        if (action === "feedback_start" && eventId) {
+            // ユーザーデータベースに「今この人は〇〇イベントの感想を入力しようとしている」という目印をつける
+            await db.collection("users").doc(userId).set({ replyState: `feedback_${eventId}` }, { merge: true });
+            await reply(replyToken, "素敵なイベントになったようで嬉しいです！✨\n\nそれでは、一番の学びや楽しかったことを、そのままこのトーク画面に打ち込んで送信してください👇\n（AIが後で綺麗にまとめます！）");
+            return null;
+        }
+
         if (action === "search_cat" && category) await handleCategorySearch(replyToken, category);
         if (action === "about_cat" && category) await reply(replyToken, `🙇‍♂️ 「${category}」の紹介ページは現在準備中です！`);
         if (action === "create_account") await handleCreateAccount(replyToken, userId);
@@ -321,6 +526,50 @@ async function handleEvent(event: any) {
 
     if (event.type !== "message" || event.message.type !== "text") return null;
     const text = event.message.text.trim();
+
+    // ▼▼ 差し替え：感想入力モードかどうかを判定し、Notionへコメント追加 ▼▼
+    const userDoc = await db.collection("users").doc(userId).get();
+    const userData = userDoc.data();
+    if (userData && userData.replyState && String(userData.replyState).startsWith("feedback_")) {
+        const eventId = userData.replyState.split("_")[1];
+        
+        try {
+            // 1. 送り主の名前を取得（プロフィール登録がない場合は「LINEユーザー」）
+            const userName = userData.profile?.name || "LINEユーザー";
+
+            // 2. Notion APIを使って、対象のイベントページに「コメント」として追加！
+            await notion.comments.create({
+                parent: { page_id: eventId },
+                rich_text: [
+                    {
+                        text: { content: `【${userName}さんからの感想】\n` },
+                        annotations: { bold: true, color: "blue" }
+                    },
+                    {
+                        text: { content: text }
+                    }
+                ]
+            });
+
+            // 3. 入力モードを解除する
+            await db.collection("users").doc(userId).set({ replyState: null }, { merge: true });
+
+            // 4. ユーザーへ完了メッセージを送信
+            await reply(replyToken, "素敵な感想をありがとうございます！✨\nばっちり記録しました！\n\n後日、AIがみんなの感想をまとめたレポートをお届けするのでお楽しみに！");
+        
+        } catch (e) {
+            console.error("Notion Comment Error:", e);
+            // 万が一Notionへの書き込みが失敗した場合は、Firestoreにバックアップとして保存しつつエラーを返す
+            await db.collection("events").doc(eventId).collection("feedbacks").add({
+                userId: userId, text: text, createdAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+            await db.collection("users").doc(userId).set({ replyState: null }, { merge: true });
+            await reply(replyToken, "感想を受け取りました！ありがとうございます📝✨");
+        }
+        
+        return null; // 処理を終了する
+    }
+    // ▲▲ 差し替えここまで ▲▲
 
     if (text === "イベント" || text === "予定") { await handleListEvents(replyToken); return null; }
     if (text === "参加予定") { await handleMySchedule(replyToken, userId, "future"); return null; }
@@ -866,23 +1115,20 @@ async function handleNotionSearchAI(replyToken: string, userId: string, queryTex
         const userDocSnap = await userDocRef.get();
         const userData = userDocSnap.exists ? userDocSnap.data() : null;
 
-        // ✅ Admin SDKは自動で型を変換するので、.stringValue は不要！
+        // ✅ 新しく追加した2つの診断結果も取得する
         const motivationData = userData?.motivationResult || "未診断";
         const chronoData = userData?.chronoResult || "未診断";
         const coffeeData = userData?.coffeeResult || "未診断";
+        const smData = userData?.smResult || "未診断"; // 空気読めるか診断
+        const nomoData = userData?.nomophobiaResult || "未診断"; // スマホ依存チェック
 
-        // ★ 満点を自動計算してAIに教える
-// ▼ index.ts の変更部分 ▼
-        // ★ 満点を自動計算してAIに教える
+        // Big Fiveデータの計算処理
         let bigfiveData = "未診断";
         if (userData?.bigFiveScores) {
             const s = JSON.parse(userData.bigFiveScores);
-            
-            // ★ 新しい構造（domainScores）に対応させる
             if (s.domainScores) {
                 bigfiveData = `外向性:${s.domainScores.extraversion}, 協調性:${s.domainScores.agreeableness}, 誠実性:${s.domainScores.conscientiousness}, 神経症的傾向:${s.domainScores.neuroticism}, 開放性:${s.domainScores.openness} (※各120点満点)\n詳細ファセット:${JSON.stringify(s.facetScores)}`;
             } else {
-                // 古いデータ（簡易版など）への対応
                 bigfiveData = `外向性:${s.extraversion}, 協調性:${s.agreeableness}, 誠実性:${s.conscientiousness}, 神経症的傾向:${s.neuroticism}, 開放性:${s.openness}`;
             }
         } else if (userData?.bigFiveResult) {
@@ -890,10 +1136,9 @@ async function handleNotionSearchAI(replyToken: string, userId: string, queryTex
         }
 
         // ４．「北大心理ゼミのAI先輩」プロンプトを適用 ✨
-        // ... (以下はそのまま)
         const systemPrompt = `
         あなたは北海道大学「心理ゼミ」の頼れる先輩メンター（AIアドバイザー）です。
-        以下の【ユーザーの診断データ】と【過去の会話】を踏まえ、論理的かつ親身なアドバイスを行ってください。
+        以下の【ユーザーの6つの心理診断データ】と【過去の会話】を踏まえ、心理学の知見に基づいた論理的かつ親身なアドバイスを行ってください。
 
         【会話・フォーマットの厳守ルール】
         １．キャラクターとトーン（重要）
@@ -905,18 +1150,22 @@ async function handleNotionSearchAI(replyToken: string, userId: string, queryTex
         ・相手の話に共感して質問を投げるのは1回までです。「〜ということありませんか？」と何度も推測の質問を繰り返し続けるのは絶対にやめてください。
         ・ユーザーが「どう対策すればいい？」「どうすればいい？」と【解決策】を求めてきたら、質問をやめ、具体的なアドバイスや提案をするフェーズに切り替えてください。
 
-        ３．診断データの明示とプロファイリング
-        ・アドバイスの際は「診断で『経験への開放性』が高く出ていたので〜」など、根拠となる診断名を自然に織り交ぜてください。
-        ・ユーザーの悩みに直面した際、複数のデータを組み合わせて「なぜその悩みが起きているか」を論理的に解説してあげてください。
+        ３．6つの診断データを掛け合わせた【高度なプロファイリング】
+        ・アドバイスの際は、1つの診断結果だけでなく、複数の診断結果を組み合わせて論理的なアドバイスを提示してください。
+        ・（例）「クロノタイプが『夜型(オオカミ)』で、かつ『スマホ依存(ノモフォビア)』が高い傾向にあるため、夜更かししてスマホを触り、睡眠の質が落ちている可能性があります。まずは寝る前のスマホを〜」
+        ・（例）「BigFiveの『協調性』が高く、『空気読めるか診断(SM尺度)』も高いため、他人に気を使いすぎて疲れていませんか？『コーヒー性格(カフェラテ)』の結果からも、自分を犠牲にする傾向が見られます。」
+        ・診断結果が「未診断」の項目については触れず、分かっているデータのみで分析してください。
 
         ４．解決策とコミュニティ（ゼミ）への接続
-        ・ユーザーの課題が明確になったら、具体的な解決アクションを提案し、自然な流れで「ゼミのイベント」「Notionのコラム」「他のゼミ生」を紹介して、心理ゼミというコミュニティへ誘導してください。
+        ・ユーザーの課題が明確になったら、具体的な解決アクションを提案し、自然な流れで「ゼミのイベント」「Notionのコラム」を紹介して、心理ゼミというコミュニティへ誘導してください。
 
-        【ユーザーの診断データ】
+        【ユーザーの診断データ（全6種）】
         ・やる気８タイプ: ${motivationData}
         ・Big Five: ${bigfiveData}
-        ・クロノタイプ: ${chronoData}
-        ・コーヒー性格: ${coffeeData}
+        ・クロノタイプ(体内時計): ${chronoData}
+        ・コーヒー性格(行動心理): ${coffeeData}
+        ・空気読めるか診断(SM尺度): ${smData}
+        ・スマホ依存チェック(ノモフォビア): ${nomoData}
 
         【Notionのイベント・コラム情報】
         ${contextText}
@@ -929,6 +1178,8 @@ async function handleNotionSearchAI(replyToken: string, userId: string, queryTex
 
         上記ルールに従い、1回の返信は20〜300文字程度の短文で、マークダウンを一切使わずに返信してください。
         `;
+
+        // ５．AI回答の生成
 
         // ５．AI回答の生成
         const result = await model.generateContent(systemPrompt);
@@ -1834,7 +2085,7 @@ export const getUserData = functions.region("asia-northeast1").https.onRequest(a
 });
 
 // ───────────────────────────────────────────
-// 12. マイページ用 API: 全ユーザーの簡易データ取得（爆速キャッシュ版）
+// 12. マイページ用 API: 全ユーザーの簡易データ取得（爆速キャッシュ＆非公開対応版）
 // ───────────────────────────────────────────
 export const getAllUsersData = functions.region("asia-northeast1").https.onRequest(async (req: any, res: any) => {
     res.set('Access-Control-Allow-Origin', '*');
@@ -1851,6 +2102,16 @@ export const getAllUsersData = functions.region("asia-northeast1").https.onReque
         snapshot.forEach(doc => {
             const data = doc.data();
             if (data.profile) {
+                // ▼▼ ユーザーが設定した「公開設定（privacy）」を取得（なければ全て公開扱い） ▼▼
+                const privacy = data.privacy || {
+                    chrono: true,
+                    bigFive: true,
+                    coffee: true,
+                    sm: true,
+                    motivation: true,
+                    nomophobia: true
+                };
+
                 users.push({
                     id: doc.id,
                     name: data.profile.name || "匿名",
@@ -1860,11 +2121,14 @@ export const getAllUsersData = functions.region("asia-northeast1").https.onReque
                     intro: data.profile.intro || data.profile.selfIntro || "よろしくお願いします！",
                     uni: data.profile.uni || "",
                     grade: data.profile.grade || "",
-                    chronoResult: data.chronoResult || "",
-                    bigFiveResult: data.bigFiveResult || "",
-                    coffeeResult: data.coffeeResult || "",
-                    smResult: data.smResult || "",
-                    motivationResult: data.motivationResult || ""
+                    
+                    // ▼▼ プライバシー設定が false (非公開) の場合は「非公開」という文字列を返す ▼▼
+                    chronoResult: privacy.chrono ? (data.chronoResult || "") : "非公開",
+                    bigFiveResult: privacy.bigFive ? (data.bigFiveResult || "") : "非公開",
+                    coffeeResult: privacy.coffee ? (data.coffeeResult || "") : "非公開",
+                    smResult: privacy.sm ? (data.smResult || "") : "非公開",
+                    motivationResult: privacy.motivation ? (data.motivationResult || "") : "非公開",
+                    nomophobiaResult: privacy.nomophobia ? (data.nomophobiaResult || "") : "非公開"
                 });
             }
         });
@@ -1872,6 +2136,31 @@ export const getAllUsersData = functions.region("asia-northeast1").https.onReque
         res.json(users);
     } catch(e: any) { 
         console.error("getAllUsersData API Error:", e);
+        res.status(500).json({ error: e.message }); 
+    }
+});
+
+// ───────────────────────────────────────────
+// 13. プライバシー設定を更新する新しいAPI
+// ───────────────────────────────────────────
+export const updatePrivacySettings = functions.region("asia-northeast1").https.onRequest(async (req: any, res: any) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+
+    try {
+        const { userId, privacy } = req.body;
+        if (!userId || !privacy) { res.status(400).json({ error: "Missing parameters" }); return; }
+
+        // Firestoreのユーザーデータの privacy フィールドを上書き（マージ）
+        await db.collection("users").doc(userId).set({
+            privacy: privacy,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+
+        res.json({ success: true });
+    } catch(e: any) { 
         res.status(500).json({ error: e.message }); 
     }
 });
