@@ -560,7 +560,7 @@
                 } else { container.innerHTML = `<p class="text-xs text-slate-400 font-bold w-full text-center py-4">まだ似ている人が見つかりません。仲間が増えるのを待とう！</p>`; }
             } catch (e) { console.error("コネクション取得エラー", e); }
         }
-        // ==========================================
+// ==========================================
         // 🔒 プライバシー設定の制御 (mypage用)
         // ==========================================
         let currentPrivacy = { chrono: true, bigFive: true, coffee: true, sm: true, motivation: true, nomophobia: true };
@@ -579,15 +579,15 @@
             const content = document.getElementById('privacy-modal-content');
             modal.classList.remove('hidden');
             
-            // mypage.htmlでは userData が純粋なJSONオブジェクトとして取得されている想定
-            if (userData && userData.privacy) {
+            // ▼▼ ここを myData に修正！！ ▼▼
+            if (myData && myData.privacy) {
                 currentPrivacy = {
-                    motivation: userData.privacy.motivation !== false,
-                    bigFive: userData.privacy.bigFive !== false,
-                    chrono: userData.privacy.chrono !== false,
-                    coffee: userData.privacy.coffee !== false,
-                    sm: userData.privacy.sm !== false,
-                    nomophobia: userData.privacy.nomophobia !== false
+                    motivation: myData.privacy.motivation !== false,
+                    bigFive: myData.privacy.bigFive !== false,
+                    chrono: myData.privacy.chrono !== false,
+                    coffee: myData.privacy.coffee !== false,
+                    sm: myData.privacy.sm !== false,
+                    nomophobia: myData.privacy.nomophobia !== false
                 };
             }
 
@@ -630,13 +630,14 @@
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: userId, privacy: newPrivacy })
                 });
                 if (res.ok) {
-                    if (userData) userData.privacy = newPrivacy; // ローカル更新
+                    // ▼▼ ここも myData に修正！！ ▼▼
+                    if (myData) myData.privacy = newPrivacy; // ローカル更新
+                    
                     btn.innerHTML = '✅ 保存しました！'; btn.classList.replace('bg-slate-800', 'bg-emerald-500');
                     setTimeout(() => { closePrivacyModal(); btn.innerHTML = '<span>💾 設定を保存する</span>'; btn.classList.replace('bg-emerald-500', 'bg-slate-800'); btn.disabled = false; }, 1500);
                 } else throw new Error("API Error");
             } catch (err) { btn.innerHTML = '❌ エラー'; setTimeout(() => { btn.innerHTML = '<span>💾 設定を保存する</span>'; btn.disabled = false; }, 2000); }
         }
-
         initMyPage();
     </script>
 
