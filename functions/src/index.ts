@@ -2415,3 +2415,74 @@ export const updatePrivacySettings = functions.region("asia-northeast1").https.o
         res.status(500).json({ error: e.message }); 
     }
 });
+
+// ───────────────────────────────────────────
+// 🚀 ギルドシステム用API: クエスト報酬の受け取り＆EXP保存
+// ───────────────────────────────────────────
+export const claimQuestReward = functions.region("asia-northeast1").https.onRequest(async (req: any, res: any) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+
+    try {
+        const { userId, questId, exp } = req.body;
+        if (!userId || !questId || exp === undefined) { res.status(400).json({ error: "Missing parameters" }); return; }
+
+        const userRef = db.collection("users").doc(userId);
+        
+        // トランザクションで安全にEXPを加算し、クエストIDを記録
+        await db.runTransaction(async (transaction) => {
+            const userDoc = await transaction.get(userRef);
+            if (!userDoc.exists) throw new Error("User not found");
+            const data = userDoc.data() || {};
+            
+            const claimedQuests = data.claimedQuests || [];
+            if (claimedQuests.includes(questId)) return; // 既に受け取り済みならスキップ
+            
+            const currentExp = data.totalExp || 0;
+            transaction.set(userRef, {
+                totalExp: currentExp + exp,
+                claimedQuests: admin.firestore.FieldValue.arrayUnion(questId)
+            }, { merge: true });
+        });
+
+        res.json({ success: true });
+    } catch(e: any) { 
+        console.error(e);
+        res.status(500).json({ error: e.message }); 
+    }
+});
+
+// ───────────────────────────────────────────
+// 🚀 ギルドシステム用API: ランキング＆メンバー一覧取得
+// ───────────────────────────────────────────
+export const getGuildRanking = functions.region("asia-northeast1").https.onRequest(async (req: any, res: any) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+
+    try {
+        res.set('Cache-Control', 'public, max-age=300, s-maxage=300'); // 5分キャッシュ
+        // 経験値（totalExp）が多い順に取得
+        const snapshot = await db.collection("users").orderBy("totalExp", "desc").limit(100).get();
+        const ranking: any[] = [];
+        
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.profile && data.profile.name) {
+                ranking.push({
+                    id: doc.id,
+                    name: data.profile.name,
+                    icon: data.profile.pictureUrl || data.profile.iconUrl || "https://via.placeholder.com/150",
+                    totalExp: data.totalExp || 0,
+                    chronoResult: data.chronoResult || "未設定"
+                });
+            }
+        });
+        
+        res.json(ranking);
+    } catch(e: any) { 
+        res.status(500).json({ error: e.message }); 
+    }
+});
