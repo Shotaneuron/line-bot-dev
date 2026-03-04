@@ -503,7 +503,93 @@ ${JSON.stringify(participantData)}
         } catch (e) { console.error("Reminder Error:", e); }
         return null;
     });
-    
+
+    // ───────────────────────────────────────────
+// 🚀 定期実行: AIゲリラ部活の結成提案 (毎日19:00)
+// ───────────────────────────────────────────
+export const scheduledGuerrillaClub = functions.region("asia-northeast1").pubsub
+    .schedule("0 19 * * *").timeZone("Asia/Tokyo").onRun(async (context) => {
+        console.log("🔥 ゲリラ部活探索バッチ開始");
+
+        try {
+            // 1. 公開プロフィールを持つ全ユーザーを取得
+            const snapshot = await db.collection("users").get();
+            const candidates: any[] = [];
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.profile && data.profile.tags && data.profile.tags.length > 0) {
+                    candidates.push({
+                        id: doc.id,
+                        name: data.profile.name,
+                        tags: data.profile.tags.join(", "),
+                        chrono: data.chronoResult || "",
+                        coffee: data.coffeeResult || ""
+                    });
+                }
+            });
+
+            if (candidates.length < 3) return null;
+
+            // 2. Geminiに「面白そうな3〜4人組の部活」を1つだけ企画させる
+            const prompt = `
+あなたは大学のサークルを盛り上げる天才プランナーです。
+以下のゼミ生リストから、「共通の趣味タグ」や「心理テストの結果」が絶妙に噛み合う【3〜4人】を選び、突発的な「ゲリラ部活」を1つだけ企画してください。
+（例：夜型(オオカミ)でサウナ好きの3人を集めた「深夜のサウナ哲学コミュニティ」など）
+
+【ゼミ生リスト】
+${JSON.stringify(candidates)}
+
+【出力JSONフォーマット】
+以下のJSONのみを出力してください（Markdown不要）。
+{
+  "userIds": ["LINE_ID_1", "LINE_ID_2", "LINE_ID_3"],
+  "clubName": "企画した部活のキャッチーな名前",
+  "reason": "なぜこのメンバーを選んだのか、どんな化学反応が起きそうかという熱いメッセージ（100文字程度）"
+}
+`;
+            const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_NAME });
+            const result = await model.generateContent(prompt);
+            const text = result.response.text().replace(/```json/g, "").replace(/```/g, "").trim();
+            const proposal = JSON.parse(text);
+
+            if (!proposal || !proposal.userIds || proposal.userIds.length < 2) return null;
+
+            // 3. 提案（企画書）をFirestoreに一時保存する
+            const proposalRef = await db.collection("guerrilla_proposals").add({
+                userIds: proposal.userIds,
+                clubName: proposal.clubName,
+                reason: proposal.reason,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                status: "pending"
+            });
+
+            // 4. 選ばれたメンバーだけにLINEで提案メッセージを送信！
+            const proposalId = proposalRef.id;
+            const message = {
+                type: "flex", altText: `💡 ピコン！AIからのゲリラ部活の提案です！`,
+                contents: {
+                    type: "bubble",
+                    header: { type: "box", layout: "vertical", backgroundColor: "#8b5cf6", contents: [{ type: "text", text: "💡 ゲリラ部活の提案！", weight: "bold", color: "#ffffff", size: "sm" }] },
+                    body: {
+                        type: "box", layout: "vertical", spacing: "md",
+                        contents: [
+                            { type: "text", text: "AIが面白い化学反応が起きそうなメンバーを検知しました！", size: "xs", color: "#666666", wrap: true },
+                            { type: "text", text: `【${proposal.clubName}】`, weight: "bold", size: "lg", color: "#8b5cf6", wrap: true },
+                            { type: "text", text: proposal.reason, size: "sm", wrap: true, color: "#333333", margin: "md" },
+                            { type: "text", text: "※誰か1人がボタンを押すと、専用ページが作成されて正式に結成されます！", size: "xxs", color: "#aaaaaa", wrap: true, margin: "md" }
+                        ]
+                    },
+                    footer: { type: "box", layout: "vertical", contents: [{ type: "button", style: "primary", color: "#8b5cf6", action: { type: "postback", label: "✨ この部活を結成する！", data: `action=guerrilla_accept&pid=${proposalId}` } }] }
+                }
+            };
+
+            await lineClient.multicast(proposal.userIds, message as any);
+            console.log(`✅ ゲリラ部活「${proposal.clubName}」の提案を ${proposal.userIds.length} 名に送信しました`);
+
+        } catch (e) { console.error("ゲリラ部活バッチエラー:", e); }
+        return null;
+    });
+
 // ───────────────────────────────────────────
 // 4. Googleカレンダーからの更新通知を受け取るWebhook
 // ───────────────────────────────────────────
@@ -606,6 +692,63 @@ async function handleEvent(event: any) {
         const eventId = data.get("eventId");
         const category = data.get("category");
         const tag = data.get("tag");
+        // ▼▼ ゲリラ部活結成ボタンが押された時の処理 ▼▼
+        const pid = data.get("pid");
+        if (action === "guerrilla_accept" && pid) {
+            try {
+                const docRef = db.collection("guerrilla_proposals").doc(pid);
+                const doc = await docRef.get();
+                if (!doc.exists) return null;
+                const pData = doc.data();
+
+                if (!pData) return null;
+
+                // 既に誰かが結成ボタンを押していた場合
+                if (pData?.status === "active") {
+                    await reply(replyToken, "既に他のメンバーが結成ボタンを押してくれました！グループの招待をお待ちください✨");
+                    return null;
+                }
+
+                // 「結成済み」にステータス変更
+                await docRef.set({ status: "active" }, { merge: true });
+
+                // 1. NotionのイベントDBに「専用ページ」を自動作成
+                const newPage = await notion.pages.create({
+                    parent: { database_id: EVENT_DB_ID },
+                    properties: {
+                        [PROP_EVENT_NAME]: { title: [{ text: { content: `【ゲリラ部】${pData.clubName}` } }] },
+                        [PROP_EVENT_CAT]: { select: { name: "ゲリラ部活" } },
+                    },
+                    children: [
+                        { object: 'block', type: 'heading_2', heading_2: { rich_text: [{ type: 'text', text: { content: '🎯 AIからの結成メッセージ' } }] } },
+                        { object: 'block', type: 'paragraph', paragraph: { rich_text: [{ type: 'text', text: { content: pData.reason } }] } }
+                    ]
+                });
+
+                // 2. メンバー全員に「結成完了！」のメッセージと専用ページのURLを送信
+                const successMsg = {
+                    type: "flex", altText: `🎉 ゲリラ部活「${pData.clubName}」が結成されました！`,
+                    contents: {
+                        type: "bubble",
+                        body: {
+                            type: "box", layout: "vertical", spacing: "md",
+                            contents: [
+                                { type: "text", text: "🎉 ゲリラ部活 結成！", weight: "bold", color: "#10b981", size: "sm" },
+                                { type: "text", text: `誰かがボタンを押したため、\n「${pData.clubName}」が正式に立ち上がりました！`, size: "sm", wrap: true },
+                                { type: "text", text: "まずは下のボタンから専用ページ（Notion）にアクセスし、コメント欄で集合して日程を決めましょう！👇", size: "sm", color: "#666666", wrap: true }
+                            ]
+                        },
+                        footer: { type: "box", layout: "vertical", contents: [{ type: "button", style: "primary", color: "#10b981", action: { type: "uri", label: "📄 専用ページへ移動", uri: newPage.url } }] }
+                    }
+                };
+
+                await lineClient.multicast(pData.userIds, successMsg as any);
+                return null;
+            } catch (e) {
+                console.error(e);
+                await reply(replyToken, "結成処理中にエラーが発生しました🙇‍♂️");
+            }
+        }
 
         if (eventId) {
             if (action === "join") await handleStatusUpdate(replyToken, userId, eventId, PROP_JOIN, "参加");
