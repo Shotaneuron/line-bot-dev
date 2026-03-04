@@ -830,7 +830,7 @@ async function handleEvent(event: any) {
                             { type: "text", text: aiAnalysis, size: "sm", wrap: true, color: "#333333" }
                         ]
                     },
-                    footer: { type: "box", layout: "vertical", contents: [{ type: "button", style: "primary", color: "#10b981", action: { type: "uri", label: "名刺ホルダーを開く", uri: `https://liff.line.me/【あなたのcommunity.htmlのLIFF_ID】` } }] }
+                    footer: { type: "box", layout: "vertical", contents: [{ type: "button", style: "primary", color: "#10b981", action: { type: "uri", label: "名刺ホルダーを開く", uri: `https://liff.line.me/2009176797-MJ4zJxOt` } }] }
                 }
             });
 
