@@ -110,27 +110,15 @@
         </div>
 
         <div id="tab-buddies" class="tab-content space-y-4">
-            <h3 class="text-sm font-black text-white tracking-widest flex items-center gap-2"><span class="text-amber-500">🤝</span> 共闘の記憶</h3>
-            <div class="space-y-3">
-                <div class="bg-slate-800/80 border border-slate-700 p-4 rounded-2xl flex items-center gap-4 relative overflow-hidden">
-                    <div class="w-1 h-full bg-blue-500 absolute left-0 top-0"></div>
-                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=A" class="w-12 h-12 rounded-full border border-slate-600">
-                    <div class="flex-1">
-                        <p class="text-[10px] text-slate-400 font-bold mb-0.5">2026/03/10 定例会</p>
-                        <p class="text-sm font-black text-white">武田 さん</p>
-                    </div>
-                    <span class="text-[10px] font-bold bg-blue-500/20 text-blue-400 px-2 py-1 rounded-md border border-blue-500/30">補完関係</span>
-                </div>
-                <div class="bg-slate-800/80 border border-slate-700 p-4 rounded-2xl flex items-center gap-4 relative overflow-hidden">
-                    <div class="w-1 h-full bg-pink-500 absolute left-0 top-0"></div>
-                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=B" class="w-12 h-12 rounded-full border border-slate-600">
-                    <div class="flex-1">
-                        <p class="text-[10px] text-slate-400 font-bold mb-0.5">2026/02/22 カジノ</p>
-                        <p class="text-sm font-black text-white">三上 さん</p>
-                    </div>
-                    <span class="text-[10px] font-bold bg-pink-500/20 text-pink-400 px-2 py-1 rounded-md border border-pink-500/30">似た者同士</span>
-                </div>
+            <h3 class="text-sm font-black text-white tracking-widest flex items-center gap-2"><span class="text-amber-500">🤝</span> 繋がった仲間たち</h3>
+            
+            <div id="friends-container" class="space-y-3">
+                <p class="text-center text-xs text-slate-400 py-4">名刺ホルダーを読み込み中...</p>
             </div>
+            
+            <button onclick="location.href='mypage.html'" class="w-full bg-slate-800/80 border border-slate-600 py-3 rounded-2xl flex items-center justify-center gap-2 text-slate-300 font-bold text-xs mt-4 active:scale-95 transition">
+                <span>📷</span> マイページでデジタル名刺を交換する
+            </button>
         </div>
 
     </main>
@@ -176,7 +164,46 @@
             } catch (err) { console.error(err); }
         };
 
-        // --- タブ切り替え ---
+        // --- フレンドリスト取得 ---
+        let friendsLoaded = false;
+        async function loadFriends() {
+            if(friendsLoaded) return;
+            try {
+                const res = await fetch(`https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/getMyConnections?userId=${myUserId}`);
+                const friends = await res.json();
+                
+                const container = document.getElementById('friends-container');
+                container.innerHTML = "";
+                
+                if (friends.length === 0) {
+                    container.innerHTML = `<p class="text-center text-xs text-slate-400 py-4 bg-slate-800/50 rounded-2xl border border-slate-700">まだ繋がっている仲間がいません。<br>イベントでデジタル名刺を交換しよう！</p>`;
+                    return;
+                }
+                
+                friends.forEach(f => {
+                    const tagHtml = f.tags.slice(0,2).map(t => `<span class="bg-slate-700 px-1.5 py-0.5 rounded text-[8px] text-slate-300 border border-slate-600">${t}</span>`).join("");
+                    
+                    container.innerHTML += `
+                        <div class="bg-slate-800/80 border border-slate-700 p-4 rounded-2xl flex items-start gap-4 relative overflow-hidden active:scale-95 transition cursor-pointer" onclick="alert('${f.name}さんとのチャットや詳細プロフを見る機能（準備中）')">
+                            <div class="w-1 h-full bg-emerald-500 absolute left-0 top-0"></div>
+                            <img src="${f.icon}" class="w-12 h-12 rounded-full border border-slate-600 object-cover flex-shrink-0">
+                            <div class="flex-1">
+                                <p class="text-[10px] text-slate-400 font-bold mb-0.5">${f.chrono.split('（')[0]}</p>
+                                <p class="text-sm font-black text-white mb-1">${f.name}</p>
+                                <div class="flex flex-wrap gap-1 mb-2">${tagHtml}</div>
+                                <div class="bg-slate-900/50 p-2 rounded-lg border border-slate-700/50">
+                                    <p class="text-[9px] text-emerald-400 font-bold mb-0.5">🤖 AIのおすすめ話題</p>
+                                    <p class="text-[9px] text-slate-300 leading-tight">タップして相性分析と会話のネタをチェック！</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                friendsLoaded = true;
+            } catch(e) { console.error(e); }
+        }
+
+        // --- タブ切り替えの関数も少し修正 ---
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => {
@@ -186,6 +213,7 @@
             document.getElementById('btn-' + tabId).classList.replace('text-slate-500', 'text-amber-400');
             
             if (tabId === 'ranking') loadRanking();
+            if (tabId === 'buddies') loadFriends(); // ← これを追加！
         }
 
         function updateStatusUI() {

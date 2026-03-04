@@ -778,13 +778,12 @@ async function handleEvent(event: any) {
     if (event.type !== "message" || event.message.type !== "text") return null;
     const text = event.message.text.trim();
 
-    // ▼▼ ここから追加: デジタル名刺（ワンタップ連絡先交換）の処理 ▼▼
+// ▼▼ 名刺交換（ワンタップ連絡先交換）＆フレンド登録の処理 ▼▼
     if (text.startsWith("名刺交換:")) {
         const targetId = text.replace("名刺交換:", "").trim();
         if (targetId === userId) return null;
 
         try {
-            // 自分と相手のデータをFirestoreから取得
             const [myDoc, targetDoc] = await Promise.all([
                 db.collection("users").doc(userId).get(),
                 db.collection("users").doc(targetId).get()
@@ -800,23 +799,23 @@ async function handleEvent(event: any) {
             const myName = myData.profile?.name || "あなた";
             const targetName = targetData.profile?.name || "ゼミ生";
 
+            // 🛑 【ここを追加】お互いのフレンドリスト（connections）に相手のIDを追加！
+            await db.runTransaction(async (transaction) => {
+                transaction.set(myDoc.ref, { connections: admin.firestore.FieldValue.arrayUnion(targetId) }, { merge: true });
+                transaction.set(targetDoc.ref, { connections: admin.firestore.FieldValue.arrayUnion(userId) }, { merge: true });
+            });
+
             // Geminiに2人のデータから相性を分析させる
             const prompt = `
-あなたは心理学コミュニティのAIです。
-以下の「${myName}」さんと「${targetName}」さんが今、現実のイベントで名刺交換をしました！
-2人の心理診断データを比較し、「どんな相性か」「一緒にどんなプロジェクト・行動をすると面白いか」を、100文字程度のポップで熱いメッセージで出力してください。
-
-【${myName}さんのデータ】
-やる気: ${myData.motivationResult || "未設定"}, BigFive: ${myData.bigFiveResult || "未設定"}, クロノタイプ: ${myData.chronoResult || "未設定"}
-
-【${targetName}さんのデータ】
-やる気: ${targetData.motivationResult || "未設定"}, BigFive: ${targetData.bigFiveResult || "未設定"}, クロノタイプ: ${targetData.chronoResult || "未設定"}
+あなたは心理学コミュニティのAIです。以下の2人が名刺交換をしてフレンドになりました。
+2人の心理データから、「共通点や相性」と「次に話すべきおすすめの会話のネタ」を100文字程度で出力してください。
+【${myName}】やる気: ${myData.motivationResult||"なし"}, BigFive: ${myData.bigFiveResult||"なし"}
+【${targetName}】やる気: ${targetData.motivationResult||"なし"}, BigFive: ${targetData.bigFiveResult||"なし"}
 `;
             const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_NAME });
             const result = await model.generateContent(prompt);
             const aiText = result.response.text().trim();
 
-            // 共通のFlex Messageを作成
             const createMessage = (partnerName: string, partnerId: string, aiAnalysis: string) => ({
                 type: "flex", altText: `🤝 ${partnerName}さんと繋がりました！`,
                 contents: {
@@ -824,34 +823,27 @@ async function handleEvent(event: any) {
                     body: {
                         type: "box", layout: "vertical", spacing: "md",
                         contents: [
-                            { type: "text", text: "🤝 新たな繋がり！", weight: "bold", color: "#10b981", size: "sm" },
-                            { type: "text", text: `${partnerName}さんとデジタル名刺を交換しました！`, size: "sm", wrap: true, weight: "bold" },
+                            { type: "text", text: "🤝 フレンド追加完了！", weight: "bold", color: "#10b981", size: "sm" },
+                            { type: "text", text: `${partnerName}さんと名刺を交換しました！`, size: "sm", wrap: true, weight: "bold" },
                             { type: "separator", margin: "md" },
-                            { type: "text", text: "🤖 AI相性分析", size: "xs", color: "#3498db", weight: "bold", margin: "md" },
+                            { type: "text", text: "🤖 AI相性分析＆おすすめの話題", size: "xs", color: "#3498db", weight: "bold", margin: "md" },
                             { type: "text", text: aiAnalysis, size: "sm", wrap: true, color: "#333333" }
                         ]
                     },
-                    footer: { type: "box", layout: "vertical", contents: [{ type: "button", style: "primary", color: "#10b981", action: { type: "uri", label: "📄 相手のプロフを見る", uri: `https://liff.line.me/2009176797-MJ4zJxOt` } }] }
+                    footer: { type: "box", layout: "vertical", contents: [{ type: "button", style: "primary", color: "#10b981", action: { type: "uri", label: "名刺ホルダーを開く", uri: `https://liff.line.me/【あなたのcommunity.htmlのLIFF_ID】` } }] }
                 }
             });
 
-            // スキャンした側（自分）に返信
             await reply(replyToken, createMessage(targetName, targetId, aiText) as any);
+            try { await lineClient.pushMessage(targetId, createMessage(myName, userId, aiText) as any); } catch (e) { }
 
-            // スキャンされた側（相手）にもプッシュ通知で報告！
-            try {
-                await lineClient.pushMessage(targetId, createMessage(myName, userId, aiText) as any);
-            } catch (e) { console.error("プッシュ通知エラー:", e); }
-
-            // （おまけ）お互いのバディ履歴やコネクションデータベースに記録する処理を後でここに書くこともできます
             return null;
         } catch (e) {
             console.error("名刺交換エラー:", e);
             await reply(replyToken, "名刺の処理中にエラーが発生しました🙇‍♂️");
             return null;
         }
-    }
-    // ▲▲ 名刺交換処理ここまで ▲▲
+    }    // ▲▲ 名刺交換処理ここまで ▲▲
 
     // ▼▼ 差し替え：感想入力モードかどうかを判定し、Notionへコメント追加 ▼▼
     const userDoc = await db.collection("users").doc(userId).get();
@@ -2557,6 +2549,50 @@ export const getGuildRanking = functions.region("asia-northeast1").https.onReque
         });
         
         res.json(ranking);
+    } catch(e: any) { 
+        res.status(500).json({ error: e.message }); 
+    }
+});
+
+// ───────────────────────────────────────────
+// 🚀 フレンド（コネクション）リスト取得API
+// ───────────────────────────────────────────
+export const getMyConnections = functions.region("asia-northeast1").https.onRequest(async (req: any, res: any) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+
+    try {
+        const userId = req.query.userId;
+        if (!userId) { res.status(400).json({ error: "Missing userId" }); return; }
+
+        const userDoc = await db.collection("users").doc(userId).get();
+        if (!userDoc.exists) { res.json([]); return; }
+        
+        const connections = userDoc.data()?.connections || [];
+        if (connections.length === 0) { res.json([]); return; }
+
+        // フレンドのデータを一括取得
+        const friends: any[] = [];
+        const snapshot = await db.collection("users").where(admin.firestore.FieldPath.documentId(), "in", connections.slice(0, 10)).get(); // ※上限10件ずつの制限あり
+        
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const privacy = data.privacy || { chrono: true, bigFive: true, coffee: true, sm: true, motivation: true, nomophobia: true };
+            if (data.profile) {
+                friends.push({
+                    id: doc.id,
+                    name: data.profile.name || "匿名",
+                    icon: data.profile.pictureUrl || data.profile.iconUrl || "https://via.placeholder.com/150",
+                    tags: data.profile.tags || [],
+                    // プライバシー設定が公開のものだけ取得
+                    chrono: privacy.chrono ? (data.chronoResult || "") : "非公開",
+                    bigFive: privacy.bigFive ? (data.bigFiveResult || "") : "非公開"
+                });
+            }
+        });
+
+        res.json(friends);
     } catch(e: any) { 
         res.status(500).json({ error: e.message }); 
     }
