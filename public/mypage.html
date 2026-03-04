@@ -275,12 +275,14 @@
 
         async function initMyPage() {
             try {
-                await liff.init({ liffId: "2009176797-tgpGsUUz" }); 
+                await liff.init({ liffId: "2009176797-tgpGsUUz" }); // ※あなたのLIFF ID
                 if (!liff.isLoggedIn()) { liff.login(); return; }
                 const profile = await liff.getProfile();
                 myUserId = profile.userId;
-
-                await checkConnection(myUserId);
+                
+                // 🛑 QRコードから開かれた時は、以降の「ゲストさん」などの描画をストップする！
+                const isConnecting = await checkConnection(myUserId);
+                if (isConnecting) return;
 
                 document.getElementById('user-icon').src = profile.pictureUrl; 
                 document.getElementById('user-name').innerText = profile.displayName + " さん";
@@ -288,7 +290,6 @@
                 await fetchAvailableTags();
                 fetchDashboardEvents();
                 
-                // 👇 バックエンド化：自分のデータを綺麗に取得
                 const res = await fetch(`https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/getUserData?userId=${myUserId}`);
                 if (res.ok) {
                     myData = await res.json();
@@ -678,8 +679,7 @@
             setTimeout(() => { modal.classList.add('hidden'); }, 300);
         }
 
-        // 🚀 URLパラメータを監視して、スキャンされたらBotにメッセージを送信する処理
-        // （既存の initMyPage の一番最初、 liff.getProfile() の後に追加してください）
+// 🚀 URLパラメータを監視して接続処理を行う
         async function checkConnection(userId) {
             const urlParams = new URLSearchParams(window.location.search);
             const action = urlParams.get('action');
@@ -688,13 +688,36 @@
             if (action === 'connect' && targetId) {
                 if (targetId === userId) {
                     alert("自分のQRコードは読み込めません！");
-                    return;
+                    return true; // 処理をストップ
                 }
-                // LINE Botに裏側でメッセージを送信し、画面を閉じる
-                document.getElementById('loading').innerHTML = '<div class="text-4xl animate-bounce mb-4">🤝</div><p class="text-amber-400 font-black">名刺交換中...</p>';
-                await liff.sendMessages([{ type: "text", text: `名刺交換:${targetId}` }]);
-                liff.closeWindow(); // 読み込んだら即座にLINEのトーク画面に戻す！
+                
+                // 画面をロード中にして他の操作を防ぐ
+                const loading = document.getElementById('loading');
+                loading.innerHTML = '<div class="text-4xl animate-bounce mb-4">🤝</div><p class="text-amber-400 font-black">AIが相性を分析中...</p>';
+                loading.classList.remove('hidden');
+
+                try {
+                    // バックエンドのAPIに通信して名刺交換処理を依頼する
+                    const res = await fetch(`https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/connectUsers`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ scannerId: userId, targetId: targetId })
+                    });
+
+                    if (res.ok) {
+                        alert("名刺交換が完了しました！LINEのトーク画面に戻ってAI分析を確認してください✨");
+                        liff.closeWindow(); 
+                    } else {
+                        throw new Error("API通信エラー");
+                    }
+                } catch (e) {
+                    console.error(e);
+                    alert("通信エラーが発生しました。もう一度読み込んでください。");
+                    liff.closeWindow();
+                }
+                return true; // スキャン時は通常のマイページ描画をストップする
             }
+            return false; // 通常のアクセスの場合はfalseを返す
         }
         initMyPage();
     </script>
