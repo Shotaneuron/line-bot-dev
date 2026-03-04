@@ -221,7 +221,7 @@
                         {
                             id: "pj_health", label: "運動・健康系PJ", icon: "👟", question: "心と体の健康を促進するプロジェクト",
                             children: [
-                                { id: "pj_sports", label: "運動プロジェクト (PJ長: 三上)", icon: "🏃", type: "page", title: "運動プロジェクト", description: "【PJ長：秘書 三上晃生】\n心と体をリフレッシュさせる運動企画！大通駅集合での『円山公園ウォーキング会』など、ゆるく楽しく活動中。" },
+                                { id: "pj_sports", label: "運動プロジェクト (PJ長: 三上)", icon: "🏃", type: "page", title: "運動プロジェクト", description: "【PJ長：秘書 三上晃生】\n「運動を通して自分に変化を」運動習慣を身に着けることで身体や心、生活リズムを整えて自分を変革していくプロジェクト大通駅集合での『円山公園ウォーキング会』など、ゆるく楽しく活動中。" },
                                 { id: "pj_meditation", label: "瞑想習慣化PJ", icon: "🧘", type: "page", title: "瞑想習慣化PJ", description: "マインドフルネスの講義から派生したプロジェクト。毎日寝る前の5分間、LINEグループで通話を繋いでみんなで瞑想を習慣化します。" },
                                 { id: "pj_sleep", label: "快眠お届けPJ", icon: "🛏️", type: "page", title: "快眠お届けPJ", description: "睡眠の質を向上させるための情報共有や、アロマ、ヒーリングミュージックのおすすめをシェアする安らぎのプロジェクト。" },
                                 { id: "pj_sunlight", label: "朝の光浴びるPJ", icon: "☀️", type: "page", title: "朝の光浴びるPJ", description: "セロトニン分泌を促すため、朝起きたら「太陽の光を浴びた写真」をグループに投稿し合う、健康的すぎる企画。" }
@@ -294,26 +294,27 @@
                         {
                             id: "ev_large", label: "大型イベント", icon: "🎪", question: "年間のハイライトとなる大企画",
                             children: [
-                                { id: "event_hokudaisai", label: "北大祭出店（心理戦カジノ）", icon: "🃏", type: "page", title: "北大祭での熱い企画！", description: "毎年6月の北大祭（楡陵祭）では、心理学の知識を活かした体験型企画を出店。過去の『心理戦カジノ』は大盛況でした！" },
-                                { id: "event_camp", label: "夏合宿・秋合宿", icon: "🎒", type: "page", title: "合宿イベント", description: "日常を離れて大自然で行う宿泊イベント。昼は真面目なワークショップ、夜はBBQやレクで最高の思い出を作ります。" },
-                                { id: "event_xmas", label: "クリスマスパーティ", icon: "🎄", type: "page", title: "クリスマス会", description: "一年の締めくくりに行う大型パーティ。プレゼント交換や、一年の活動を振り返るアワード表彰などが行われます。" },
-                                { id: "event_summer", label: "未来開拓倶楽部サマーパーティ", icon: "🍉", type: "page", title: "サマーパーティ", description: "北大心理ゼミが所属する大きな枠組み「未来開拓倶楽部」全体で行われる夏の大型交流イベント。多様なPJメンバーが集結します。" }
+                                { id: "event_hokudaisai", label: "北大祭出店（心理戦カジノ）", icon: "🃏", type: "page", title: "北大祭での熱い企画！", description: "2024年6月の北大祭（楡陵祭）で行われ、大盛況だった企画です。「うそつきブラックジャック」「心理戦ババ抜き」「性格ルーレット」など、各ブースが賑わいました。" },
+                                { id: "event_camp", label: "夏合宿・秋合宿", icon: "🎒", type: "page", title: "合宿イベント", description: "月に一度、小樽の長橋にある別荘で行われる宿泊イベント。昼は観光やまじめなワークショップ、夜はBBQやサウナを大自然の中で行い、最高の思い出を作ります。" },
+                                { id: "event_xmas", label: "クリスマスパーティ", icon: "🎄", type: "page", title: "クリスマス会", description: "新歓、クリスマス、冬休みなどの節目で行われる大型パーティー。大学内の施設であるFMI国際拠点を貸し切り、様々な企画をおいしいご飯とともに楽しみます！心理ゼミの母体である未来開拓倶楽部の人たちとも交流する機会となります。" },
+                                { id: "event_summer", label: "未来開拓倶楽部パーティ", icon: "🥳", type: "page", title: "パーティ", description: "北大心理ゼミが所属する大きな枠組み「未来開拓倶楽部」全体で行われる夏の大型交流イベント。多様なPJメンバーが集結します。" },
+                                { id: "event_summer", label: "サイコロ旅", icon: "🎲", type: "page", title: "サイコロ旅", description: "一日乗車券を使って、ルーレットで出た札幌市営地下鉄の駅に向かう企画です！普段行かない、行こうとしないような場所にも行けちゃいます！" }
                             ]
                         },
                         {
                             id: "ev_study", label: "勉強会・ワークショップ", icon: "📖", question: "知識をインプット・アウトプット",
                             children: [
-                                { id: "study_stats", label: "統計学もくもく会", icon: "📊", type: "page", title: "統計学もくもく会", description: "心理学研究に欠かせない統計・データ分析をみんなで自習・教え合う会です。挫折しやすい分野を先輩がサポートします。" },
-                                { id: "study_paper", label: "論文輪読会", icon: "📄", type: "page", title: "論文輪読会", description: "興味のある心理学の論文を持ち寄り、要約を発表し合う会。最新の研究トレンドを知り、論理的思考力を鍛えます。" },
-                                { id: "study_idea", label: "アイデアイノベーションWS", icon: "💡", type: "page", title: "アイデアWS", description: "心理学の知識を使って、社会の課題を解決するサービスや企画のアイデアをブレインストーミングする実践型ワークショップ。" }
-                            ]
+                                { id: "study_stats", label: "ワークスペース勉強会", icon: "📊", type: "page", title: "ワークスペース勉強会", description: "心理ゼミ運営の基盤となっているNotionなどのAIワークスペースの使い方を、一緒に学ぶ会です！" },
+                                { id: "study_paper", label: "シンプル勉強会", icon: "📄", type: "page", title: "シンプル勉強会", description: "テスト前や課題が終わってない日など、ゲリラ的に開催される自習会です。誰でも自由に開いて呼びかけることができ、高等教育推進機構の演習室などを使用しています。" },                            ]
                         },
                         {
-                            id: "ev_management", label: "運営会議・幹部会", icon: "🏢", question: "ゼミの未来を創る裏側",
+                            id: "ev_management", label: "運営部・企画部", icon: "🏢", question: "ゼミの未来を創る裏側",
                             children: [
-                                { id: "event_teirei", label: "運営部定例会議", icon: "📅", type: "page", title: "運営部 定例会議", description: "【毎週火曜 10:30〜】\n運営部が集まり、『心理学の知識を基にして新プロジェクトを始める支援の仕組み』など、組織をアップデートする議論を実施。" },
-                                { id: "pj_kanbu", label: "幹部会・全体運営", icon: "👑", type: "page", title: "幹部会", description: "代表や統括、秘書などが所属し、ゼミ全体の方向性や新しい組織づくりを進める中枢チーム。「学問の実践」の理念を実現します。" },
-                                { id: "ev_retrospective", label: "月次振り返り会（KPT）", icon: "🔄", type: "page", title: "振り返り会", description: "月末に活動を振り返り、Keep(良かったこと)、Problem(課題)、Try(次やること)を共有して、組織の自己成長を促します。" }
+                                { id: "event_teirei", label: "運営部 定例会議", icon: "📅", type: "page", title: "運営部 定例会議", description: "週2回、心理ゼミを運営する運営部が集まり、心理学の知識を活用した会議進行で、心理ゼミをアップデートするための議論を実施。" },
+                                { id: "pj_kanbu", label: "企画部 会議", icon: "👑", type: "page", title: "企画部 会議", description: "部活を運営している部長たちが運営部とともに、部活をよりよくするための議論を行う会。月に1回程度行われる。ほかの部活の部長とも交流する機会になるので、良い刺激が得られるかも。" },
+                                { id: "ev_retrospective", label: "運営部とは？", icon: "🔄", type: "page", title: "運営部", description: "代表、統括、秘書、広報、補佐の５つの役職で構成される、心理ゼミ全体の方向性や新しい組織づくりを進める中枢チーム。「学問の実践」の理念を実現します。" },
+                                { id: "ev_retrospective", label: "企画部とは？", icon: "🔄", type: "page", title: "企画部", description: "心理ゼミの部活・プロジェクト（PJ）を運営する部長・PJ長で構成される、心理ゼミの活動を支えるチーム。独自の情報システムとNotionというツールを用いてイベント運営に「やりがい」をもたらします。" },
+                                { id: "ev_retrospective", label: "運営部内で行われるイベント", icon: "🔄", type: "page", title: "運営部内で行われるイベント", description: "運営部はビジネスパートナーではありません。不定期でさまざまな企画が開催され、ご飯会も定期的に行われます。良好な関係が、円滑なコミュニケーションに役立っています！" }
                             ]
                         }
                     ]
