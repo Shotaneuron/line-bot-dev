@@ -35,9 +35,9 @@
     </div>
 
     <header id="id-card" class="card-normal rounded-3xl p-6 mb-6 fade-in relative overflow-hidden transition-all duration-500">
-        <div class="absolute top-[-50%] right-[-20%] w-[200px] h-[200px] bg-white/50 rounded-full filter blur-[20px]"></div>
+        <div class="absolute top-[-50%] right-[-20%] w-[200px] h-[200px] bg-white/50 rounded-full filter blur-[20px] pointer-events-none"></div>
         
-        <div class="absolute top-4 right-4 z-20 flex items-center gap-2">
+        <div class="absolute top-4 right-4 z-30 flex items-center gap-2">
             <button onclick="openPrivacyModal()" class="bg-white/80 hover:bg-white text-slate-700 text-[10px] font-bold px-3 py-1.5 rounded-full backdrop-blur-md transition flex items-center gap-1 border border-slate-200 shadow-sm active:scale-95">
                 <span>🔒</span> 公開設定
             </button>
@@ -45,7 +45,8 @@
                 <span>✏️</span> 編集
             </button>
         </div>
-        <div class="relative z-10 pr-16"> 
+
+        <div class="relative z-10 pr-16 pt-2"> 
             <div class="flex items-center gap-4 mb-4">
                 <img id="user-icon" src="https://via.placeholder.com/150" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-white shadow-md object-cover flex-shrink-0">
                 <div>
@@ -54,6 +55,7 @@
                     <div id="user-role-badges" class="flex flex-wrap gap-1 mt-1.5 hidden"></div>
                 </div>
             </div>
+            
             <div class="bg-black/5 rounded-xl p-3 border border-black/5 flex items-start gap-2 relative group cursor-pointer active:scale-95 transition" onclick="editHitokoto()">
                 <span class="text-sm">💬</span>
                 <div class="flex-1">
