@@ -301,9 +301,6 @@
                 
                 fetchConnections();
 
-                // ロード画面を消す
-                document.getElementById('loading').classList.add('hidden');
-
             } catch (err) { 
                 console.error("初期化エラー:", err); 
                 document.getElementById('user-name').innerText = "エラー発生";
