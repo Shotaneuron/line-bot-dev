@@ -56,7 +56,7 @@
         window.onload = async () => {
             try {
                 // 🛑 【重要】LINE Developersで新しく「profile.html」用のLIFF IDを作成し、ここに入れてください！
-                await liff.init({ liffId: "【ここにprofile.html用のLIFF_IDを入れる】" }); 
+                await liff.init({ liffId: "2009176797-p0GJH4Oe" }); 
                 if (!liff.isLoggedIn()) { liff.login(); return; }
                 const profile = await liff.getProfile();
                 myUserId = profile.userId;
