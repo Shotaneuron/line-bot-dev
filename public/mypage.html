@@ -315,7 +315,7 @@
                 document.getElementById('user-intro').innerText = err.message;
             }
         }
-        
+
         function applyRoleStyle(roles) {
             const card = document.getElementById('id-card'); const badgesContainer = document.getElementById('user-role-badges');
             card.className = "rounded-3xl p-6 mb-6 fade-in relative overflow-hidden transition-all duration-500";
@@ -694,7 +694,7 @@
             setTimeout(() => { modal.classList.add('hidden'); }, 300);
         }
 
-// 🚀 URLパラメータを監視して接続処理を行う
+        // 🚀 URLパラメータを監視して接続処理を行う
         async function checkConnection(userId) {
             const urlParams = new URLSearchParams(window.location.search);
             const action = urlParams.get('action');
@@ -703,16 +703,17 @@
             if (action === 'connect' && targetId) {
                 if (targetId === userId) {
                     alert("自分のQRコードは読み込めません！");
-                    return true; // 処理をストップして普通の画面に戻す
+                    return true; // 処理をストップ
                 }
                 
-                // 画面をロード中にして他の操作を防ぐ
-                const loading = document.getElementById('loading');
-                loading.innerHTML = '<div class="text-4xl animate-bounce mb-4">🤝</div><p class="text-amber-400 font-black">AIが相性を分析中...</p>';
-                loading.classList.remove('hidden');
+                // 🛑 【修正】HTMLに依存せず、動的に真っ黒なロード画面を強制的に作って被せる！
+                const loadingDiv = document.createElement('div');
+                loadingDiv.className = 'fixed inset-0 bg-slate-900 z-[999] flex flex-col justify-center items-center';
+                loadingDiv.innerHTML = '<div class="text-6xl animate-bounce mb-4">🤝</div><p class="text-amber-400 font-black text-xl">AIが相性を分析中...</p><p class="text-slate-400 text-xs mt-2 font-bold">このまま数秒お待ちください</p>';
+                document.body.appendChild(loadingDiv);
 
                 try {
-                    // ▼▼ あなたのバックエンドAPIを呼び出す ▼▼
+                    // バックエンドAPIに通信
                     const res = await fetch(`https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/connectUsers`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -727,10 +728,10 @@
                     }
                 } catch (e) {
                     console.error(e);
-                    alert("通信エラーが発生しました。もう一度QRコードを読み込んでください。");
+                    alert("通信エラーが発生しました。もう一度読み込んでください。");
                     liff.closeWindow();
                 }
-                return true; // スキャン時は通常のマイページ描画を完全にストップする
+                return true; // スキャン時は通常のマイページ描画をストップする
             }
             return false; // 通常のアクセスの場合はfalseを返す
         }
