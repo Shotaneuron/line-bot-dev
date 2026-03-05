@@ -528,13 +528,15 @@ export const scheduledGuerrillaClub = functions.region("asia-northeast1").pubsub
                 }
             });
 
-            if (candidates.length < 3) return null;
-
+            if (candidates.length < 4) return null; // 👈 4人未満なら中止に修正
             // 2. Geminiに「面白そうな3〜4人組の部活」を1つだけ企画させる
             const prompt = `
-あなたは大学のサークルを盛り上げる天才プランナーです。
-以下のゼミ生リストから、「共通の趣味タグ」や「心理テストの結果」が絶妙に噛み合う【3〜4人】を選び、突発的な「ゲリラ部活」を1つだけ企画してください。
-（例：夜型(オオカミ)でサウナ好きの3人を集めた「深夜のサウナ哲学コミュニティ」など）
+あなたは優秀なコミュニティマネージャーです。以下のゼミ生リストから、「共通の趣味タグ」や「心理テストの結果」が絶妙に噛み合う【4〜7人】を選び、突発的な「ゲリラ部活」を1つだけ企画してください。
+
+【厳守するルール】
+1. 部活名は、中二病っぽさや痛さを排除し、カフェのメニューのような「センスが良く、実際に参加したくなる」名前にすること（例：「夜型サウナーの会」「朝活コーヒー部」など）。
+2. 理由（メッセージ）の中で、絶対に個人名（メンバーの名前）を直接出さないでください。
+3. 「夜型とサウナ好きのメンバーが集まりました。この組み合わせなら…」のように、「なぜその属性が集められたか」という理由と、そこで話すと面白そうなテーマを、丁寧でワクワクする言葉遣いで100文字程度で書いてください。
 
 【ゼミ生リスト】
 ${JSON.stringify(candidates)}
@@ -542,9 +544,9 @@ ${JSON.stringify(candidates)}
 【出力JSONフォーマット】
 以下のJSONのみを出力してください（Markdown不要）。
 {
-  "userIds": ["LINE_ID_1", "LINE_ID_2", "LINE_ID_3"],
-  "clubName": "企画した部活のキャッチーな名前",
-  "reason": "なぜこのメンバーを選んだのか、どんな化学反応が起きそうかという熱いメッセージ（100文字程度）"
+  "userIds": ["LINE_ID_1", "LINE_ID_2", "LINE_ID_3", "LINE_ID_4"],
+  "clubName": "企画した部活のセンスの良い名前",
+  "reason": "なぜこの属性のメンバーを集めたかという、参加したくなる丁寧なメッセージ"
 }
 `;
             const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_NAME });
@@ -699,6 +701,9 @@ async function handleEvent(event: any) {
         // ────────────────────────────────────────
         // ① ゲリラ部活結成ボタンの処理
         // ────────────────────────────────────────
+        // ────────────────────────────────────────
+        // ① ゲリラ部活結成ボタンの処理
+        // ────────────────────────────────────────
         const pid = data.get("pid");
         if (action === "guerrilla_accept" && pid) {
             try {
@@ -708,50 +713,24 @@ async function handleEvent(event: any) {
                 const pData = doc.data();
                 if (!pData) return null;
 
-                // 既に誰かが結成ボタンを押していた場合
-                if (pData.status === "active") {
-                    await reply(replyToken, "既に他のメンバーが結成ボタンを押してくれました！グループの招待をお待ちください✨");
+                // 既に他の人が結成ボタンを押していた場合
+                if (pData.status !== "pending") {
+                    await reply(replyToken, "既に他のメンバーが結成ボタンを押してくれました！\n代表者さんがオープンチャットの招待URLを送ってくれるまで、少しお待ちください✨");
                     return null;
                 }
 
-                // 「結成済み」にステータス変更
-                await docRef.set({ status: "active" }, { merge: true });
+                // 「URL待ち」にステータス変更し、誰がボタンを押したか記録
+                await docRef.set({ status: "waiting_for_url", creatorId: userId }, { merge: true });
 
-                // 1. NotionのイベントDBに「専用ページ」を自動作成
-                const newPage = await notion.pages.create({
-                    parent: { database_id: EVENT_DB_ID },
-                    properties: {
-                        [PROP_EVENT_NAME]: { title: [{ text: { content: `【ゲリラ部】${pData.clubName}` } }] },
-                        [PROP_EVENT_CAT]: { select: { name: "ゲリラ部活" } },
-                    },
-                    children: [
-                        { object: 'block', type: 'heading_2', heading_2: { rich_text: [{ type: 'text', text: { content: '🎯 AIからの結成メッセージ' } }] } },
-                        { object: 'block', type: 'paragraph', paragraph: { rich_text: [{ type: 'text', text: { content: pData.reason } }] } }
-                    ]
-                });
+                // ユーザーのデータベースに「今この人はゲリラ部活のURLを入力しようとしている」という目印をつける
+                await db.collection("users").doc(userId).set({ replyState: `guerrilla_${pid}` }, { merge: true });
 
-                // 2. メンバー全員に「結成完了！」のメッセージと専用ページのURLを送信
-                const successMsg = {
-                    type: "flex", altText: `🎉 ゲリラ部活「${pData.clubName}」が結成されました！`,
-                    contents: {
-                        type: "bubble",
-                        body: {
-                            type: "box", layout: "vertical", spacing: "md",
-                            contents: [
-                                { type: "text", text: "🎉 ゲリラ部活 結成！", weight: "bold", color: "#10b981", size: "sm" },
-                                { type: "text", text: `誰かがボタンを押したため、\n「${pData.clubName}」が正式に立ち上がりました！`, size: "sm", wrap: true },
-                                { type: "text", text: "まずは下のボタンから専用ページ（Notion）にアクセスし、コメント欄で集合して日程を決めましょう！👇", size: "sm", color: "#666666", wrap: true }
-                            ]
-                        },
-                        footer: { type: "box", layout: "vertical", contents: [{ type: "button", style: "primary", color: "#10b981", action: { type: "uri", label: "📄 専用ページへ移動", uri: newPage.url } }] }
-                    }
-                };
-
-                await lineClient.multicast(pData.userIds, successMsg as any);
+                // 代表者（押した人）にだけ返信
+                await reply(replyToken, `🎉 結成ありがとうございます！\n\nそれでは、LINEの「オープンチャット」を新しく作成し、その【招待URL】をこのトーク画面にそのまま送信してください👇\n\n（送信いただいたURLを、AIが他のメンバーに配達します！）`);
                 return null;
             } catch (e) {
                 console.error(e);
-                await reply(replyToken, "結成処理中にエラーが発生しました🙇‍♂️");
+                await reply(replyToken, "処理中にエラーが発生しました🙇‍♂️");
                 return null;
             }
         } // 👈 ゲリラ部活の処理はここで終了！
@@ -931,9 +910,62 @@ async function handleEvent(event: any) {
     }    // ▲▲ 名刺交換処理ここまで ▲▲
 
     // ▼▼ 差し替え：感想入力モードかどうかを判定し、Notionへコメント追加 ▼▼
-    const userDoc = await db.collection("users").doc(userId).get();
-    const userData = userDoc.data();
-    if (userData && userData.replyState && String(userData.replyState).startsWith("feedback_")) {
+        const userDoc = await db.collection("users").doc(userId).get();
+        const userData = userDoc.data() || {}; // 👈 これを足すだけ！
+        const replyState = userData.replyState;
+
+        // ▼▼ 新規：ゲリラ部活のURL入力待ちの処理 ▼▼
+        if (replyState && replyState.startsWith("guerrilla_")) {
+            const pid = replyState.replace("guerrilla_", "");
+            
+            // URLが含まれているか簡易チェック
+            if (!text.includes("http") && !text.includes("line.me")) {
+                await reply(replyToken, "⚠️ URLが正しくないようです。\n作成したオープンチャットの「招待リンク（URL）」をコピーして送信してください！");
+                return null;
+            }
+
+            const docRef = db.collection("guerrilla_proposals").doc(pid);
+            const doc = await docRef.get();
+            const pData = doc.data();
+
+            if (doc.exists && pData) {
+                // ステータスを完全にactiveに変更
+                await docRef.set({ status: "active", openChatUrl: text }, { merge: true });
+                // ユーザーの入力待ち状態を解除
+                await db.collection("users").doc(userId).update({ replyState: admin.firestore.FieldValue.delete() });
+
+                // 他のメンバー（送信者以外）を抽出
+                const targetUsers = pData.userIds.filter((id: string) => id !== userId);
+                
+                const invitationMsg = {
+                    type: "flex", altText: `🎉 ゲリラ部活「${pData.clubName}」の招待が届きました！`,
+                    contents: {
+                        type: "bubble",
+                        body: {
+                            type: "box", layout: "vertical", spacing: "md",
+                            contents: [
+                                { type: "text", text: "🎉 待ち合わせ部屋が完成！", weight: "bold", color: "#10b981", size: "sm" },
+                                { type: "text", text: `代表者さんが「${pData.clubName}」のオープンチャットを作成してくれました！`, size: "sm", wrap: true, weight: "bold" },
+                                { type: "text", text: "下のボタンから合流して、日程などを決めましょう✨", size: "xs", color: "#666666", wrap: true, margin: "md" }
+                            ]
+                        },
+                        footer: { type: "box", layout: "vertical", contents: [{ type: "button", style: "primary", color: "#10b981", action: { type: "uri", label: "🚪 オープンチャットに参加", uri: text } }] }
+                    }
+                };
+
+                // 送信した本人には完了メッセージを返す
+                await reply(replyToken, "✅ オープンチャットのURLを他のメンバーに配達しました！合流をお待ちください✨");
+                
+                // 他のメンバー全員に一斉送信
+                if (targetUsers.length > 0) {
+                    try { await lineClient.multicast(targetUsers, invitationMsg as any); } catch(e) { console.error("URL配達エラー", e); }
+                }
+            }
+            return null;
+        }
+
+        // ▼▼ イベントの感想入力待ちの処理 ▼▼
+        if (replyState && replyState.startsWith("feedback_")) {
         const eventId = userData.replyState.split("_")[1];
         
         try {
