@@ -770,13 +770,13 @@ async function handleEvent(event: any) {
         const reqId = data.get("reqId");
         if (action === "accept_friend" && reqId) {
             try {
-                // 1. お互いのフレンドリスト（connections）に登録
-                await db.runTransaction(async (transaction) => {
-                    const myRef = db.collection("users").doc(userId);
-                    const targetRef = db.collection("users").doc(reqId);
-                    transaction.set(myRef, { connections: admin.firestore.FieldValue.arrayUnion(reqId) }, { merge: true });
-                    transaction.set(targetRef, { connections: admin.firestore.FieldValue.arrayUnion(userId) }, { merge: true });
-                });
+                // 1. お互いのフレンドリスト（connections）に登録（※より安全な一括保存処理に変更）
+                const batch = db.batch();
+                const myRef = db.collection("users").doc(userId);
+                const targetRef = db.collection("users").doc(reqId);
+                batch.set(myRef, { connections: admin.firestore.FieldValue.arrayUnion(reqId) }, { merge: true });
+                batch.set(targetRef, { connections: admin.firestore.FieldValue.arrayUnion(userId) }, { merge: true });
+                await batch.commit();
 
                 // 2. お互いのデータを取得してAIに相性分析させる
                 const [myDoc, reqDoc] = await Promise.all([
@@ -814,15 +814,16 @@ async function handleEvent(event: any) {
                     }
                 });
 
-                // 承認した側（自分）に返信
-                await reply(replyToken, createMessage(reqName) as any);
+                // ▼▼ 【修正箇所】文字専用の reply 関数ではなく、LINE公式の replyMessage を直接使う！ ▼▼
+                await lineClient.replyMessage(replyToken, createMessage(reqName) as any);
                 // 申請した側（相手）にプッシュ通知
                 try { await lineClient.pushMessage(reqId, createMessage(myName) as any); } catch(e){}
 
                 return null;
             } catch (e) {
                 console.error("フレンド承認エラー:", e);
-                await reply(replyToken, "承認処理中にエラーが発生しました🙇‍♂️");
+                // エラー時のメッセージも公式の機能で返すように修正
+                await lineClient.replyMessage(replyToken, { type: "text", text: "承認処理中にエラーが発生しました🙇‍♂️" });
                 return null;
             }
         }
@@ -852,7 +853,7 @@ async function handleEvent(event: any) {
         if (action === "edit_tags") await handleTagMenu(replyToken, userId);
         if (action === "toggle_tag" && tag) await handleToggleTag(replyToken, userId, tag);
 
-        
+
         if (action === "edit_intro") {
             await reply(replyToken, "💬 ひとことを編集します。\n\n「ひとこと （スペース） 〇〇」のように入力して送信してください。（※最大40文字程度がおすすめです）"); 
             return null;
