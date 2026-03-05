@@ -2597,3 +2597,82 @@ export const getMyConnections = functions.region("asia-northeast1").https.onRequ
         res.status(500).json({ error: e.message }); 
     }
 });
+
+// ───────────────────────────────────────────
+// 🚀 デジタル名刺（QRスキャン）接続API
+// ───────────────────────────────────────────
+export const connectUsers = functions.region("asia-northeast1").https.onRequest(async (req: any, res: any) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+
+    try {
+        const { scannerId, targetId } = req.body;
+        if (!scannerId || !targetId || scannerId === targetId) {
+            res.status(400).json({ error: "Invalid IDs" }); return;
+        }
+
+        const [scannerDoc, targetDoc] = await Promise.all([
+            db.collection("users").doc(scannerId).get(),
+            db.collection("users").doc(targetId).get()
+        ]);
+
+        if (!scannerDoc.exists || !targetDoc.exists) {
+            res.status(404).json({ error: "User not found" }); return;
+        }
+
+        // お互いのフレンドリストに登録
+        await db.runTransaction(async (transaction) => {
+            transaction.set(scannerDoc.ref, { connections: admin.firestore.FieldValue.arrayUnion(targetId) }, { merge: true });
+            transaction.set(targetDoc.ref, { connections: admin.firestore.FieldValue.arrayUnion(scannerId) }, { merge: true });
+        });
+
+        const scannerData = scannerDoc.data() || {};
+        const targetData = targetDoc.data() || {};
+        const scannerName = scannerData.profile?.name || "あなた";
+        const targetName = targetData.profile?.name || "ゼミ生";
+
+        // Geminiに相性分析を依頼
+        const prompt = `
+あなたは心理学コミュニティのAIです。以下の2人が名刺交換をしてフレンドになりました。
+2人の心理データから、「共通点や相性」と「次に話すべきおすすめの会話のネタ」を100文字程度で出力してください。
+【${scannerName}】やる気: ${scannerData.motivationResult||"なし"}, BigFive: ${scannerData.bigFiveResult||"なし"}
+【${targetName}】やる気: ${targetData.motivationResult||"なし"}, BigFive: ${targetData.bigFiveResult||"なし"}
+`;
+        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_NAME });
+        const result = await model.generateContent(prompt);
+        const aiText = result.response.text().trim();
+
+        // Flex Message作成関数
+        const createMessage = (partnerName: string, aiAnalysis: string) => ({
+            type: "flex", altText: `🤝 ${partnerName}さんと繋がりました！`,
+            contents: {
+                type: "bubble",
+                body: {
+                    type: "box", layout: "vertical", spacing: "md",
+                    contents: [
+                        { type: "text", text: "🤝 フレンド追加完了！", weight: "bold", color: "#10b981", size: "sm" },
+                        { type: "text", text: `${partnerName}さんと名刺を交換しました！`, size: "sm", wrap: true, weight: "bold" },
+                        { type: "separator", margin: "md" },
+                        { type: "text", text: "🤖 AI相性分析＆おすすめの話題", size: "xs", color: "#3498db", weight: "bold", margin: "md" },
+                        { type: "text", text: aiAnalysis, size: "sm", wrap: true, color: "#333333" }
+                    ]
+                },
+                // ▼▼ 注意：ここのURLはご自身のcommunity.htmlのLIFF URLに変更してください ▼▼
+                footer: { type: "box", layout: "vertical", contents: [{ type: "button", style: "primary", color: "#10b981", action: { type: "uri", label: "名刺ホルダーを開く", uri: `https://liff.line.me/【あなたのcommunity.htmlのLIFF_ID】` } }] }
+            }
+        });
+
+        // スキャンした人・された人の両方に公式LINEからプッシュ通知を送信！
+        await Promise.all([
+            lineClient.pushMessage(scannerId, createMessage(targetName, aiText) as any).catch(e => console.error("Push Error", e)),
+            lineClient.pushMessage(targetId, createMessage(scannerName, aiText) as any).catch(e => console.error("Push Error", e))
+        ]);
+
+        res.json({ success: true });
+    } catch (e: any) {
+        console.error("Connect API Error:", e);
+        res.status(500).json({ error: e.message });
+    }
+});

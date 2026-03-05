@@ -273,33 +273,49 @@
             } catch(e) { document.getElementById('dashboard-planned').innerHTML = '<p class="text-xs text-red-400 px-2 py-4">予定の取得に失敗しました</p>'; }
         }
 
+// 🚀 初期化処理
         async function initMyPage() {
             try {
-                await liff.init({ liffId: "2009176797-tgpGsUUz" }); // ※あなたのLIFF ID
+                await liff.init({ liffId: "2009176797-tgpGsUUz" }); // ※LIFF IDはご自身のもの
                 if (!liff.isLoggedIn()) { liff.login(); return; }
                 const profile = await liff.getProfile();
                 myUserId = profile.userId;
                 
-                // 🛑 QRコードから開かれた時は、以降の「ゲストさん」などの描画をストップする！
+                // 🛑 【超重要】QRコードから開かれた時は、以降の「ゲストさん」などの描画をストップする！
                 const isConnecting = await checkConnection(myUserId);
-                if (isConnecting) return;
+                if (isConnecting) return; // ここで処理が止まるので、一瞬で画面が閉じます
 
+                // --- ここから下は「普通にマイページを開いた時」の処理 ---
                 document.getElementById('user-icon').src = profile.pictureUrl; 
                 document.getElementById('user-name').innerText = profile.displayName + " さん";
                 
-                await fetchAvailableTags();
-                fetchDashboardEvents();
+                // データの取得を並列で爆速化
+                await Promise.all([
+                    fetchAvailableTags(),
+                    fetchDashboardEvents()
+                ]);
                 
                 const res = await fetch(`https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/getUserData?userId=${myUserId}`);
                 if (res.ok) {
                     myData = await res.json();
                     if (myData) { renderProfile(myData); renderTags(myData); }
-                } else { renderEditTags([]); }
+                } else { 
+                    renderEditTags([]); 
+                }
                 
                 fetchConnections();
-            } catch (err) { console.error("初期化エラー:", err); }
-        }
 
+                // ロード画面を消す
+                document.getElementById('loading').classList.add('hidden');
+
+            } catch (err) { 
+                console.error("初期化エラー:", err); 
+                // エラー内容を画面に強制表示（デバッグ用）
+                document.getElementById('user-name').innerText = "エラー発生";
+                document.getElementById('user-intro').innerText = err.message;
+            }
+        }
+        
         function applyRoleStyle(roles) {
             const card = document.getElementById('id-card'); const badgesContainer = document.getElementById('user-role-badges');
             card.className = "rounded-3xl p-6 mb-6 fade-in relative overflow-hidden transition-all duration-500";
@@ -648,18 +664,17 @@
                 } else throw new Error("API Error");
             } catch (err) { btn.innerHTML = '❌ エラー'; setTimeout(() => { btn.innerHTML = '<span>💾 設定を保存する</span>'; btn.disabled = false; }, 2000); }
         }
-        // 🤝 デジタル名刺の表示処理
+// 🤝 デジタル名刺の表示処理
         let qrcodeObj = null;
         function openQrModal() {
             const modal = document.getElementById('qr-modal');
             const content = document.getElementById('qr-modal-content');
             modal.classList.remove('hidden');
             
-            // LIFF IDを含めたスキャン用URLを生成
-            // ?action=connect&targetId=自分のID を付与します
-            // ? ではなく /? にし、パラメータ全体を一度エンコードして渡すのがLINE公式推奨の安全な渡し方です
+            // 【修正点】パラメータを確実に渡すための安全なURL生成
             const query = new URLSearchParams({ action: "connect", targetId: myUserId }).toString();
-            const liffUrl = `https://liff.line.me/${liff.id}/?${query}`;            
+            const liffUrl = `https://liff.line.me/${liff.id}/?${query}`;
+            
             const container = document.getElementById('qrcode-container');
             container.innerHTML = ""; // 初期化
             qrcodeObj = new QRCode(container, {
@@ -688,7 +703,7 @@
             if (action === 'connect' && targetId) {
                 if (targetId === userId) {
                     alert("自分のQRコードは読み込めません！");
-                    return true; // 処理をストップ
+                    return true; // 処理をストップして普通の画面に戻す
                 }
                 
                 // 画面をロード中にして他の操作を防ぐ
@@ -697,7 +712,7 @@
                 loading.classList.remove('hidden');
 
                 try {
-                    // バックエンドのAPIに通信して名刺交換処理を依頼する
+                    // ▼▼ あなたのバックエンドAPIを呼び出す ▼▼
                     const res = await fetch(`https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/connectUsers`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -712,13 +727,14 @@
                     }
                 } catch (e) {
                     console.error(e);
-                    alert("通信エラーが発生しました。もう一度読み込んでください。");
+                    alert("通信エラーが発生しました。もう一度QRコードを読み込んでください。");
                     liff.closeWindow();
                 }
-                return true; // スキャン時は通常のマイページ描画をストップする
+                return true; // スキャン時は通常のマイページ描画を完全にストップする
             }
             return false; // 通常のアクセスの場合はfalseを返す
         }
+
         initMyPage();
     </script>
 
