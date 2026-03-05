@@ -852,6 +852,7 @@ async function handleEvent(event: any) {
         if (action === "edit_tags") await handleTagMenu(replyToken, userId);
         if (action === "toggle_tag" && tag) await handleToggleTag(replyToken, userId, tag);
 
+        
         if (action === "edit_intro") {
             await reply(replyToken, "💬 ひとことを編集します。\n\n「ひとこと （スペース） 〇〇」のように入力して送信してください。（※最大40文字程度がおすすめです）"); 
             return null;
