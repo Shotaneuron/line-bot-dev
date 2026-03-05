@@ -42,7 +42,7 @@
             <div class="flex items-center gap-3 mb-4">
                 <span class="text-4xl font-black step-number">01</span>
                 <div>
-                    <h2 class="text-lg font-black text-slate-800 leading-tight">まずはここから！<br>「マイページ」を完成させる</h2>
+                    <h2 class="text-lg font-black text-slate-800 leading-tight">まずはここから！<br>「マイページ」＆「公開設定」</h2>
                 </div>
             </div>
             <p class="text-sm text-slate-600 font-medium leading-relaxed mb-4">
@@ -56,7 +56,7 @@
                 </div>
                 <div class="flex gap-3 items-start">
                     <span class="bg-indigo-100 text-indigo-600 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">2</span>
-                    <p class="text-sm font-bold text-slate-700"><span class="new-badge mr-1">NEW</span>「🔒公開設定」ボタンから、他のゼミ生に見せる診断データを選ぶことができます。（安心設計！）</p>
+                    <p class="text-sm font-bold text-slate-700"><span class="new-badge mr-1">NEW</span>「🔒公開設定」から、他のゼミ生に見せる診断データを選ぶことができます。（安心設計！）</p>
                 </div>
             </div>
 
@@ -71,6 +71,10 @@
                 </div>
                 <div class="w-40 flex-shrink-0 snap-center">
                     <img src="./images/step1-3.png" alt="完成したマイページ" onerror="this.outerHTML=`<div class='w-full aspect-[9/16] bg-slate-200 rounded-xl flex flex-col items-center justify-center text-slate-500 font-bold text-xs text-center p-3 border border-slate-300'><br><span class='text-[9px] font-normal'>画像を ./images/step1-3.png に配置</span></div>`" class="w-full aspect-[9/16] object-cover rounded-xl border border-slate-300 shadow-sm">
+                </div>
+                <div class="w-40 flex-shrink-0 snap-center relative">
+                    <div class="absolute top-2 right-2 bg-emerald-500 text-white text-[10px] font-black px-2 py-1 rounded-full shadow-lg tap-badge z-10 border-2 border-white">👆見せたくない項目をOFF！</div>
+                    <img src="./images/step1-4-privacy.png" alt="公開設定画面" onerror="this.outerHTML=`<div class='w-full aspect-[9/16] bg-slate-200 rounded-xl flex flex-col items-center justify-center text-slate-500 font-bold text-xs text-center p-3 border border-slate-300'><br><span class='text-[9px] font-normal'>公開設定のスクショ<br>./images/step1-4-privacy.png</span></div>`" class="w-full aspect-[9/16] object-cover rounded-xl border border-slate-300 shadow-sm relative z-0">
                 </div>
             </div>
 
@@ -182,45 +186,69 @@
             <div class="flex items-center gap-3 mb-4">
                 <span class="text-4xl font-black step-number">05</span>
                 <div>
+                    <h2 class="text-lg font-black text-slate-800 leading-tight">予定管理も賢く！<br>「カレンダー＆スマート通知」</h2>
+                </div>
+            </div>
+            <p class="text-sm text-slate-600 font-medium leading-relaxed mb-4">
+                メニューの「カレンダー」からゼミのイベントを確認・参加登録できます。さらに、賢い<span class="font-bold text-emerald-600">スマート通知機能</span>を搭載！
+            </p>
+
+            <div class="w-full relative mb-4">
+                 <div class="absolute top-1/4 left-1/2 transform -translate-x-1/2 bg-pink-500 text-white text-[10px] font-black px-2 py-1 rounded-full shadow-lg tap-badge z-10 border-2 border-white w-max">👆カレンダーで参加登録！</div>
+                 <img src="./images/step5-1-cal.png" alt="カレンダー画面" onerror="this.outerHTML=`<div class='w-full h-32 bg-slate-200 rounded-xl flex flex-col items-center justify-center text-slate-500 font-bold text-xs text-center p-3 border border-slate-300'><br><span class='text-[9px] font-normal'>カレンダー画面<br>./images/step5-1-cal.png</span></div>`" class="w-full h-40 object-cover rounded-xl border border-slate-300 shadow-sm relative z-0">
+            </div>
+
+            <ul class="space-y-3 text-xs font-bold text-slate-700 bg-emerald-50/50 p-4 rounded-xl border border-emerald-100">
+                <li class="flex items-start gap-2">
+                    <span class="text-lg">🎯</span> 
+                    <span><strong class="text-emerald-700 text-sm">興味タグ連動通知</strong><br>マイページで設定した「興味タグ」に一致するイベントが企画された時だけ、LINEに通知が届きます。<span class="text-emerald-600">興味のないイベントの通知で邪魔されることはありません！</span></span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <span class="text-lg">⏰</span> 
+                    <span><strong class="text-emerald-700 text-sm">前日リマインド</strong><br>「参加」にしたイベントは、前日の夜にLINEでリマインダーが届くのでうっかり忘れを防げます。</span>
+                </li>
+            </ul>
+        </section>
+
+        <section class="glass-card rounded-3xl p-6 fade-in" style="animation-delay: 0.6s;">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="text-4xl font-black step-number">06</span>
+                <div>
                     <h2 class="text-lg font-black text-slate-800 leading-tight">AIが巻き起こす化学反応<br>「バディ＆ゲリラ部活」</h2>
                 </div>
             </div>
             <p class="text-sm text-slate-600 font-medium leading-relaxed mb-4">
-                メニューの「カレンダー」からイベントに参加登録すると、AIが裏で暗躍し始めます！
+                ただの予定管理ではありません！AIが裏で暗躍し、ゼミ生同士の化学反応をプロデュースします。
             </p>
 
-            <div class="flex gap-3 overflow-x-auto pb-4 snap-x relative no-scrollbar">
-                <div class="w-40 flex-shrink-0 snap-center relative">
-                    <div class="absolute top-1/3 left-1/2 transform -translate-x-1/2 bg-pink-500 text-white text-[10px] font-black px-2 py-1 rounded-full shadow-lg tap-badge z-10 border-2 border-white w-max">👆参加登録！</div>
-                    <img src="./images/step5-1-cal.png" alt="カレンダー画面" onerror="this.outerHTML=`<div class='w-full aspect-[9/16] bg-slate-200 rounded-xl flex flex-col items-center justify-center text-slate-500 font-bold text-xs text-center p-3 border border-slate-300'><br><span class='text-[9px] font-normal'>カレンダー<br>./images/step5-1-cal.png</span></div>`" class="w-full aspect-[9/16] object-cover rounded-xl border border-slate-300 shadow-sm relative z-0">
+            <div class="flex gap-3 mb-4 relative">
+                <div class="w-1/2 relative">
+                    <img src="./images/step6-1-buddy.png" alt="AIバディ通知" onerror="this.outerHTML=`<div class='w-full aspect-[9/16] bg-slate-200 rounded-xl flex flex-col items-center justify-center text-slate-500 font-bold text-xs text-center p-3 border border-slate-300'><br><span class='text-[9px] font-normal'>AIバディ通知<br>./images/step6-1-buddy.png</span></div>`" class="w-full aspect-[9/16] object-cover rounded-xl border border-slate-300 shadow-sm relative z-0">
                 </div>
-                <div class="w-40 flex-shrink-0 snap-center relative">
-                    <img src="./images/step5-2-buddy.png" alt="AIバディ通知" onerror="this.outerHTML=`<div class='w-full aspect-[9/16] bg-slate-200 rounded-xl flex flex-col items-center justify-center text-slate-500 font-bold text-xs text-center p-3 border border-slate-300'><br><span class='text-[9px] font-normal'>AIバディ通知<br>./images/step5-2-buddy.png</span></div>`" class="w-full aspect-[9/16] object-cover rounded-xl border border-slate-300 shadow-sm relative z-0">
-                </div>
-                <div class="w-40 flex-shrink-0 snap-center relative">
-                    <img src="./images/step5-3-guerilla.png" alt="ゲリラ部活提案" onerror="this.outerHTML=`<div class='w-full aspect-[9/16] bg-slate-200 rounded-xl flex flex-col items-center justify-center text-slate-500 font-bold text-xs text-center p-3 border border-slate-300'><br><span class='text-[9px] font-normal'>ゲリラ部活<br>./images/step5-3-guerilla.png</span></div>`" class="w-full aspect-[9/16] object-cover rounded-xl border border-slate-300 shadow-sm relative z-0">
+                <div class="w-1/2">
+                    <img src="./images/step6-2-guerilla.png" alt="ゲリラ部活提案" onerror="this.outerHTML=`<div class='w-full aspect-[9/16] bg-slate-200 rounded-xl flex flex-col items-center justify-center text-slate-500 font-bold text-xs text-center p-3 border border-slate-300'><br><span class='text-[9px] font-normal'>ゲリラ部活<br>./images/step6-2-guerilla.png</span></div>`" class="w-full aspect-[9/16] object-cover rounded-xl border border-slate-300 shadow-sm relative z-0">
                 </div>
             </div>
 
             <div class="space-y-3">
-                <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex items-start gap-3">
-                    <span class="text-xl mt-0.5">👥</span>
+                <div class="bg-pink-50 p-3 rounded-xl border border-pink-200 shadow-sm flex items-start gap-3">
+                    <span class="text-xl mt-0.5">🤝</span>
                     <div>
-                        <h3 class="text-xs font-black text-slate-800">イベント前夜の「AIバディ」</h3>
-                        <p class="text-[10px] text-slate-500 font-bold mt-1">イベント前日、AIが「最高の相棒」を勝手にマッチング！「明日はまず〇〇について話してみて！」とLINEに通知が来ます。</p>
+                        <h3 class="text-xs font-black text-pink-700">イベント前夜の「AIバディ」</h3>
+                        <p class="text-[10px] text-pink-900 font-bold mt-1">イベント前日のリマインドと一緒に、AIが参加者の中から「最高の相棒」を勝手にマッチング！おすすめの話題も教えてくれるので会話のネタに困りません。</p>
                     </div>
                 </div>
-                <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex items-start gap-3">
+                <div class="bg-purple-50 p-3 rounded-xl border border-purple-200 shadow-sm flex items-start gap-3">
                     <span class="text-xl mt-0.5">💡</span>
                     <div>
-                        <h3 class="text-xs font-black text-slate-800">突然の「ゲリラ部活」提案</h3>
-                        <p class="text-[10px] text-slate-500 font-bold mt-1">「夜型×サウナ好き」など面白い化学反応が起きそうなメンバーをAIが検知すると、突然グループ結成の招待状が届きます！</p>
+                        <h3 class="text-xs font-black text-purple-700">突然の「ゲリラ部活」提案</h3>
+                        <p class="text-[10px] text-purple-900 font-bold mt-1">「夜型×サウナ好き」など面白い化学反応が起きそうなメンバーをAIが検知すると、突然LINEにグループ結成の招待状が届きます！</p>
                     </div>
                 </div>
             </div>
         </section>
 
-        <section class="text-center pb-6 fade-in" style="animation-delay: 0.6s;">
+        <section class="text-center pb-6 fade-in" style="animation-delay: 0.7s;">
             <p class="text-sm font-bold text-slate-700 mb-4">
                 さあ、まずはメニューの<br><span class="text-indigo-600 font-black text-base">「マイページ」</span><br>から冒険の準備を始めましょう！🚀
             </p>
