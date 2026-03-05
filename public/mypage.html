@@ -273,23 +273,19 @@
             } catch(e) { document.getElementById('dashboard-planned').innerHTML = '<p class="text-xs text-red-400 px-2 py-4">予定の取得に失敗しました</p>'; }
         }
 
-// 🚀 初期化処理
+        // 🚀 初期化処理
         async function initMyPage() {
             try {
-                await liff.init({ liffId: "2009176797-tgpGsUUz" }); // ※LIFF IDはご自身のもの
+                await liff.init({ liffId: "2009176797-tgpGsUUz" }); // ※ご自身のLIFF ID
                 if (!liff.isLoggedIn()) { liff.login(); return; }
                 const profile = await liff.getProfile();
                 myUserId = profile.userId;
-                
-                // 🛑 【超重要】QRコードから開かれた時は、以降の「ゲストさん」などの描画をストップする！
-                const isConnecting = await checkConnection(myUserId);
-                if (isConnecting) return; // ここで処理が止まるので、一瞬で画面が閉じます
 
-                // --- ここから下は「普通にマイページを開いた時」の処理 ---
+                // 💡 checkConnectionの呼び出しを削除し、すぐに画面を描画します！
                 document.getElementById('user-icon').src = profile.pictureUrl; 
                 document.getElementById('user-name').innerText = profile.displayName + " さん";
                 
-                // データの取得を並列で爆速化
+                // データの取得
                 await Promise.all([
                     fetchAvailableTags(),
                     fetchDashboardEvents()
@@ -310,11 +306,11 @@
 
             } catch (err) { 
                 console.error("初期化エラー:", err); 
-                // エラー内容を画面に強制表示（デバッグ用）
                 document.getElementById('user-name').innerText = "エラー発生";
                 document.getElementById('user-intro').innerText = err.message;
             }
         }
+    
 
         function applyRoleStyle(roles) {
             const card = document.getElementById('id-card'); const badgesContainer = document.getElementById('user-role-badges');
@@ -672,7 +668,7 @@
             // ▼▼ 【修正】相手に「profile.html」を開かせるURLに変更 ▼▼
             const query = new URLSearchParams({ targetId: myUserId }).toString();
             // 🛑 【重要】LINE Developersで新しく作成した「profile.html」用のLIFF IDを入れてください
-            const liffUrl = `https://liff.line.me/【ここにprofile.html用のLIFF_IDを入れる】/?${query}`;
+            const liffUrl = `https://liff.line.me/2009176797-p0GJH4Oe/?${query}`;
             
             const container = document.getElementById('qrcode-container');
             container.innerHTML = "";
