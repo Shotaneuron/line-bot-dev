@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>デジタル名刺 | 北大心理ゼミ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Zen Maru Gothic', sans-serif; background-color: #f8fafc; color: #1e293b; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center p-5 pb-24">
+
+    <div id="loading" class="fixed inset-0 bg-slate-900/80 z-[100] flex flex-col justify-center items-center backdrop-blur-sm">
+        <div class="animate-spin h-10 w-10 border-4 border-sky-500 border-t-transparent rounded-full mb-4"></div>
+        <p class="text-sky-400 font-bold tracking-widest animate-pulse">名刺データを取得中...</p>
+    </div>
+
+    <main id="app-content" class="w-full max-w-sm hidden">
+        <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100">
+            <div class="h-24 bg-gradient-to-r from-sky-400 to-indigo-500"></div>
+            <div class="px-6 pb-6 relative">
+                <img id="target-icon" src="" class="w-20 h-20 rounded-full border-4 border-white shadow-md absolute -top-10 left-6 object-cover bg-white">
+                
+                <div class="pt-12">
+                    <p id="target-univ" class="text-[10px] font-bold text-slate-400 mb-0.5">大学・学部未設定</p>
+                    <h1 id="target-name" class="text-2xl font-black text-slate-800 tracking-tight leading-none mb-3">ゼミ生</h1>
+                    <div id="target-tags" class="flex flex-wrap gap-1.5 mb-4"></div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <p class="text-[10px] text-slate-400 font-bold mb-1">💬 今のひとこと</p>
+                        <p id="target-intro" class="text-xs font-bold text-slate-700">よろしくお願いします！</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h2 class="text-sm font-black text-slate-800 mt-6 mb-3 flex items-center gap-2"><span class="text-lg">📊</span> 公開されている診断結果</h2>
+        <div id="test-results" class="grid grid-cols-2 gap-3 mb-6">
+            </div>
+
+    </main>
+
+    <div id="action-area" class="fixed bottom-0 left-0 w-full bg-white/80 backdrop-blur-md border-t border-slate-200 p-4 pb-safe hidden">
+        <button id="btn-request" onclick="sendFriendRequest()" class="w-full max-w-sm mx-auto bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition flex items-center justify-center gap-2">
+            <span class="text-lg">🤝</span> フレンド申請を送る
+        </button>
+    </div>
+
+    <script>
+        let myUserId = "";
+        let targetId = "";
+        let targetName = "";
+
+        window.onload = async () => {
+            try {
+                // 🛑 【重要】LINE Developersで新しく「profile.html」用のLIFF IDを作成し、ここに入れてください！
+                await liff.init({ liffId: "【ここにprofile.html用のLIFF_IDを入れる】" }); 
+                if (!liff.isLoggedIn()) { liff.login(); return; }
+                const profile = await liff.getProfile();
+                myUserId = profile.userId;
+
+                const urlParams = new URLSearchParams(window.location.search);
+                targetId = urlParams.get('targetId');
+
+                if (!targetId || targetId === myUserId) {
+                    alert("無効なQRコード、または自分自身のQRコードです。");
+                    liff.closeWindow(); return;
+                }
+
+                // 自分と相手のデータを同時に取得
+                const [myRes, targetRes] = await Promise.all([
+                    fetch(`https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/getUserData?userId=${myUserId}`),
+                    fetch(`https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/getUserData?userId=${targetId}`)
+                ]);
+
+                if (myRes.ok && targetRes.ok) {
+                    const myData = await myRes.json();
+                    const targetData = await targetRes.json();
+
+                    if (!targetData || !targetData.profile) {
+                        alert("相手のデータが見つかりませんでした。"); liff.closeWindow(); return;
+                    }
+
+                    // 既にフレンドかどうかチェック
+                    const connections = myData?.connections || [];
+                    if (connections.includes(targetId)) {
+                        document.getElementById('btn-request').innerText = "既にフレンドです✨";
+                        document.getElementById('btn-request').disabled = true;
+                        document.getElementById('btn-request').classList.replace('bg-indigo-600', 'bg-slate-400');
+                    }
+
+                    renderProfile(targetData);
+                } else { throw new Error("API通信エラー"); }
+
+            } catch (err) { console.error(err); alert("エラーが発生しました。"); liff.closeWindow(); }
+        };
+
+        function renderProfile(data) {
+            targetName = data.profile.name || "ゼミ生";
+            document.getElementById('target-name').innerText = targetName;
+            document.getElementById('target-icon').src = data.profile.pictureUrl || data.profile.iconUrl || "https://via.placeholder.com/150";
+            document.getElementById('target-univ').innerText = (data.profile.uni || "") + " " + (data.profile.grade || "");
+            document.getElementById('target-intro').innerText = data.profile.intro || data.profile.selfIntro || "よろしくお願いします！";
+
+            const tagsContainer = document.getElementById('target-tags');
+            (data.profile.tags || []).slice(0, 5).forEach(tag => {
+                tagsContainer.innerHTML += `<span class="bg-indigo-50 text-indigo-600 border border-indigo-100 px-2 py-1 rounded-lg text-[10px] font-bold">${tag}</span>`;
+            });
+
+            // プライバシー設定を考慮した診断結果の表示
+            const privacy = data.privacy || { chrono: true, bigFive: true, coffee: true, sm: true, motivation: true, nomophobia: true };
+            const resultsContainer = document.getElementById('test-results');
+            
+            const tests = [
+                { icon: "⏰", name: "クロノタイプ", isPublic: privacy.chrono !== false, res: data.chronoResult },
+                { icon: "☕", name: "コーヒー性格", isPublic: privacy.coffee !== false, res: data.coffeeResult },
+                { icon: "🧠", name: "BigFive", isPublic: privacy.bigFive !== false, res: data.bigFiveResult?.split('：')[0] || data.bigFiveResult },
+                { icon: "🔥", name: "やる気8タイプ", isPublic: privacy.motivation !== false, res: data.motivationResult?.replace('やる気：','') }
+            ];
+
+            tests.forEach(t => {
+                const text = t.isPublic ? (t.res ? t.res.split('（')[0] : "未診断") : "🔒 非公開";
+                const isPrivate = !t.isPublic;
+                resultsContainer.innerHTML += `
+                    <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100">
+                        <p class="text-[9px] font-bold text-slate-400 mb-1">${t.icon} ${t.name}</p>
+                        <p class="text-xs font-black ${isPrivate ? 'text-slate-300' : 'text-indigo-600'} truncate">${text}</p>
+                    </div>
+                `;
+            });
+
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('app-content').classList.remove('hidden');
+            document.getElementById('action-area').classList.remove('hidden');
+        }
+
+        async function sendFriendRequest() {
+            const btn = document.getElementById('btn-request');
+            btn.innerHTML = '<span class="animate-spin">🌀</span> 送信中...';
+            btn.disabled = true;
+
+            try {
+                // バックエンドの申請送信APIを叩く
+                const res = await fetch(`https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/sendFriendRequest`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ scannerId: myUserId, targetId: targetId })
+                });
+
+                if (res.ok) {
+                    btn.innerHTML = '✅ 申請を送りました！';
+                    btn.classList.replace('bg-indigo-600', 'bg-emerald-500');
+                    setTimeout(() => { liff.closeWindow(); }, 1500); // 送信完了したら閉じる
+                } else { throw new Error("APIエラー"); }
+            } catch (e) {
+                console.error(e);
+                btn.innerHTML = '❌ エラーが発生しました';
+                setTimeout(() => { btn.innerHTML = '<span class="text-lg">🤝</span> フレンド申請を送る'; btn.disabled = false; }, 2000);
+            }
+        }
+    </script>
+</body>
+</html>

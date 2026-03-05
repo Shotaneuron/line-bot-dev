@@ -664,24 +664,21 @@
                 } else throw new Error("API Error");
             } catch (err) { btn.innerHTML = '❌ エラー'; setTimeout(() => { btn.innerHTML = '<span>💾 設定を保存する</span>'; btn.disabled = false; }, 2000); }
         }
-// 🤝 デジタル名刺の表示処理
-        let qrcodeObj = null;
         function openQrModal() {
             const modal = document.getElementById('qr-modal');
             const content = document.getElementById('qr-modal-content');
             modal.classList.remove('hidden');
             
-            // 【修正点】パラメータを確実に渡すための安全なURL生成
-            const query = new URLSearchParams({ action: "connect", targetId: myUserId }).toString();
-            const liffUrl = `https://liff.line.me/${liff.id}/?${query}`;
+            // ▼▼ 【修正】相手に「profile.html」を開かせるURLに変更 ▼▼
+            const query = new URLSearchParams({ targetId: myUserId }).toString();
+            // 🛑 【重要】LINE Developersで新しく作成した「profile.html」用のLIFF IDを入れてください
+            const liffUrl = `https://liff.line.me/【ここにprofile.html用のLIFF_IDを入れる】/?${query}`;
             
             const container = document.getElementById('qrcode-container');
-            container.innerHTML = ""; // 初期化
+            container.innerHTML = "";
             qrcodeObj = new QRCode(container, {
-                text: liffUrl,
-                width: 180, height: 180,
-                colorDark : "#1e293b", colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.M
+                text: liffUrl, width: 180, height: 180,
+                colorDark : "#1e293b", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.M
             });
 
             setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); }, 10);
@@ -692,48 +689,6 @@
             const content = document.getElementById('qr-modal-content');
             modal.classList.add('opacity-0'); content.classList.add('scale-95');
             setTimeout(() => { modal.classList.add('hidden'); }, 300);
-        }
-
-        // 🚀 URLパラメータを監視して接続処理を行う
-        async function checkConnection(userId) {
-            const urlParams = new URLSearchParams(window.location.search);
-            const action = urlParams.get('action');
-            const targetId = urlParams.get('targetId');
-
-            if (action === 'connect' && targetId) {
-                if (targetId === userId) {
-                    alert("自分のQRコードは読み込めません！");
-                    return true; // 処理をストップ
-                }
-                
-                // 🛑 【修正】HTMLに依存せず、動的に真っ黒なロード画面を強制的に作って被せる！
-                const loadingDiv = document.createElement('div');
-                loadingDiv.className = 'fixed inset-0 bg-slate-900 z-[999] flex flex-col justify-center items-center';
-                loadingDiv.innerHTML = '<div class="text-6xl animate-bounce mb-4">🤝</div><p class="text-amber-400 font-black text-xl">AIが相性を分析中...</p><p class="text-slate-400 text-xs mt-2 font-bold">このまま数秒お待ちください</p>';
-                document.body.appendChild(loadingDiv);
-
-                try {
-                    // バックエンドAPIに通信
-                    const res = await fetch(`https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/connectUsers`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ scannerId: userId, targetId: targetId })
-                    });
-
-                    if (res.ok) {
-                        alert("名刺交換が完了しました！LINEのトーク画面に戻ってAI分析を確認してください✨");
-                        liff.closeWindow(); 
-                    } else {
-                        throw new Error("API通信エラー");
-                    }
-                } catch (e) {
-                    console.error(e);
-                    alert("通信エラーが発生しました。もう一度読み込んでください。");
-                    liff.closeWindow();
-                }
-                return true; // スキャン時は通常のマイページ描画をストップする
-            }
-            return false; // 通常のアクセスの場合はfalseを返す
         }
 
         initMyPage();

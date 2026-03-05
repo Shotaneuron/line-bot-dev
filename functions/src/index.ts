@@ -686,13 +686,19 @@ async function handleEvent(event: any) {
     const userId = event.source.userId;
     const replyToken = event.replyToken;
 
+// ==========================================
+    // 🔘 ボタン（Postback）が押された時の処理
+    // ==========================================
     if (event.type === "postback") {
         const data = new URLSearchParams(event.postback.data);
         const action = data.get("action");
         const eventId = data.get("eventId");
         const category = data.get("category");
         const tag = data.get("tag");
-        // ▼▼ ゲリラ部活結成ボタンが押された時の処理 ▼▼
+
+        // ────────────────────────────────────────
+        // ① ゲリラ部活結成ボタンの処理
+        // ────────────────────────────────────────
         const pid = data.get("pid");
         if (action === "guerrilla_accept" && pid) {
             try {
@@ -700,11 +706,10 @@ async function handleEvent(event: any) {
                 const doc = await docRef.get();
                 if (!doc.exists) return null;
                 const pData = doc.data();
-
                 if (!pData) return null;
 
                 // 既に誰かが結成ボタンを押していた場合
-                if (pData?.status === "active") {
+                if (pData.status === "active") {
                     await reply(replyToken, "既に他のメンバーが結成ボタンを押してくれました！グループの招待をお待ちください✨");
                     return null;
                 }
@@ -747,16 +752,91 @@ async function handleEvent(event: any) {
             } catch (e) {
                 console.error(e);
                 await reply(replyToken, "結成処理中にエラーが発生しました🙇‍♂️");
+                return null;
+            }
+        } // 👈 ゲリラ部活の処理はここで終了！
+
+        // ────────────────────────────────────────
+        // ② フレンド申請の「スキップ」ボタン
+        // ────────────────────────────────────────
+        if (action === "reject_friend") {
+            await reply(replyToken, "フレンド申請をスキップしました。");
+            return null;
+        }
+
+        // ────────────────────────────────────────
+        // ③ フレンド申請の「承認する」ボタン
+        // ────────────────────────────────────────
+        const reqId = data.get("reqId");
+        if (action === "accept_friend" && reqId) {
+            try {
+                // 1. お互いのフレンドリスト（connections）に登録
+                await db.runTransaction(async (transaction) => {
+                    const myRef = db.collection("users").doc(userId);
+                    const targetRef = db.collection("users").doc(reqId);
+                    transaction.set(myRef, { connections: admin.firestore.FieldValue.arrayUnion(reqId) }, { merge: true });
+                    transaction.set(targetRef, { connections: admin.firestore.FieldValue.arrayUnion(userId) }, { merge: true });
+                });
+
+                // 2. お互いのデータを取得してAIに相性分析させる
+                const [myDoc, reqDoc] = await Promise.all([
+                    db.collection("users").doc(userId).get(),
+                    db.collection("users").doc(reqId).get()
+                ]);
+                
+                const myData = myDoc.data() || {}; const reqData = reqDoc.data() || {};
+                const myName = myData.profile?.name || "あなた"; const reqName = reqData.profile?.name || "ゼミ生";
+
+                const prompt = `
+あなたは心理学コミュニティのAIです。以下の2人が名刺交換をしてフレンドになりました。
+2人の心理データから、「共通点や相性」と「次に話すべきおすすめの会話のネタ」を100文字程度で出力してください。
+【${myName}】やる気: ${myData.motivationResult||"なし"}, BigFive: ${myData.bigFiveResult||"なし"}
+【${reqName}】やる気: ${reqData.motivationResult||"なし"}, BigFive: ${reqData.bigFiveResult||"なし"}
+`;
+                const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_NAME });
+                const result = await model.generateContent(prompt);
+                const aiText = result.response.text().trim();
+
+                const createMessage = (partnerName: string) => ({
+                    type: "flex", altText: `🎉 ${partnerName}さんとフレンドになりました！`,
+                    contents: {
+                        type: "bubble",
+                        body: {
+                            type: "box", layout: "vertical", spacing: "md",
+                            contents: [
+                                { type: "text", text: "🎉 フレンド成立！", weight: "bold", color: "#10b981", size: "sm" },
+                                { type: "text", text: `${partnerName}さんと正式に繋がりました！`, size: "sm", wrap: true, weight: "bold" },
+                                { type: "separator", margin: "md" },
+                                { type: "text", text: "🤖 AI相性分析＆おすすめの話題", size: "xs", color: "#3498db", weight: "bold", margin: "md" },
+                                { type: "text", text: aiText, size: "sm", wrap: true, color: "#333333" }
+                            ]
+                        }
+                    }
+                });
+
+                // 承認した側（自分）に返信
+                await reply(replyToken, createMessage(reqName) as any);
+                // 申請した側（相手）にプッシュ通知
+                try { await lineClient.pushMessage(reqId, createMessage(myName) as any); } catch(e){}
+
+                return null;
+            } catch (e) {
+                console.error("フレンド承認エラー:", e);
+                await reply(replyToken, "承認処理中にエラーが発生しました🙇‍♂️");
+                return null;
             }
         }
 
+        // ────────────────────────────────────────
+        // ④ その他のボタン操作（イベント出欠・カテゴリ検索など）
+        // ────────────────────────────────────────
         if (eventId) {
             if (action === "join") await handleStatusUpdate(replyToken, userId, eventId, PROP_JOIN, "参加");
             if (action === "maybe") await handleStatusUpdate(replyToken, userId, eventId, PROP_MAYBE, "迷い中");
             if (action === "decline") await handleStatusUpdate(replyToken, userId, eventId, PROP_DECLINE, "不参加");
             if (action === "detail") await handleShowDetail(replyToken, eventId);
         }
-        // ▼▼ 既存の処理の並びにこれを追加 ▼▼
+
         if (action === "feedback_start" && eventId) {
             // ユーザーデータベースに「今この人は〇〇イベントの感想を入力しようとしている」という目印をつける
             await db.collection("users").doc(userId).set({ replyState: `feedback_${eventId}` }, { merge: true });
@@ -772,7 +852,10 @@ async function handleEvent(event: any) {
         if (action === "edit_tags") await handleTagMenu(replyToken, userId);
         if (action === "toggle_tag" && tag) await handleToggleTag(replyToken, userId, tag);
 
-        if (action === "edit_intro") await reply(replyToken, "💬 ひとことを編集します。\n\n「ひとこと （スペース） 〇〇」のように入力して送信してください。（※最大40文字程度がおすすめです）"); return null;
+        if (action === "edit_intro") {
+            await reply(replyToken, "💬 ひとことを編集します。\n\n「ひとこと （スペース） 〇〇」のように入力して送信してください。（※最大40文字程度がおすすめです）"); 
+            return null;
+        }
     }
 
     if (event.type !== "message" || event.message.type !== "text") return null;
@@ -2598,10 +2681,11 @@ export const getMyConnections = functions.region("asia-northeast1").https.onRequ
     }
 });
 
+
 // ───────────────────────────────────────────
-// 🚀 デジタル名刺（QRスキャン）接続API
+// 🚀 フレンド申請送信API (profile.html から呼ばれる)
 // ───────────────────────────────────────────
-export const connectUsers = functions.region("asia-northeast1").https.onRequest(async (req: any, res: any) => {
+export const sendFriendRequest = functions.region("asia-northeast1").https.onRequest(async (req: any, res: any) => {
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.set('Access-Control-Allow-Headers', 'Content-Type');
@@ -2609,70 +2693,40 @@ export const connectUsers = functions.region("asia-northeast1").https.onRequest(
 
     try {
         const { scannerId, targetId } = req.body;
-        if (!scannerId || !targetId || scannerId === targetId) {
-            res.status(400).json({ error: "Invalid IDs" }); return;
-        }
+        if (!scannerId || !targetId) { res.status(400).json({ error: "Invalid IDs" }); return; }
 
-        const [scannerDoc, targetDoc] = await Promise.all([
-            db.collection("users").doc(scannerId).get(),
-            db.collection("users").doc(targetId).get()
-        ]);
+        const scannerDoc = await db.collection("users").doc(scannerId).get();
+        if (!scannerDoc.exists) { res.status(404).json({ error: "User not found" }); return; }
+        
+        const scannerName = scannerDoc.data()?.profile?.name || "ゼミ生";
 
-        if (!scannerDoc.exists || !targetDoc.exists) {
-            res.status(404).json({ error: "User not found" }); return;
-        }
-
-        // お互いのフレンドリストに登録
-        await db.runTransaction(async (transaction) => {
-            transaction.set(scannerDoc.ref, { connections: admin.firestore.FieldValue.arrayUnion(targetId) }, { merge: true });
-            transaction.set(targetDoc.ref, { connections: admin.firestore.FieldValue.arrayUnion(scannerId) }, { merge: true });
-        });
-
-        const scannerData = scannerDoc.data() || {};
-        const targetData = targetDoc.data() || {};
-        const scannerName = scannerData.profile?.name || "あなた";
-        const targetName = targetData.profile?.name || "ゼミ生";
-
-        // Geminiに相性分析を依頼
-        const prompt = `
-あなたは心理学コミュニティのAIです。以下の2人が名刺交換をしてフレンドになりました。
-2人の心理データから、「共通点や相性」と「次に話すべきおすすめの会話のネタ」を100文字程度で出力してください。
-【${scannerName}】やる気: ${scannerData.motivationResult||"なし"}, BigFive: ${scannerData.bigFiveResult||"なし"}
-【${targetName}】やる気: ${targetData.motivationResult||"なし"}, BigFive: ${targetData.bigFiveResult||"なし"}
-`;
-        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_NAME });
-        const result = await model.generateContent(prompt);
-        const aiText = result.response.text().trim();
-
-        // Flex Message作成関数
-        const createMessage = (partnerName: string, aiAnalysis: string) => ({
-            type: "flex", altText: `🤝 ${partnerName}さんと繋がりました！`,
+        // 相手に「申請が来ました！」というLINEメッセージ（Flex Message）を送信
+        const message = {
+            type: "flex", altText: `🔔 ${scannerName}さんからフレンド申請が届きました！`,
             contents: {
                 type: "bubble",
                 body: {
                     type: "box", layout: "vertical", spacing: "md",
                     contents: [
-                        { type: "text", text: "🤝 フレンド追加完了！", weight: "bold", color: "#10b981", size: "sm" },
-                        { type: "text", text: `${partnerName}さんと名刺を交換しました！`, size: "sm", wrap: true, weight: "bold" },
-                        { type: "separator", margin: "md" },
-                        { type: "text", text: "🤖 AI相性分析＆おすすめの話題", size: "xs", color: "#3498db", weight: "bold", margin: "md" },
-                        { type: "text", text: aiAnalysis, size: "sm", wrap: true, color: "#333333" }
+                        { type: "text", text: "🔔 フレンド申請", weight: "bold", color: "#f59e0b", size: "sm" },
+                        { type: "text", text: `${scannerName}さんからデジタル名刺を受け取りました！`, wrap: true, weight: "bold", size: "md" },
+                        { type: "text", text: "承認してコネクション（フレンド）になりますか？", size: "xs", color: "#666666", wrap: true, margin: "md" }
                     ]
                 },
-                // ▼▼ 注意：ここのURLはご自身のcommunity.htmlのLIFF URLに変更してください ▼▼
-                footer: { type: "box", layout: "vertical", contents: [{ type: "button", style: "primary", color: "#10b981", action: { type: "uri", label: "名刺ホルダーを開く", uri: `https://liff.line.me/【あなたのcommunity.htmlのLIFF_ID】` } }] }
+                footer: {
+                    type: "box", layout: "horizontal", spacing: "sm",
+                    contents: [
+                        { type: "button", style: "secondary", action: { type: "postback", label: "スキップ", data: `action=reject_friend` } },
+                        { type: "button", style: "primary", color: "#10b981", action: { type: "postback", label: "承認する", data: `action=accept_friend&reqId=${scannerId}` } }
+                    ]
+                }
             }
-        });
+        };
 
-        // スキャンした人・された人の両方に公式LINEからプッシュ通知を送信！
-        await Promise.all([
-            lineClient.pushMessage(scannerId, createMessage(targetName, aiText) as any).catch(e => console.error("Push Error", e)),
-            lineClient.pushMessage(targetId, createMessage(scannerName, aiText) as any).catch(e => console.error("Push Error", e))
-        ]);
-
+        await lineClient.pushMessage(targetId, message as any);
         res.json({ success: true });
     } catch (e: any) {
-        console.error("Connect API Error:", e);
+        console.error("Send Request Error:", e);
         res.status(500).json({ error: e.message });
     }
 });
