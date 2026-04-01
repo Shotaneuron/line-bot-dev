@@ -1090,6 +1090,18 @@ async function handleEvent(event: any) {
         return null;
     }
 
+    if (text.startsWith("【入部申請】")) {
+        // プロフィールを保存
+        await handleProfileUpdate(replyToken, userId, text);
+        // ステータスを「承認待ち」に変更
+        await db.collection("users").doc(userId).set({
+            status: "pending"
+        }, { merge: true });
+        
+        await reply(replyToken, "📝 入部申請を受け付けました！\n代表の承認が完了するまで少々お待ちください。");
+        return null;
+    }
+
     if (text.startsWith("ひとこと ") || text.startsWith("ひとこと　")) {
         const introText = text.replace(/^ひとこと[\s　]+/, "");
         await handleUpdateIntro(replyToken, userId, introText);
