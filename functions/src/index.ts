@@ -313,9 +313,10 @@ ${rawFeedbacks}
                     ]
                 });
 
-                // 5. LINEで「全員」にレポート完成のハイライトを配信！
+                // 5. LINEで「参加・迷い中だったメンバー」だけにレポート完成を配信！
                 const message = {
                     type: "flex", altText: `「${title}」のハイライトレポートが完成！`,
+                    // (※ messageのcontentsの中身は元のままでOKです)
                     contents: {
                         type: "bubble",
                         body: {
@@ -332,9 +333,19 @@ ${rawFeedbacks}
                     }
                 };
                 
-                // 全員へ一斉配信 (ブロードキャスト)
-                await lineClient.broadcast(message as any);
-                console.log(`✅ 「${title}」のAIレポート作成と全体配信が完了しました！`);
+                // Firestoreから関係者のLINE_ID（joinsLineIds と maybesLineIds）を取得
+                const joinsLineIds = data.joinsLineIds || [];
+                const maybesLineIds = data.maybesLineIds || [];
+                // 重複をなくして1つのリストにまとめる
+                const targetLineIds = Array.from(new Set([...joinsLineIds, ...maybesLineIds]));
+
+                // 対象者がいる場合のみマルチキャスト配信
+                if (targetLineIds.length > 0) {
+                    await lineClient.multicast(targetLineIds, message as any);
+                    console.log(`✅ 「${title}」のAIレポート作成と関係者（${targetLineIds.length}名）への配信が完了しました！`);
+                } else {
+                    console.log(`✅ 「${title}」のAIレポート作成完了（LINE配信対象者なし）`);
+                }
             }
         } catch (e) {
             console.error("レポート作成バッチエラー:", e);
@@ -507,8 +518,11 @@ ${JSON.stringify(participantData)}
     // ───────────────────────────────────────────
 // 🚀 定期実行: AIゲリラ部活の結成提案 (毎日19:00)
 // ───────────────────────────────────────────
+// ───────────────────────────────────────────
+// 🚀 定期実行: AIゲリラ部活の結成提案 (月・水・金の19:00)
+// ───────────────────────────────────────────
 export const scheduledGuerrillaClub = functions.region("asia-northeast1").pubsub
-    .schedule("0 19 * * *").timeZone("Asia/Tokyo").onRun(async (context) => {
+    .schedule("0 19 * * 1,3,5").timeZone("Asia/Tokyo").onRun(async (context) => {
         console.log("🔥 ゲリラ部活探索バッチ開始");
 
         try {
@@ -535,7 +549,7 @@ export const scheduledGuerrillaClub = functions.region("asia-northeast1").pubsub
 
 【厳守するルール】
 1. 部活名は、中二病っぽさや痛さを排除し、カフェのメニューのような「センスが良く、実際に参加したくなる」名前にすること（例：「夜型サウナーの会」「朝活コーヒー部」など）。
-2. 理由（メッセージ）の中で、絶対に個人名（メンバーの名前）を直接出さないでください。
+2. 出力するJSONには個人名を含めず、理由のみを書いてください（個人名はシステム側で自動で追加します）。
 3. 「夜型とサウナ好きのメンバーが集まりました。この組み合わせなら…」のように、「なぜその属性が集められたか」という理由と、そこで話すと面白そうなテーマを、丁寧でワクワクする言葉遣いで100文字程度で書いてください。
 
 【ゼミ生リスト】
@@ -565,6 +579,14 @@ ${JSON.stringify(candidates)}
                 status: "pending"
             });
 
+            // 👇ここに追加：選ばれたメンバーの名前を抽出して繋げる
+            const selectedNames = proposal.userIds
+                .map((uid: string) => {
+                    const candidate = candidates.find(c => c.id === uid);
+                    return candidate ? candidate.name : "メンバー";
+                })
+                .join("さん、 ") + "さん";
+
             // 4. 選ばれたメンバーだけにLINEで提案メッセージを送信！
             const proposalId = proposalRef.id;
             const message = {
@@ -577,6 +599,10 @@ ${JSON.stringify(candidates)}
                         contents: [
                             { type: "text", text: "AIが面白い化学反応が起きそうなメンバーを検知しました！", size: "xs", color: "#666666", wrap: true },
                             { type: "text", text: `【${proposal.clubName}】`, weight: "bold", size: "lg", color: "#8b5cf6", wrap: true },
+                            
+                            // 👇ここに追加：誰と一緒に呼ばれたかを明記する
+                            { type: "text", text: `👥 呼ばれたメンバー：\n${selectedNames}`, size: "sm", color: "#8b5cf6", weight: "bold", wrap: true, margin: "md" },
+                            
                             { type: "text", text: proposal.reason, size: "sm", wrap: true, color: "#333333", margin: "md" },
                             { type: "text", text: "※誰か1人がボタンを押すと、専用ページが作成されて正式に結成されます！", size: "xxs", color: "#aaaaaa", wrap: true, margin: "md" }
                         ]
@@ -698,9 +724,6 @@ async function handleEvent(event: any) {
         const category = data.get("category");
         const tag = data.get("tag");
 
-        // ────────────────────────────────────────
-        // ① ゲリラ部活結成ボタンの処理
-        // ────────────────────────────────────────
         // ────────────────────────────────────────
         // ① ゲリラ部活結成ボタンの処理
         // ────────────────────────────────────────
@@ -836,6 +859,38 @@ async function handleEvent(event: any) {
         if (action === "edit_intro") {
             await reply(replyToken, "💬 ひとことを編集します。\n\n「ひとこと （スペース） 〇〇」のように入力して送信してください。（※最大40文字程度がおすすめです）"); 
             return null;
+        }
+        // ────────────────────────────────────────
+        // 🌟 新規追加：入部承認ボタンの処理
+        // ────────────────────────────────────────
+        const targetUserId = data.get("targetUserId");
+        if (action === "approve_member" && targetUserId) {
+            try {
+                // ① Firestoreのstatusを'approved'に更新
+                await db.collection("users").doc(targetUserId).update({
+                    status: "approved"
+                });
+
+                // ② ユーザー本人へLINE通知
+                await lineClient.pushMessage(targetUserId, {
+                    type: "text",
+                    text: "🎉 心理ゼミへの入部が承認されました！\nマイページが利用可能になっていますので、ぜひご確認ください。"
+                });
+
+                // ③ 運営グループの画面上に「承認しました」と返信
+                await lineClient.replyMessage(replyToken, {
+                    type: "text",
+                    text: "✅ 承認処理が完了し、本人に通知を送りました！"
+                });
+                return null;
+            } catch (error) {
+                console.error("承認処理エラー:", error);
+                await lineClient.replyMessage(replyToken, {
+                    type: "text",
+                    text: "⚠️ 承認処理中にエラーが発生しました。"
+                });
+                return null;
+            }
         }
     }
 
@@ -1022,6 +1077,13 @@ async function handleEvent(event: any) {
     // ▼▼ ここに追加 ▼▼
     if (text === "監視スタート") { await handleSetupWatch(replyToken); return null; }
     // ★New! LIFFからデータを受け取った時の処理を追加
+
+    // 🌟 新規追加: 運営グループID取得用の隠しコマンド
+    if (text === "グループID取得") {
+        const groupId = event.source.groupId || "ここはグループではありません（個人のトーク画面です）";
+        await reply(replyToken, `このグループのIDは以下の通りです：\n\n${groupId}`);
+        return null;
+    }
 
     if (text.startsWith("【プロフ更新】")) {
         await handleProfileUpdate(replyToken, userId, text);
@@ -2764,3 +2826,65 @@ export const sendFriendRequest = functions.region("asia-northeast1").https.onReq
         res.status(500).json({ error: e.message });
     }
 });
+
+// ───────────────────────────────────────────
+// 🌟 新規追加: 入部届けの新規提出を検知して運営グループに通知
+// ───────────────────────────────────────────
+export const notifyAdminOnNewMember = functions.region("asia-northeast1").firestore
+    .database('default')
+    .document('users/{userId}')
+    .onWrite(async (change, context) => {
+        const newData = change.after.data();
+        const previousData = change.before.data();
+
+        // データがない場合、または status が 'pending' 以外の場合は何もしない
+        if (!newData || newData.status !== 'pending') return null;
+        // すでに 'pending' だった場合（他のフィールドの更新など）も何もしない
+        if (previousData && previousData.status === 'pending') return null;
+
+        const userId = context.params.userId;
+        // 既存のFirestoreの構造（profile以下に保存）に合わせて取得
+        const userName = newData.profile?.name || '名前未登録';
+        const university = newData.profile?.uni || '大学未登録';
+
+        // ⚠️ 運営グループのID（あとで取得してここに入れます）
+        const ADMIN_GROUP_ID = "Cef309dc3c19f6f4a68d350b088a29178"; 
+
+        const message = {
+            type: "flex",
+            altText: `${userName}さんから入部申請が届きました`,
+            contents: {
+                type: "bubble",
+                body: {
+                    type: "box", layout: "vertical", spacing: "md",
+                    contents: [
+                        { type: "text", text: "🆕 新しい入部申請", weight: "bold", size: "xl", color: "#1DB446" },
+                        { type: "text", text: `名前: ${userName}`, size: "sm" },
+                        { type: "text", text: `大学: ${university}`, size: "sm" }
+                    ]
+                },
+                footer: {
+                    type: "box", layout: "horizontal", spacing: "sm",
+                    contents: [
+                        {
+                            type: "button", style: "primary", color: "#1DB446",
+                            action: {
+                                type: "postback",
+                                label: "承認する",
+                                // 承認ボタンが押された時に誰を承認するかを targetUserId として送る
+                                data: `action=approve_member&targetUserId=${userId}` 
+                            }
+                        }
+                    ]
+                }
+            }
+        };
+
+        try {
+            await lineClient.pushMessage(ADMIN_GROUP_ID, message as any);
+            console.log(`✅ 運営グループへ ${userName} さんの申請通知を送信しました`);
+        } catch (e) {
+            console.error("運営グループへの通知エラー:", e);
+        }
+        return null;
+    });

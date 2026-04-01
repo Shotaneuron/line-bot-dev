@@ -35,90 +35,153 @@
         </div>
     </div>
 
-    <header id="id-card" class="card-normal rounded-3xl p-6 mb-6 fade-in relative overflow-hidden transition-all duration-500">
-        <div class="absolute top-[-50%] right-[-20%] w-[200px] h-[200px] bg-white/50 rounded-full filter blur-[20px] pointer-events-none"></div>
-        
-        <div class="absolute top-4 right-4 z-30 flex items-center gap-2">
-            <button onclick="openPrivacyModal()" class="bg-white/80 hover:bg-white text-slate-700 text-[10px] font-bold px-3 py-1.5 rounded-full backdrop-blur-md transition flex items-center gap-1 border border-slate-200 shadow-sm active:scale-95">
-                <span>🔒</span> 公開設定
-            </button>
-            <button onclick="openEditModal()" class="bg-white/80 hover:bg-white text-slate-700 text-[10px] font-bold px-3 py-1.5 rounded-full backdrop-blur-md transition flex items-center gap-1 border border-slate-200 shadow-sm active:scale-95">
-                <span>✏️</span> 編集
-            </button>
-        </div>
+    <div id="view-loading" class="text-center py-20 fade-in">
+        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-500 mx-auto mb-4"></div>
+        <p class="text-sm font-bold text-slate-500 tracking-widest">データを読み込み中...</p>
+    </div>
 
-        <div class="relative z-10 pt-2"> 
-            <div class="flex items-center gap-4 mb-4 pr-16">
-                <img id="user-icon" src="https://via.placeholder.com/150" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-white shadow-md object-cover flex-shrink-0">
-                <div>
-                    <p id="user-univ" class="text-[9px] font-bold opacity-80 mb-0.5">大学・学部を設定しよう</p>
-                    <h1 id="user-name" class="text-xl sm:text-2xl font-black tracking-tight leading-tight">ゲスト さん</h1>
-                    <div id="user-role-badges" class="flex flex-wrap gap-1 mt-1.5 hidden"></div>
-                </div>
-            </div>
+    <div id="view-register" class="hidden fade-in max-w-md mx-auto pb-10">
+        <div class="bg-white rounded-3xl p-6 shadow-xl border border-slate-100">
+            <h2 class="text-xl font-black text-slate-800 mb-2">👋 心理ゼミへようこそ！</h2>
+            <p class="text-xs text-slate-500 font-bold mb-6">以下のプロフィールを入力して、入部申請を完了させてください。</p>
             
-            <div class="bg-black/5 rounded-xl p-3 border border-black/5 flex items-start gap-2 relative group cursor-pointer active:scale-95 transition w-full" onclick="editHitokoto()">
-                <span class="text-sm">💬</span>
-                <div class="flex-1">
-                    <p class="text-[9px] opacity-60 font-bold mb-0.5">今のひとこと (タップで編集)</p>
-                    <p id="user-intro" class="text-xs font-bold leading-relaxed">ここをタップしてひとことを設定！</p>
+            <div class="space-y-4">
+                <div><label class="text-[10px] font-bold text-slate-500">名前（フルネーム推奨） <span class="text-red-500">*</span></label><input type="text" id="reg-name" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-800 focus:outline-none focus:border-indigo-400"></div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div><label class="text-[10px] font-bold text-slate-500">大学</label><input type="text" id="reg-uni" value="北海道大学" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-800"></div>
+                    <div><label class="text-[10px] font-bold text-slate-500">学年</label>
+                        <select id="reg-grade" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-800">
+                            <option value="学部1年">学部1年</option><option value="学部2年">学部2年</option><option value="学部3年">学部3年</option><option value="学部4年">学部4年</option><option value="修士1年">修士1年</option><option value="修士2年">修士2年</option><option value="博士1年">博士1年</option><option value="博士2年">博士2年</option><option value="博士3年">博士3年</option><option value="博士4年">博士4年</option><option value="その他">その他</option>
+                        </select>
+                    </div>
                 </div>
-                <span class="opacity-40 text-xs mt-1">✏️</span>
-            </div>
+                <div><label class="text-[10px] font-bold text-slate-500">学部・学科</label><input type="text" id="reg-faculty" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-800"></div>
+                <div>
+                    <label class="text-[10px] font-bold text-slate-500">簡単な自己紹介</label>
+                    <textarea id="reg-selfintro" rows="2" placeholder="よろしくお願いします！" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-800 mt-1 focus:outline-none focus:border-indigo-400"></textarea>
+                </div>
+                
+                <div class="pt-2 border-t border-slate-100">
+                    <label class="text-[10px] font-bold text-slate-500 mb-2 block">🏷️ 興味タグ（複数選択可）</label>
+                    <div id="reg-tags-container" class="flex flex-wrap gap-2"></div>
+                </div>
 
-            <button onclick="openQrModal()" class="mt-4 w-full bg-slate-800 text-white text-xs font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition shadow-lg">
-                <span class="text-base">📱</span> デジタル名刺を見せる（連絡先交換）
-            </button>
+                <div class="bg-red-50 p-4 rounded-xl border border-red-200 mt-6 shadow-sm">
+                    <p class="text-xs text-red-600 font-black mb-2 flex items-center gap-1"><span>⚠️</span> 部費に関する確認事項</p>
+                    <p class="text-[10px] text-red-500 mb-3 leading-relaxed font-bold">
+                        心理ゼミの活動を維持・発展させるため、<strong>部費として年額2,000円（1か月あたり約167円）</strong>をいただいております。<br>
+                        ※お支払い方法などの詳細は、入部が承認された後に公式LINEからご案内します。
+                    </p>
+                    <label class="flex items-start gap-2 cursor-pointer bg-white p-3 rounded-lg border border-red-100">
+                        <input type="checkbox" id="reg-consent" class="mt-0.5 w-4 h-4 text-indigo-600 border-red-300 rounded focus:ring-indigo-500">
+                        <span class="text-[10px] font-black text-slate-700 leading-tight">部費（年額2,000円）について理解し、支払いに同意して入部を申請します。</span>
+                    </label>
+                </div>
+
+                <button onclick="submitApplication()" class="w-full mt-4 bg-gradient-to-r from-indigo-500 to-pink-500 text-white font-black py-4 rounded-xl shadow-lg active:scale-95 transition flex items-center justify-center gap-2">入部を申請する 🚀</button>
+            </div>
         </div>
-    </header>
+    </div>
 
-    <main class="space-y-4">
-        <section class="glass-card rounded-[2rem] p-5 fade-in" style="animation-delay: 0.1s;">
-            <div class="flex justify-between items-end mb-3">
-                <h2 class="text-sm font-black text-slate-800 tracking-widest flex items-center gap-2"><span>🏷️</span> 自分の興味タグ</h2>
-                <button onclick="openEditModal()" class="text-[10px] text-indigo-500 font-bold bg-indigo-50 px-2 py-1 rounded-md">＋ 追加</button>
-            </div>
-            <div id="my-interest-tags" class="flex flex-wrap gap-1.5"></div>
-        </section>
+    <div id="view-pending" class="hidden fade-in max-w-md mx-auto text-center py-10">
+        <div class="bg-white rounded-3xl p-8 shadow-xl border border-slate-100">
+            <div class="text-5xl mb-4 animate-pulse">⏳</div>
+            <h2 class="text-xl font-black text-slate-800 mb-3">承認待ちです</h2>
+            <p class="text-xs text-slate-500 font-bold leading-relaxed mb-6">
+                入部申請ありがとうございます！🎉<br>
+                現在、代表の承認待ちとなっています。<br><br>
+                承認手続きが完了次第、公式LINEに通知が届きますので、もうしばらくお待ちください🙇‍♂️
+            </p>
+            <button onclick="liff.closeWindow()" class="bg-slate-100 text-slate-600 text-xs font-bold px-6 py-3 rounded-xl active:scale-95 transition border border-slate-200 shadow-sm">LINEに戻る</button>
+        </div>
+    </div>
 
-        <section class="glass-card rounded-[2rem] p-5 fade-in" style="animation-delay: 0.15s;">
-            <h2 class="text-sm font-black text-slate-800 tracking-widest flex items-center gap-2 mb-4"><span>📅</span> わたしの活動予定</h2>
-            <div class="mb-5">
-                <p class="text-[10px] text-indigo-600 font-bold mb-2">🚀 参加予定</p>
-                <div id="dashboard-planned" class="flex gap-3 overflow-x-auto no-scrollbar pb-2"><div class="w-full text-center py-4 bg-slate-50 rounded-xl border border-slate-100"><p class="text-xs text-slate-400 font-bold animate-pulse">予定を取得中...</p></div></div>
+    <div id="view-dashboard" class="hidden fade-in">
+        <header id="id-card" class="card-normal rounded-3xl p-6 mb-6 relative overflow-hidden transition-all duration-500">
+            <div class="absolute top-[-50%] right-[-20%] w-[200px] h-[200px] bg-white/50 rounded-full filter blur-[20px] pointer-events-none"></div>
+            
+            <div class="absolute top-4 right-4 z-30 flex items-center gap-2">
+                <button onclick="openPrivacyModal()" class="bg-white/80 hover:bg-white text-slate-700 text-[10px] font-bold px-3 py-1.5 rounded-full backdrop-blur-md transition flex items-center gap-1 border border-slate-200 shadow-sm active:scale-95">
+                    <span>🔒</span> 公開設定
+                </button>
+                <button onclick="openEditModal()" class="bg-white/80 hover:bg-white text-slate-700 text-[10px] font-bold px-3 py-1.5 rounded-full backdrop-blur-md transition flex items-center gap-1 border border-slate-200 shadow-sm active:scale-95">
+                    <span>✏️</span> 編集
+                </button>
             </div>
-            <div class="mb-5">
-                <p class="text-[10px] text-orange-500 font-bold mb-2">🤔 迷い中</p>
-                <div id="dashboard-maybe" class="flex gap-3 overflow-x-auto no-scrollbar pb-2"><p class="text-xs text-slate-400 font-bold px-2">迷い中のイベントはありません</p></div>
-            </div>
-            <div class="mb-5">
-                <p class="text-[10px] text-pink-500 font-bold mb-2">✨ あなたにおすすめ（興味タグ一致）</p>
-                <div id="dashboard-recommended" class="flex gap-3 overflow-x-auto no-scrollbar pb-2"><p class="text-xs text-slate-400 font-bold px-2">おすすめを探すには、興味タグを設定してください！</p></div>
-            </div>
-            <div>
-                <p class="text-[10px] text-emerald-600 font-bold mb-2">🏆 活動履歴</p>
-                <div id="dashboard-past" class="space-y-2"><p class="text-xs text-slate-400 font-bold px-2">まだ活動履歴がありません</p></div>
-            </div>
-        </section>
 
-        <section class="glass-card rounded-[2rem] p-5 fade-in" style="animation-delay: 0.2s;">
-            <h2 class="text-sm font-black text-slate-800 tracking-widest flex items-center gap-2 mb-3"><span>📚</span> わたしのトリセツ</h2>
-            <p id="tags-hint" class="text-[9px] text-indigo-500 font-bold mb-3 hidden">👇タップすると同じタイプのゼミ生を探せます！</p>
-            <div id="tags-container" class="flex flex-wrap gap-2"><p class="text-xs text-slate-500 font-bold">まだテストを受けていません。ポータルから診断しよう！</p></div>
-        </section>
+            <div class="relative z-10 pt-2"> 
+                <div class="flex items-center gap-4 mb-4 pr-16">
+                    <img id="user-icon" src="https://via.placeholder.com/150" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-white shadow-md object-cover flex-shrink-0">
+                    <div>
+                        <p id="user-univ" class="text-[9px] font-bold opacity-80 mb-0.5">大学・学部を設定しよう</p>
+                        <h1 id="user-name" class="text-xl sm:text-2xl font-black tracking-tight leading-tight">ゲスト さん</h1>
+                        <div id="user-role-badges" class="flex flex-wrap gap-1 mt-1.5 hidden"></div>
+                    </div>
+                </div>
+                
+                <div class="bg-black/5 rounded-xl p-3 border border-black/5 flex items-start gap-2 relative group cursor-pointer active:scale-95 transition w-full" onclick="editHitokoto()">
+                    <span class="text-sm">💬</span>
+                    <div class="flex-1">
+                        <p class="text-[9px] opacity-60 font-bold mb-0.5">今のひとこと (タップで編集)</p>
+                        <p id="user-intro" class="text-xs font-bold leading-relaxed">ここをタップしてひとことを設定！</p>
+                    </div>
+                    <span class="opacity-40 text-xs mt-1">✏️</span>
+                </div>
 
-        <section class="glass-card rounded-[2rem] p-5 fade-in" style="animation-delay: 0.3s;">
-            <h2 class="text-sm font-black text-slate-800 mb-4 tracking-widest flex items-center gap-2"><span>👥</span> ゼミ内のつながり</h2>
-            <div class="mb-4">
-                <p class="text-[10px] text-emerald-600 font-bold mb-2">✨ あなたと似ているメンバー (シンクロ率)</p>
-                <div id="sync-users-container" class="flex gap-3 overflow-x-auto no-scrollbar pb-2"><p class="text-xs text-slate-500 font-bold w-full text-center py-4">データ収集中... 🔄</p></div>
+                <button onclick="openQrModal()" class="mt-4 w-full bg-slate-800 text-white text-xs font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition shadow-lg">
+                    <span class="text-base">📱</span> デジタル名刺を見せる（連絡先交換）
+                </button>
             </div>
-            <div class="bg-pink-50/50 rounded-xl p-4 border border-pink-100">
-                <p class="text-[10px] text-pink-600 font-black mb-1">👑 タイプのレア度</p>
-                <p id="rare-text" class="text-xs text-slate-700 font-bold leading-relaxed">計算中... 🔄</p>
-            </div>
-        </section>
-    </main>
+        </header>
+
+        <main class="space-y-4">
+            <section class="glass-card rounded-[2rem] p-5 fade-in" style="animation-delay: 0.1s;">
+                <div class="flex justify-between items-end mb-3">
+                    <h2 class="text-sm font-black text-slate-800 tracking-widest flex items-center gap-2"><span>🏷️</span> 自分の興味タグ</h2>
+                    <button onclick="openEditModal()" class="text-[10px] text-indigo-500 font-bold bg-indigo-50 px-2 py-1 rounded-md border border-indigo-100">＋ 追加</button>
+                </div>
+                <div id="my-interest-tags" class="flex flex-wrap gap-1.5"></div>
+            </section>
+
+            <section class="glass-card rounded-[2rem] p-5 fade-in" style="animation-delay: 0.15s;">
+                <h2 class="text-sm font-black text-slate-800 tracking-widest flex items-center gap-2 mb-4"><span>📅</span> わたしの活動予定</h2>
+                <div class="mb-5">
+                    <p class="text-[10px] text-indigo-600 font-bold mb-2">🚀 参加予定</p>
+                    <div id="dashboard-planned" class="flex gap-3 overflow-x-auto no-scrollbar pb-2"><div class="w-full text-center py-4 bg-slate-50 rounded-xl border border-slate-100"><p class="text-xs text-slate-400 font-bold animate-pulse">予定を取得中...</p></div></div>
+                </div>
+                <div class="mb-5">
+                    <p class="text-[10px] text-orange-500 font-bold mb-2">🤔 迷い中</p>
+                    <div id="dashboard-maybe" class="flex gap-3 overflow-x-auto no-scrollbar pb-2"><p class="text-xs text-slate-400 font-bold px-2">迷い中のイベントはありません</p></div>
+                </div>
+                <div class="mb-5">
+                    <p class="text-[10px] text-pink-500 font-bold mb-2">✨ あなたにおすすめ（興味タグ一致）</p>
+                    <div id="dashboard-recommended" class="flex gap-3 overflow-x-auto no-scrollbar pb-2"><p class="text-xs text-slate-400 font-bold px-2">おすすめを探すには、興味タグを設定してください！</p></div>
+                </div>
+                <div>
+                    <p class="text-[10px] text-emerald-600 font-bold mb-2">🏆 活動履歴</p>
+                    <div id="dashboard-past" class="space-y-2"><p class="text-xs text-slate-400 font-bold px-2">まだ活動履歴がありません</p></div>
+                </div>
+            </section>
+
+            <section class="glass-card rounded-[2rem] p-5 fade-in" style="animation-delay: 0.2s;">
+                <h2 class="text-sm font-black text-slate-800 tracking-widest flex items-center gap-2 mb-3"><span>📚</span> わたしのトリセツ</h2>
+                <p id="tags-hint" class="text-[9px] text-indigo-500 font-bold mb-3 hidden">👇タップすると同じタイプのゼミ生を探せます！</p>
+                <div id="tags-container" class="flex flex-wrap gap-2"><p class="text-xs text-slate-500 font-bold">まだテストを受けていません。ポータルから診断しよう！</p></div>
+            </section>
+
+            <section class="glass-card rounded-[2rem] p-5 fade-in" style="animation-delay: 0.3s;">
+                <h2 class="text-sm font-black text-slate-800 mb-4 tracking-widest flex items-center gap-2"><span>👥</span> ゼミ内のつながり</h2>
+                <div class="mb-4">
+                    <p class="text-[10px] text-emerald-600 font-bold mb-2">✨ あなたと似ているメンバー (シンクロ率)</p>
+                    <div id="sync-users-container" class="flex gap-3 overflow-x-auto no-scrollbar pb-2"><p class="text-xs text-slate-500 font-bold w-full text-center py-4">データ収集中... 🔄</p></div>
+                </div>
+                <div class="bg-pink-50/50 rounded-xl p-4 border border-pink-100">
+                    <p class="text-[10px] text-pink-600 font-black mb-1">👑 タイプのレア度</p>
+                    <p id="rare-text" class="text-xs text-slate-700 font-bold leading-relaxed">計算中... 🔄</p>
+                </div>
+            </section>
+        </main>
+    </div>
 
     <div id="same-type-modal" class="fixed inset-0 z-[55] hidden flex-col justify-end bg-slate-900/40 backdrop-blur-sm">
         <div class="bg-white rounded-t-[2rem] p-6 shadow-2xl border-t border-slate-200 max-h-[75vh] flex flex-col w-full max-w-md mx-auto relative animate-[translateY_0.2s_ease-out]">
@@ -212,7 +275,6 @@
             } catch (e) { console.error("タグ取得エラー", e); }
         }
 
-        // 🌟 役職バッジのHTMLを生成する共通関数
         function getRoleBadgeHtml(role) {
             let badgeClass = "", badgeIcon = "";
             if (role === "代表") { badgeIcon = "👑"; badgeClass = "bg-yellow-500/20 text-yellow-800 border border-yellow-400"; } 
@@ -230,7 +292,6 @@
                 const events = await res.json();
                 globalPastEvents = events.past; 
 
-                // 🚀 参加予定
                 if (events.planned.length > 0) {
                     document.getElementById('dashboard-planned').className = "space-y-3";
                     document.getElementById('dashboard-planned').innerHTML = events.planned.map(ev => `
@@ -243,7 +304,6 @@
                     document.getElementById('dashboard-planned').innerHTML = '<p class="text-xs text-slate-400 font-bold px-2 py-4">参加予定のイベントはありません。ポータルから探そう！</p>';
                 }
 
-                // 🤔 迷い中 ＆ ✨ おすすめ
                 const createHorizontalCard = (ev, borderCol, bgCol) => `
                     <div onclick="openEventDetail('${ev.id}', '${ev.title}')" class="flex-shrink-0 w-48 bg-white rounded-xl p-4 border ${borderCol} ${bgCol} shadow-sm cursor-pointer hover:bg-slate-50 active:scale-95 transition flex flex-col justify-between">
                         <div>
@@ -255,7 +315,6 @@
                 if (events.maybe.length > 0) document.getElementById('dashboard-maybe').innerHTML = events.maybe.map(e => createHorizontalCard(e, "border-orange-200", "bg-orange-50/50")).join('');
                 if (events.recommended.length > 0) document.getElementById('dashboard-recommended').innerHTML = events.recommended.map(e => createHorizontalCard(e, "border-pink-200", "bg-pink-50/50")).join('');
 
-                // 🏆 活動履歴
                 if (events.past.length > 0) {
                     document.getElementById('dashboard-past').className = "flex gap-3 overflow-x-auto no-scrollbar pb-2 pt-1"; 
                     let pastHtml = events.past.slice(0, 5).map(ev => `
@@ -273,41 +332,95 @@
             } catch(e) { document.getElementById('dashboard-planned').innerHTML = '<p class="text-xs text-red-400 px-2 py-4">予定の取得に失敗しました</p>'; }
         }
 
-        // 🚀 初期化処理
+        // 🚀 画面制御つき初期化処理
         async function initMyPage() {
             try {
-                await liff.init({ liffId: "2009176797-tgpGsUUz" }); // ※ご自身のLIFF ID
+                // 🛑 【重要】ご自身のLIFF IDを設定してください
+                await liff.init({ liffId: "2009176797-tgpGsUUz" }); 
                 if (!liff.isLoggedIn()) { liff.login(); return; }
                 const profile = await liff.getProfile();
                 myUserId = profile.userId;
 
-                // 💡 checkConnectionの呼び出しを削除し、すぐに画面を描画します！
                 document.getElementById('user-icon').src = profile.pictureUrl; 
                 document.getElementById('user-name').innerText = profile.displayName + " さん";
                 
-                // データの取得
-                await Promise.all([
-                    fetchAvailableTags(),
-                    fetchDashboardEvents()
-                ]);
+                await fetchAvailableTags();
                 
                 const res = await fetch(`https://asia-northeast1-shinrizemi-linebot.cloudfunctions.net/getUserData?userId=${myUserId}`);
+                
+                let status = 'unregistered';
+
                 if (res.ok) {
                     myData = await res.json();
-                    if (myData) { renderProfile(myData); renderTags(myData); }
-                } else { 
-                    renderEditTags([]); 
+                    if (myData) {
+                        if (myData.status === 'pending') {
+                            status = 'pending';
+                        } else if (myData.status === 'approved' || myData.profile) {
+                            // 既にプロフ登録済みの過去ユーザーも承認済みとして救済
+                            status = 'approved';
+                        }
+                    }
                 }
-                
-                fetchConnections();
+
+                // 🔄 ローディング画面を隠す
+                document.getElementById('view-loading').classList.add('hidden');
+
+                // 🚦 ステータスに応じて画面を切り替え
+                if (status === 'unregistered') {
+                    renderRegisterTags();
+                    document.getElementById('view-register').classList.remove('hidden');
+                } else if (status === 'pending') {
+                    document.getElementById('view-pending').classList.remove('hidden');
+                } else if (status === 'approved') {
+                    document.getElementById('view-dashboard').classList.remove('hidden');
+                    
+                    // 承認済みならDashboard用のデータを取得
+                    fetchDashboardEvents();
+                    fetchConnections();
+                    renderProfile(myData); 
+                    renderTags(myData);
+                }
 
             } catch (err) { 
                 console.error("初期化エラー:", err); 
-                document.getElementById('user-name').innerText = "エラー発生";
-                document.getElementById('user-intro').innerText = err.message;
+                document.getElementById('view-loading').innerHTML = '<p class="text-red-500 font-bold">エラーが発生しました。リロードしてください。</p>';
             }
         }
     
+        // 🆕 入部申請用のタグ表示
+        function renderRegisterTags() {
+            let html = "";
+            AVAILABLE_TAGS.forEach(tag => {
+                html += `<label class="inline-block px-3 py-1.5 rounded-full text-[10px] font-bold border cursor-pointer transition bg-slate-50 text-slate-500 border-slate-200"><input type="checkbox" value="${tag}" class="hidden tag-checkbox-reg" onchange="toggleTagStyle(this)">${tag}</label>`;
+            });
+            document.getElementById('reg-tags-container').innerHTML = html;
+        }
+
+        // 🆕 入部申請ボタンの処理
+        function submitApplication() {
+            const name = document.getElementById('reg-name').value; 
+            const uni = document.getElementById('reg-uni').value; 
+            const faculty = document.getElementById('reg-faculty').value; 
+            const grade = document.getElementById('reg-grade').value; 
+            const selfintro = document.getElementById('reg-selfintro').value;
+            const consent = document.getElementById('reg-consent').checked;
+            
+            const checkedBoxes = document.querySelectorAll('.tag-checkbox-reg:checked'); 
+            let selectedTags = []; 
+            checkedBoxes.forEach(box => selectedTags.push(box.value)); 
+            const tagsString = selectedTags.join(",");
+
+            if (!name) { alert("名前を入力してください！"); return; }
+            if (!consent) { alert("部費に関する確認事項の同意にチェックを入れてください。"); return; }
+
+            const text = `【入部申請】\n名前:${name}\n大学:${uni}\n学部:${faculty}\n学年:${grade}\n興味タグ:${tagsString}\n自己紹介:${selfintro}`;
+            
+            liff.sendMessages([{ type: "text", text: text }]).then(() => {
+                alert("入部申請を送信しました！\n公式LINEからの通知をお待ちください🙇‍♂️"); 
+                liff.closeWindow(); 
+            }).catch((err) => { alert("エラーが発生しました: " + err); });
+        }
+
 
         function applyRoleStyle(roles) {
             const card = document.getElementById('id-card'); const badgesContainer = document.getElementById('user-role-badges');
@@ -373,7 +486,6 @@
             if (html !== "") { container.innerHTML = html; document.getElementById('tags-hint').classList.remove('hidden'); }
         }
 
-        // 🌟 名前からプロフィールを開くための機能
         function openProfileByLineId(lineId) {
             if (!lineId) { alert("プロフィールが紐づいていません"); return; }
             if (lineId === myUserId) { alert("これはあなた自身です！"); return; }
@@ -402,7 +514,6 @@
 
                 let html = `<div class="bg-slate-50 p-4 rounded-xl border border-slate-200 whitespace-pre-wrap text-xs text-slate-700 leading-relaxed font-medium">${data.details}</div>`;
 
-                // 🙋 参加予定リスト
                 const joins = data.joinsLineIds || [];
                 html += `<div class="mt-4"><p class="text-[10px] font-bold text-indigo-500 mb-2">🙋 参加予定 (${joins.length}人)</p>`;
                 if(joins.length > 0) {
@@ -414,7 +525,6 @@
                 } else { html += `<p class="text-[10px] text-slate-400">まだ参加者はいません</p>`; }
                 html += `</div>`;
 
-                // 🤔 迷い中リスト
                 const maybes = data.maybesLineIds || [];
                 html += `<div class="mt-4"><p class="text-[10px] font-bold text-orange-500 mb-2">🤔 迷い中 (${maybes.length}人)</p>`;
                 if(maybes.length > 0) {
@@ -524,7 +634,6 @@
             }).catch((err) => { alert("エラーが発生しました: " + err); });
         }
 
-        // 👇 バックエンド化：全ユーザーのデータをAPI経由で爆速取得！
         async function fetchConnections() {
             if (!myData) return;
             try {
@@ -579,9 +688,7 @@
                 } else { container.innerHTML = `<p class="text-xs text-slate-400 font-bold w-full text-center py-4">まだ似ている人が見つかりません。仲間が増えるのを待とう！</p>`; }
             } catch (e) { console.error("コネクション取得エラー", e); }
         }
-// ==========================================
-        // 🔒 プライバシー設定の制御 (mypage用)
-        // ==========================================
+
         let currentPrivacy = { chrono: true, bigFive: true, coffee: true, sm: true, motivation: true, nomophobia: true };
 
         const testNames = {
@@ -598,7 +705,6 @@
             const content = document.getElementById('privacy-modal-content');
             modal.classList.remove('hidden');
             
-            // ▼▼ ここを myData に修正！！ ▼▼
             if (myData && myData.privacy) {
                 currentPrivacy = {
                     motivation: myData.privacy.motivation !== false,
@@ -649,20 +755,18 @@
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: userId, privacy: newPrivacy })
                 });
                 if (res.ok) {
-                    // ▼▼ ここも myData に修正！！ ▼▼
-                    if (myData) myData.privacy = newPrivacy; // ローカル更新
-                    
+                    if (myData) myData.privacy = newPrivacy; 
                     btn.innerHTML = '✅ 保存しました！'; btn.classList.replace('bg-slate-800', 'bg-emerald-500');
                     setTimeout(() => { closePrivacyModal(); btn.innerHTML = '<span>💾 設定を保存する</span>'; btn.classList.replace('bg-emerald-500', 'bg-slate-800'); btn.disabled = false; }, 1500);
                 } else throw new Error("API Error");
             } catch (err) { btn.innerHTML = '❌ エラー'; setTimeout(() => { btn.innerHTML = '<span>💾 設定を保存する</span>'; btn.disabled = false; }, 2000); }
         }
+
         function openQrModal() {
             const modal = document.getElementById('qr-modal');
             const content = document.getElementById('qr-modal-content');
             modal.classList.remove('hidden');
             
-            // ▼▼ 【修正】相手に「profile.html」を開かせるURLに変更 ▼▼
             const query = new URLSearchParams({ targetId: myUserId }).toString();
             // 🛑 【重要】LINE Developersで新しく作成した「profile.html」用のLIFF IDを入れてください
             const liffUrl = `https://liff.line.me/2009176797-p0GJH4Oe/?${query}`;
