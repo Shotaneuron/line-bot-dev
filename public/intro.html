@@ -155,7 +155,7 @@
             id: "root", icon: "🧭", question: "心理ゼミ大辞典：どのカテゴリを探索しますか？",
             children: [
                 {
-                    id: "lectures", label: "🧑‍🏫 知識アーカイブ（講義）", icon: "🧠", question: "読めば明日から使える！過去の超実践的・心理学講義",
+                    id: "lectures", label: "🧑‍🏫 心理学", icon: "🧠", question: "読めば明日から使える！過去の超実践的・心理学講義",
                     children: [
                         {
                             id: "lec_study", label: "勉強法・学習・記憶", icon: "📝", question: "圧倒的に効率よく学ぶための心理学",
@@ -216,96 +216,78 @@
                     ]
                 },
                 {
-                    id: "projects", label: "🚀 進行中のプロジェクト", icon: "🔥", question: "ゼミ生が主体となって動かすPJの数々！",
+                    id: "projects", label: "🚀 プロジェクト", icon: "🔥", question: "長期休みの期間に開催される「達成感」「スキルアップ」を目指す数々のPJ（プロジェクト）",
                     children: [
                         {
                             id: "pj_health", label: "運動・健康系PJ", icon: "👟", question: "心と体の健康を促進するプロジェクト",
                             children: [
-                                { id: "pj_sports", label: "運動プロジェクト (PJ長: 三上)", icon: "🏃", type: "page", title: "運動プロジェクト", description: "【PJ長：秘書 三上晃生】\n「運動を通して自分に変化を」運動習慣を身に着けることで身体や心、生活リズムを整えて自分を変革していくプロジェクト大通駅集合での『円山公園ウォーキング会』など、ゆるく楽しく活動中。" },
-                                { id: "pj_meditation", label: "瞑想習慣化PJ", icon: "🧘", type: "page", title: "瞑想習慣化PJ", description: "マインドフルネスの講義から派生したプロジェクト。毎日寝る前の5分間、LINEグループで通話を繋いでみんなで瞑想を習慣化します。" },
-                                { id: "pj_sleep", label: "快眠お届けPJ", icon: "🛏️", type: "page", title: "快眠お届けPJ", description: "睡眠の質を向上させるための情報共有や、アロマ、ヒーリングミュージックのおすすめをシェアする安らぎのプロジェクト。" },
-                                { id: "pj_sunlight", label: "朝の光浴びるPJ", icon: "☀️", type: "page", title: "朝の光浴びるPJ", description: "セロトニン分泌を促すため、朝起きたら「太陽の光を浴びた写真」をグループに投稿し合う、健康的すぎる企画。" }
+                                { id: "pj_sports", label: "運動プロジェクト", icon: "🏃", type: "page", title: "運動プロジェクト", description: "【PJ長：三上晃生】\n「運動を通して自分に変化を」運動習慣を身に着けることで身体や心、生活リズムを整えて自分を変革していくプロジェクト大通駅集合での『円山公園ウォーキング会』など、ゆるく楽しく活動中。" },
+                                { id: "pj_meditation", label: "瞑想習慣化PJ", icon: "🧘", type: "page", title: "瞑想習慣化PJ", description: "【PJ長：森田珠羽】\n マインドフルネスの講義から派生したプロジェクト。数多の論文で様々な効果があることを証明された瞑想を習慣化して、コミュ力・地頭力・精神力・集中力を鍛える" },
+                                { id: "pj_sleep", label: "快眠お届けPJ", icon: "🛏️", type: "page", title: "快眠お届けPJ", description: "【PJ長：青木蓮】\n 睡眠の質を向上させるための情報共有や、アロマ、ヒーリングミュージックのおすすめをシェアする安らぎのプロジェクト。認知シャッフル睡眠法など科学的なアプローチで良い睡眠習慣を身につけて、健康な睡眠を目指します" }
                             ]
                         },
                         {
                             id: "pj_academic", label: "学術・研究系PJ", icon: "🔬", question: "心理学や他分野の探求を深める",
                             children: [
-                                { id: "pj_experiment", label: "実験再現PJ", icon: "🧪", type: "page", title: "実験再現PJ", description: "有名な心理学の実験（マシュマロ・テストなど）を、倫理的な範囲内でゼミ生同士で実際にやってみて検証する面白プロジェクト。" },
-                                { id: "pj_suisan", label: "水産学ゼミ", icon: "🐟", type: "page", title: "水産学ゼミ", description: "心理学の枠を超えた他分野交流！水産学についての知見を広め、多様な学問の面白さに触れるスピンオフゼミ活動です。" },
-                                { id: "pj_test_dev", label: "心理テスト開発PJ", icon: "📋", type: "page", title: "心理テスト開発PJ", description: "公式LINEに搭載されている「クロノタイプ診断」などの心理テストを、論文をベースにして自作・実装するチームです。" },
-                                { id: "pj_data", label: "行動データ分析PJ", icon: "📈", type: "page", title: "行動データ分析PJ", description: "ゼミ生のイベント参加率やLINEボットの利用データを匿名で分析し、組織改善のヒントをデータサイエンスの視点から導き出します。" }
+                                { id: "pj_experiment", label: "実験再現PJ", icon: "🧪", type: "page", title: "実験再現PJ", description: "【PJ長：加藤翔大】\n 有名な心理学の実験を、ゼミ生同士で実際にやってみて検証するという、「知」を身に染みて実感するための実践型プロジェクト。" },
+                                { id: "pj_suisan", label: "道東Pj", icon: "🐟", type: "page", title: "道東PJ", description: "【PJ長：加藤翔大】\n 北海道東部の釧路市や弟子屈町の企業の方や役員の方々と連携して「川」をテーマに心理学を用いた地域活性プロジェクトを展開します（2026年から新規立ち上げ）" }
                             ]
                         },
                         {
                             id: "pj_system", label: "組織・システム開発系PJ", icon: "💻", question: "ゼミのインフラを構築するITチーム",
                             children: [
-                                { id: "pj_notion", label: "Notion推進チーム", icon: "📓", type: "page", title: "Notion推進・システム開発", description: "ゼミの情報を一元管理する「Notion」の構築を行っているチーム。議事録やマニュアルを整理し、組織の外部脳を作ります。" },
-                                { id: "pj_linebot", label: "公式LINEボット開発チーム", icon: "🤖", type: "page", title: "公式LINE開発チーム", description: "AIチャットやカレンダー連携を備えたこの公式LINEアプリ（LIFF）を開発・保守するエンジニアリングチーム。コンテストにも挑戦！" },
-                                { id: "pj_onboarding", label: "新規メンバーオンボーディングPJ", icon: "👋", type: "page", title: "オンボーディングPJ", description: "新しく入ったメンバーが早くゼミに馴染めるよう、ウェルカムガイドの作成やメンター制度の構築を行う人事系のチームです。" }
-                            ]
-                        },
-                        {
-                            id: "pj_event", label: "イベント・その他PJ", icon: "🎉", question: "クリエイティブや社会との接点を作る",
-                            children: [
-                                { id: "pj_shinkan", label: "新歓PV制作PJ", icon: "🎬", type: "page", title: "新歓PV制作プロジェクト", description: "来年度の新入生に向けて、心理ゼミの魅力を伝えるプロモーションビデオを制作するプロジェクト。AIツールも活用中！" },
-                                { id: "pj_mirai", label: "未来開拓倶楽部 (複合PJ)", icon: "🌍", type: "page", title: "未来開拓倶楽部", description: "北大心理ゼミは「未来開拓倶楽部」の一部として、長橋PJ、シェアハウスPJ、フードPJ、国際PJなど多岐にわたるPJを展開中。" },
-                                { id: "pj_sharehouse", label: "シェアハウスPJ", icon: "🏠", type: "page", title: "シェアハウスPJ", description: "学生同士の新しい住まい方・コミュニティの形を模索し、実際に物件の運用やルール作りに関わる実践的プロジェクト。" },
-                                { id: "pj_food", label: "フードPJ", icon: "🍱", type: "page", title: "フードPJ", description: "食と心理学を絡めたイベント企画や、規格外野菜の活用など、食に関する課題解決に取り組むプロジェクト。" }
-                            ]
+                                { id: "pj_notion", label: "アプリ・システム開発PJ", icon: "📓", type: "page", title: "アプリ・システム開発", description: "【PJ長：加藤翔大】\n 公式LINEやNotionのシステム」開発の他、LINE LIFFアプリなどのWebアプリ開発、データベースの構築などを行うチーム" }
+                             ]
                         }
                     ]
                 },
                 {
-                    id: "clubs", label: "🏕️ 部活・サークル活動", icon: "☕", question: "現在アクティブに活動中の部活一覧！",
+                    id: "clubs", label: "🏕️ 部活", icon: "☕", question: "心理ゼミで「小さな挑戦」と「やりたいことの実現」を目指す部員主導の活動",
                     children: [
                         {
                             id: "club_culture", label: "文化・インドア系部活", icon: "🎨", question: "趣味や対話を通して深める",
                             children: [
-                                { id: "reading", label: "読書部📚 (エンレイソウ朝活)", icon: "📚", type: "page", title: "読書部", description: "おすすめの本を紹介し合う部活。春休みには北大のエンレイソウに集合し、コーヒーを飲みながら本を読む優雅な朝活を実施！" },
-                                { id: "radio", label: "ラジオ部📻 (部長: 統括)", icon: "📻", type: "page", title: "ラジオ部", description: "【部長：ゼミ統括】\n部活間の交流を深めるため、ゼミ生同士でポッドキャスト配信！メンバーの多様な素顔を発信中です。" },
-                                { id: "club_share", label: "心理シェア部", icon: "💭", type: "page", title: "心理シェア部", description: "日常で感じたモヤモヤや、個人的な悩みを心理学の視点からみんなでシェアしてスッキリする、心理的安全性の高い対話部活です。" },
-                                { id: "movie", label: "映画鑑賞部🍿", icon: "🍿", type: "page", title: "映画鑑賞部", description: "月に1回集まって映画を鑑賞。終わった後は、心理学的な視点から登場人物の行動や感情を分析するディープな感想戦が始まります。" },
-                                { id: "club_boardgame", label: "ボードゲーム部🎲", icon: "🎲", type: "page", title: "ボドゲ部", description: "カタンや人狼など、相手の心理を読むボードゲームを中心に遊ぶ部活。楽しみながら交渉術や読心術(?)が鍛えられます。" }
+                                { id: "reading", label: "読書部📚", icon: "📚", type: "page", title: "読書部", description: "【部長：青木蓮】\n おすすめの本を紹介し合う部活。春休みには北大のエンレイソウに集合し、コーヒーを飲みながら本を読む優雅な朝活を実施！" },
+                                { id: "radio", label: "ラジオ部📻 ", icon: "📻", type: "page", title: "ラジオ部", description: "【部長：木下晨】\n部活間の交流を深めるため、ゼミ生同士でポッドキャスト配信！メンバーの多様な素顔を発信中です。" },
+                                { id: "club_share", label: "心理シェア部💭", icon: "💭", type: "page", title: "心理シェア部", description: "【部長：大津和希】\n 日常で感じたモヤモヤや、個人的な悩みを心理学の視点からみんなでシェアしてスッキリする、心理的安全性の高い対話部活です。" },
+                                { id: "club_share", label: "水産学ゼミ🐟", icon: "🐟", type: "page", title: "水産学ゼミ", description: "【部長：相場陸央】\n 水産学部に所属し、水産学を愛してやまない部長による講義や釣り体験、漁師さんへの訪問会など！※2026年度から部長が函館に引っ越しをした理由からオンライン開催がメインになります。" },
+                                { id: "movie", label: "映画部🍿", icon: "🍿", type: "page", title: "映画鑑賞部", description: "【部長：未定】\n 始まるかどうかは未定！2026年度新一年生がもしかしたら立ち上げるかも？な部活" }
                             ]
                         },
                         {
                             id: "club_active", label: "アクティブ・アウトドア系", icon: "🏕️", question: "外に出てアクティブに楽しむ",
                             children: [
-                                { id: "sukoyaka", label: "すこやか部🧘 (部長: 市場)", icon: "🧘", type: "page", title: "すこやか部", description: "【部長：市場百合子】\n健康第一！筋トレやサウナに行ったり、生活習慣の改善を目指して心身の健康を保つための大人気部活です。" },
-                                { id: "club_drive", label: "ドライ部🚗", icon: "🚗", type: "page", title: "ドライ部", description: "レンタカーやメンバーの車に乗り合い、北海道ならではの広大な景色や絶景スポットへドライブを満喫する部活です。" },
-                                { id: "club_flat", label: "ふらっと部🚶", icon: "🚶", type: "page", title: "ふらっと部", description: "「今からふらっと〇〇行かない？」という突発的なノリで集まり、散歩やご飯に行くフットワークの軽さNo.1の部活です。" },
-                                { id: "club_camp", label: "キャンプ部⛺", icon: "⛺", type: "page", title: "キャンプ部", description: "夏はBBQ、秋は焚き火。大自然の中でテントを張り、非日常の体験を通してメンバーの絆を深めるアウトドア部活です。" }
+                                { id: "sukoyaka", label: "すこやか部🧘", icon: "🧘", type: "page", title: "すこやか部", description: "【部長：市場百合子】\n 健康第一！ジョギングや岩盤浴に行って体の健康を整えたり、猫カフェやピクニックに行って心に癒しをもたらしたり、体と心の安らぎを目指すための人気部活！" },
+                                { id: "club_drive", label: "ドライ部🚗", icon: "🚗", type: "page", title: "ドライ部", description: "【部長：現在休止中】\n 北海道のいろんな場所にドライブにいく部活。車の中での空気感や普段行けない場所に行き、新たな経験を得たり楽しい思い出を作れたりする。" },
+                                { id: "club_flat", label: "ふらっと部🚶", icon: "🚶", type: "page", title: "ふらっと部", description: "【部長：磯永あき・森田珠羽】\n ゆるく集まってキャンパスライフを楽しむ場所。「居場所作り」をテーマに生まれた部活で、ふらっと立ち寄れてフラットな立場で話せる雑談会やお出かけ会をしている。" }
                             ]
                         },
                         {
                             id: "club_gourmet", label: "グルメ・飲食系部活", icon: "🍽️", question: "美味しいものを囲んで語り合う",
                             children: [
-                                { id: "club_mocktail", label: "ノンアルカクテル部～巡（めぐる）～", icon: "🍹", type: "page", title: "ノンアルカクテル部", description: "お酒が飲めなくても大丈夫！美味しくて映えるノンアルコールカクテル（モクテル）を自分たちで作ったり、オシャレなバーを開拓する部活です。" },
-                                { id: "club_cooking", label: "料理部🍳", icon: "🍳", type: "page", title: "料理部", description: "みんなで集まって楽しく料理を作ります。一人暮らしではなかなか作らないメニューに挑戦し、食卓を囲んで語り合います。" },
-                                { id: "cafe", label: "カフェ巡り部☕", icon: "☕", type: "page", title: "カフェ巡り部", description: "札幌市内のオシャレな隠れ家カフェや美味しいコーヒーの店を開拓。ケーキを食べながら企画会議が始まることも。" },
-                                { id: "club_ramen", label: "ラーメン部🍜", icon: "🍜", type: "page", title: "ラーメン部", description: "北大周辺を中心に、美味しいラーメン屋をひたすら巡り、味のレビューをNotionに蓄積していくカロリー高めの部活です。" }
+                                { id: "club_mocktail", label: "ノンアルカクテル部～巡（めぐる）🍹～", icon: "🍹", type: "page", title: "ノンアルカクテル部", description: "【部長：三田征宗】\n ノンアルカクテルを味わったり、希望者にはシェイカーの使い方やシェイクの仕方講座などを行う部活。名前には、ノンアルカクテルの良さが多くの人へと巡りますようにという意味が込められている。" },
+                                { id: "club_cooking", label: "料理部🍳", icon: "🍳", type: "page", title: "料理部", description: "【部長：現在休止中】\n みんなで集まって楽しく料理を作ります。一人暮らしではなかなか作らないメニューに挑戦し、食卓を囲んで語り合います。（再建者募集中！）" },
+                                { id: "cafe", label: "アイス部☕", icon: "☕", type: "page", title: "アイス部", description: "【部長：現在休止中】\n 札幌市内のおいしいアイス屋さんを探し、町を練り歩く部活！（再建者募集中！）" }
                             ]
                         }
                     ]
                 },
                 {
-                    id: "events", label: "🎉 イベント・組織運営", icon: "🏮", question: "ゼミを盛り上げ、より良くする活動",
+                    id: "events", label: "🎉 イベント", icon: "🏮", question: "ゼミを盛り上げ、青春と新たな体験・出会いをもたらす活動",
                     children: [
                         {
                             id: "ev_large", label: "大型イベント", icon: "🎪", question: "年間のハイライトとなる大企画",
                             children: [
-                                { id: "event_hokudaisai", label: "北大祭出店（心理戦カジノ）", icon: "🃏", type: "page", title: "北大祭での熱い企画！", description: "2024年6月の北大祭（楡陵祭）で行われ、大盛況だった企画です。「うそつきブラックジャック」「心理戦ババ抜き」「性格ルーレット」など、各ブースが賑わいました。" },
-                                { id: "event_camp", label: "夏合宿・秋合宿", icon: "🎒", type: "page", title: "合宿イベント", description: "月に一度、小樽の長橋にある別荘で行われる宿泊イベント。昼は観光やまじめなワークショップ、夜はBBQやサウナを大自然の中で行い、最高の思い出を作ります。" },
-                                { id: "event_xmas", label: "クリスマスパーティ", icon: "🎄", type: "page", title: "クリスマス会", description: "新歓、クリスマス、冬休みなどの節目で行われる大型パーティー。大学内の施設であるFMI国際拠点を貸し切り、様々な企画をおいしいご飯とともに楽しみます！心理ゼミの母体である未来開拓倶楽部の人たちとも交流する機会となります。" },
-                                { id: "event_summer", label: "未来開拓倶楽部パーティ", icon: "🥳", type: "page", title: "パーティ", description: "北大心理ゼミが所属する大きな枠組み「未来開拓倶楽部」全体で行われる夏の大型交流イベント。多様なPJメンバーが集結します。" },
+                                { id: "event_hokudaisai", label: "北大祭出店", icon: "🃏", type: "page", title: "北大祭での熱い企画！", description: "2024年6月の北大祭（楡陵祭）で行われ、大盛況だった企画です。「うそつきブラックジャック」「心理戦ババ抜き」「性格ルーレット」など、各ブースが賑わいました。2026年度は「ノンアルカクテル部」が主体となって出店する予定！" },
+                                { id: "event_summer", label: "未来開拓倶楽部パーティ", icon: "🥳", type: "page", title: "パーティ", description: "北大心理ゼミが所属する大きな枠組み「未来開拓倶楽部」全体で行われる夏の大型交流イベント。FMI（北海道大学フード・メディカル・イノベーション国際拠点）という北大内の巨大施設を貸し切って、多様なPJメンバーが集結します。" },
                                 { id: "event_summer", label: "サイコロ旅", icon: "🎲", type: "page", title: "サイコロ旅", description: "一日乗車券を使って、ルーレットで出た札幌市営地下鉄の駅に向かう企画です！普段行かない、行こうとしないような場所にも行けちゃいます！" }
                             ]
                         },
                         {
-                            id: "ev_study", label: "勉強会・ワークショップ", icon: "📖", question: "知識をインプット・アウトプット",
+                            id: "ev_study", label: "作業会・勉強会", icon: "📖", question: "知識をインプット・アウトプット",
                             children: [
-                                { id: "study_stats", label: "ワークスペース勉強会", icon: "📊", type: "page", title: "ワークスペース勉強会", description: "心理ゼミ運営の基盤となっているNotionなどのAIワークスペースの使い方を、一緒に学ぶ会です！" },
-                                { id: "study_paper", label: "シンプル勉強会", icon: "📄", type: "page", title: "シンプル勉強会", description: "テスト前や課題が終わってない日など、ゲリラ的に開催される自習会です。誰でも自由に開いて呼びかけることができ、高等教育推進機構の演習室などを使用しています。" },                            ]
+                                { id: "study_stats", label: "ワークスペース勉強会", icon: "📊", type: "page", title: "ワークスペース勉強会", description: "企画部限定！心理ゼミ運営の基盤となっているNotionなどのAIワークスペースの使い方を、一緒に学ぶ会です！" },
+                                { id: "study_paper", label: "シンプル勉強・作業会", icon: "📄", type: "page", title: "シンプル勉強会", description: "テスト前や課題が終わってない日など、ゲリラ的に開催される自習会です。誰でも自由に開いて呼びかけることができ、高等教育推進機構の演習室などを使用しています。" },                            ]
                         },
                         {
                             id: "ev_management", label: "運営部・企画部", icon: "🏢", question: "ゼミの未来を創る裏側",
@@ -320,20 +302,28 @@
                     ]
                 },
                 {
-                    id: "about_seminar", label: "🏫 北大心理ゼミの根本", icon: "💡", question: "ビジョンや代表の想いを知る",
+                    id: "about_seminar", label: "🏫 北大心理ゼミについて", icon: "💡", question: "ビジョンや代表の想いを知る",
                     children: [
                         {
                             id: "about_core", label: "ビジョン・理念", icon: "🎯", question: "私たちが目指す場所",
                             children: [
-                                { id: "about_vision", label: "ビジョン『学問の実践』", icon: "🚀", type: "page", title: "「学問の実践」", description: "心理ゼミは「学問の実践」をテーマに、大学で学んだ知識をただの知識で終わらせず、実際の行動や社会に還元するためのコミュニティです。" },
-                                { id: "about_support", label: "挑戦を支援する仕組み", icon: "🤝", type: "page", title: "挑戦の支援", description: "運営陣は、メンバーが心理学の知識を基にして「自ら新しいプロジェクトを立ち上げる」ことを全力で支援する仕組みづくりを重要視しています。" },
+                                { id: "about_vision", label: "ビジョン『学問の実践～知識を行動に変え未来を発掘する～』", icon: "🚀", type: "page", title: "「学問の実践」", description: "心理ゼミは「学問の実践」をテーマに、大学で学んだ知識をただの知識で終わらせず、実際の行動や社会に還元するためのコミュニティです。学問は、ただインプットするだけのものではなく、実際に使ってこそ初めて活きるものです。私たちはこのような考えのもと、論文にあるテクニックを実際に使うことで、みなさんの日々を豊かにします。そんな、ゼミ長であり創設者である加藤翔大の想いから、そしてその想いに共感する運営部メンバーによって生まれた団体としての「意志」です。" },
+                                { id: "about_support", label: "挑戦を支援する仕組み", icon: "🤝", type: "page", title: "挑戦の支援", description: "運営陣は、メンバーが心理学の知識を基にして「自ら新しい部活・プロジェクトを立ち上げる」ことを全力で支援する仕組みづくりを重要視しています。" },
+                                { id: "about_support", label: "誰もが挑戦者となれる場", icon: "🤝", type: "page", title: "小さな挑戦", description: "どんな些細なことでも、あなたがどの学年でどんな人間であろうとも、心理ゼミの運営部、そして企画部はあなたの「やりたい」を発掘し、その実現を全力でサポートします。実際、ほとんどの部活は1年生が立ち上げたものです。部活を立てて失敗してもいい、つぶしてもかまわない。あなたに与えられるのは責任ではなく本来誰もが持っているはずの「挑戦の権利」です。" },
                                 { id: "about_failure", label: "失敗を恐れない環境づくり", icon: "🌱", type: "page", title: "心理的安全性", description: "挑戦には失敗がつきもの。心理ゼミは、誰もが安心して失敗でき、そこから学びを得られる「心理的安全性の高い」組織を目指しています。" }
+                            ]
+                        },
+                        {
+                            id: "about_core", label: "心理ゼミの母団体「未来開拓倶楽部」", icon: "◙", question: "心理ゼミの温床と仲間",
+                            children: [
+                                { id: "about_vision", label: "未来開拓倶楽部とは？", icon: "🚀", type: "page", title: "未来開拓倶楽部", description: "未来開拓倶楽部とは、心理ゼミだけにとどまらず税務会計ゼミや起業ゼミ、未来の大人プロジェクトや国際交流プロジェクトなど、20を超えるゼミ・プロジェクトが所属する北海道最大規模の学生団体です。「未来を開拓する学生の挑戦のプラットフォーム」というミッションを背負い活動しています（加藤翔大は副部長を務めています）" },
+                                { id: "about_support", label: "未来開拓倶楽部に加入するには？", icon: "🤝", type: "page", title: "倶楽部への加入方法", description: "未来開拓倶楽部の中の心理ゼミという位置づけなので、実質みなさん全員が倶楽部のメンバーです。しかし、倶楽部全体の活動や他のゼミ・PJの告知や情報を受け取りたいという方はインスタ（未来開拓倶楽部）から連絡するか、心理ゼミ運営部メンバーに声をかけて全体LINEグループに加入してください！" }
                             ]
                         },
                         {
                             id: "about_members", label: "運営メンバーの想い", icon: "💬", question: "ゼミを支える人たち",
                             children: [
-                                { id: "about_rep", label: "代表メッセージ", icon: "👑", type: "page", title: "代表からのメッセージ", description: "北大心理ゼミ代表の加藤翔大です。\n「心理学を机上の空論で終わらせたくない」「何か面白いことを仕掛けたい」そんな熱い思いを持ったメンバーが集まる場所を作りたいと思い、この組織を運営しています。" },
+                                { id: "about_rep", label: "代表メッセージ", icon: "👑", type: "page", title: "代表からのメッセージ", description: "北大心理ゼミ代表の加藤翔大です。\n「学問を「知る」だけでなく人生に役立てるツールとして「使って」ほしい。」「何か面白いことを、新しい価値を生み出したい。」そんな熱い思いを持ったメンバーが作り出すクリエイティブで自由な場所を作りたいと思い、この組織を運営しています。" },
                                 { id: "about_diversity", label: "多様性を活かす組織へ", icon: "🌈", type: "page", title: "統括からのメッセージ", description: "部活間やPJ間の交流を促し、様々なバックグラウンドを持つメンバーの「多様性」が化学反応を起こすようなエコシステムを作ります！" },
                                 { id: "about_nextgen", label: "次世代へのバトンタッチ", icon: "🏃‍♂️", type: "page", title: "持続可能な組織", description: "代表や幹部が変わっても、組織が崩れないよう、ノウハウをNotionに蓄積し、強固で持続可能なコミュニティの基盤を築いています。" }
                             ]
@@ -346,9 +336,10 @@
                         {
                             id: "faq_basic", label: "活動の基本に関するFAQ", icon: "⏱️", question: "時間・場所・お金について",
                             children: [
-                                { id: "faq_busy", label: "Q. 忙しくても大丈夫？", icon: "📅", type: "page", title: "Q. 忙しくても活動できますか？", description: "A. もちろんです！\n活動は強制ではありません。自分のペースで参加できる部活や、単発のイベント（ウォーキング会など）だけでも大歓迎。途中参加もOK！" },
-                                { id: "faq_place", label: "Q. 活動場所はどこですか？", icon: "📍", type: "page", title: "Q. 活動場所はどこですか？", description: "A. メイン講義などは「Hello Visits 北海道大学」や、エンレイソウなどで開催しています。\n遠方の方のためにZoomでのオンライン参加も併用しています！" },
-                                { id: "faq_money", label: "Q. 費用はかかりますか？", icon: "💰", type: "page", title: "Q. 費用について", description: "A. 基本的な部費や月会費は徴収していません！合宿やイベント参加時の飲食代など、実費が発生する場合のみ割り勘となります。" }
+                                { id: "faq_busy", label: "Q. 心理ゼミは何をしてるの？", icon: "📅", type: "page", title: "Q. 心理ゼミの活動について", description: "A. 心理ゼミには４つの活動があります！\n1.大学では学べない”使える”知識を最新研究から分かりやすく解説する「講義」\n2.小さな挑戦から始まる多様な「部活」。\n3.長期休みを利用してスキルアップを目指す「プロジェクト」。\n4.キャンプやパーティなど普通では味わえない非日常体験を届ける「イベント」" },
+                                { id: "faq_busy", label: "Q. 忙しくても大丈夫？", icon: "📅", type: "page", title: "Q. 忙しくても活動できますか？", description: "A. もちろんです！\n一年に一回以上来てくれれば問題ありません！そのため、活動は強制ではなく、自分のペースで参加できる部活や、単発のイベント（ウォーキング会など）だけでも大歓迎。途中参加もOK！" },
+                                { id: "faq_place", label: "Q. 活動場所はどこですか？", icon: "📍", type: "page", title: "Q. 活動場所はどこですか？", description: "A. メイン講義などは「VVV Station 北海道大学」や、エンレイソウなどで開催しています。\n遠方の方のためにZoomでのオンライン参加も併用しています！　また、他の部活やPJについてはそれぞれ企画内容によって場所が変わるので、カレンダーから確認しておいてください！" },
+                                { id: "faq_money", label: "Q. 部費・費用はかかりますか？", icon: "💰", type: "page", title: "Q. 費用について", description: "A. 部費は1年間で2000円(月150円ほど)！その他の費用としては、合宿やイベント参加時の飲食代など、実費が発生する場合のみ割り勘となります。" }
                             ]
                         },
                         {
@@ -356,15 +347,15 @@
                             children: [
                                 { id: "faq_knowledge", label: "Q. 心理学の知識は必要？", icon: "🧠", type: "page", title: "Q. 専門知識がなくても平気ですか？", description: "A. 全く問題ありません！\n「興味がある」という気持ちがあれば十分。工学部や文学部など、心理学専攻以外のメンバーもたくさん活躍しています。" },
                                 { id: "faq_who", label: "Q. 高校生や他大生でもいいの？", icon: "🏫", type: "page", title: "Q. 北大生以外も参加できますか？", description: "A. はい、大歓迎です！\n対象は「高校生以上」。他大学の学生はもちろん、高校生から大学院生まで幅広いメンバーが参加しています。" },
-                                { id: "faq_adult", label: "Q. 社会人でも参加できますか？", icon: "💼", type: "page", title: "Q. 社会人の参加について", description: "A. 社会人の方の参加も大歓迎です！学生と社会人がフラットに交流し、新たな視点を共有し合える貴重な場となっています。" }
+                                { id: "faq_adult", label: "Q. 社会人でも参加できますか？", icon: "💼", type: "page", title: "Q. 社会人の参加について", description: "A. 残念ながら社会人の方の入部はお断りしています。（心理ゼミ卒業生の社会人に限って参加可能）学生が価値を受け取り、生み出す、そして新たな視点を共有し合えるコミュニティを作るのがこの心理ゼミとなっています。" }
                             ]
                         },
                         {
                             id: "join_process", label: "🐾 加入ステップ", icon: "🎉", question: "どうやってゼミに入るの？",
                             children: [
-                                { id: "join_flow", label: "ゼミに入るまでの流れ", icon: "1️⃣", type: "page", title: "ゼミに入るには？", description: "1. 「見学・説明会（新歓）」に参加\n2. メンバーとカジュアル面談\n3. 正式ジョイン！🎉\nNotionの閲覧権限や、公式LINEの全機能が解放されます。" },
-                                { id: "join_interview", label: "カジュアル面談って何するの？", icon: "🗣️", type: "page", title: "カジュアル面談とは", description: "面接のような堅いものではありません！お互いのミスマッチを防ぐため、「ゼミでどんなことをしてみたいか？」をカフェ等でラフにお話しする時間です。" },
-                                { id: "join_contact", label: "お問い合わせ先", icon: "✉️", type: "page", title: "お問い合わせ", description: "少しでも気になった方は、この公式LINEのトーク画面から直接メッセージを送るか、公式Instagram/X（旧Twitter）のDMからお気軽にご連絡ください！" }
+                                { id: "join_flow", label: "ゼミに入るまでの流れ", icon: "1️⃣", type: "page", title: "ゼミに入るには？", description: "1. 「LINEグループ」に参加\n2. 公式LINEから「入部」申請\n3. 代表からの承認通知を経て「入部」完了！🎉 ※別途部費のお支払いが必要になります\nNotionの閲覧権限や、公式LINEの全機能が解放され、心理ゼミのすべての情報、活動、人間関係へのアクセス県が与えられます。" },
+                                { id: "join_interview", label: "入部届けって何するの？", icon: "🗣️", type: "page", title: "入部届けとは", description: "公式LINEを読み込み、案内に表示される「入部届け」ボタンを押し、名前や所属などの簡単な情報を数件入力するだけ！申請後は、運営部からの承認を受けると公式LINEの機能が全て解放されます" },
+                                { id: "join_contact", label: "お問い合わせ先", icon: "✉️", type: "page", title: "お問い合わせ", description: "少しでも気になった方は、この公式LINEのトーク画面から直接メッセージを送るか、代表の加藤翔大、秘書の青木蓮、三上晃生にLINEでお気軽にご連絡ください！" }
                             ]
                         }
                     ]
